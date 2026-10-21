@@ -1,9 +1,9 @@
 
-# NestJS 10 API project template
+# NestJS 12 API project template
 
 [![License](https://img.shields.io/github/license/saluki/nestjs-template.svg)](https://github.com/saluki/nestjs-template/blob/master/LICENSE)
 
-Scaffold quickly your next [NestJS 10](https://nestjs.com/) API project with 
+Scaffold quickly your next [NestJS 12](https://nestjs.com/) API project with
 ❤️ using this template
 
 - Crafted for Docker environments (Dockerfile support and environment variables)
@@ -18,7 +18,7 @@ Scaffold quickly your next [NestJS 10](https://nestjs.com/) API project with
 
 Before starting, make sure you have at least those components on your workstation:
 
-- An up-to-date release of [NodeJS](https://nodejs.org/) such as 20.x and NPM
+- A supported release of [NodeJS](https://nodejs.org/) (20.19+, 22.12+, or 24+) and NPM
 - A database such as PostgreSQL. You may use the provided `docker-compose.yml` file.
 
 [Docker](https://www.docker.com/) may also be useful for advanced testing and image building, although it is not required for development.
@@ -35,7 +35,7 @@ The next thing will be to install all the dependencies of the project.
 
 ```sh
 cd ./my-project
-npm install
+npm ci
 ```
 
 Once the dependencies are installed, you can now configure your project by creating a new `.env` file containing the environment variables used for development.
@@ -59,11 +59,18 @@ You are now ready to launch the NestJS application using the command below.
 # For use in development environments only, performs a Prisma migration
 npx prisma migrate dev
 
-# Launch the development server with TSNode
+# Generate the Prisma Client after migrations or schema changes
+npx prisma generate
+
+# Launch the development server with tsx
 npm run dev
 ```
 
 You can now head to `http://localhost:3000/docs` and see your API Swagger docs. The example passenger API is located at the `http://localhost:3000/api/v1/passengers` endpoint.
+
+### CSV imports
+
+The template includes `@fastify/multipart` for receiving files and `csv-parse` for reading CSV rows. With the Fastify adapter, NestJS can register the multipart plugin when an upload interceptor is used. For large CSV files, use `FileStreamInterceptor` from `@nestjs/platform-fastify/multipart` and the streaming API from `csv-parse`; set a file size limit for the route. The upload endpoint and row validation should be defined alongside the project's financial data model.
 
 For restricted routes, for testing you can use the below JWT
 
@@ -115,7 +122,7 @@ npm run build
 # Run the project' functional tests
 npm run test
 
-# Lint the project files using TSLint
+# Lint the project files using ESLint
 npm run lint
 ```
 

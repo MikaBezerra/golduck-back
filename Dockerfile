@@ -1,7 +1,7 @@
 # PRODUCTION DOCKERFILE
 # ---------------------
 # This Dockerfile allows to build a Docker image of the NestJS application
-# and based on a NodeJS 20 image. The multi-stage mechanism allows to build
+# and based on a NodeJS 22 image. The multi-stage mechanism allows to build
 # the application in a "builder" stage and then create a lightweight production
 # image containing the required dependencies and the JS build files.
 # 
@@ -12,9 +12,9 @@
 # https://www.bretfisher.com/node-docker-good-defaults/
 # http://goldbergyoni.com/checklist-best-practice-of-node-js-in-production/
 
-FROM node:20-alpine as builder
+FROM node:22-alpine AS builder
 
-ENV NODE_ENV build
+ENV NODE_ENV=build
 
 USER node
 WORKDIR /home/node
@@ -23,15 +23,14 @@ COPY package*.json ./
 RUN npm ci
 
 COPY --chown=node:node . .
-RUN npx prisma generate \
-    && npm run build \
+RUN npm run build \
     && npm prune --omit=dev
 
 # ---
 
-FROM node:20-alpine
+FROM node:22-alpine
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
 
 USER node
 WORKDIR /home/node

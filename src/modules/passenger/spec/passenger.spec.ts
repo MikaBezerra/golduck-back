@@ -4,7 +4,7 @@
 import { HttpStatus, INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import * as jwt from 'jsonwebtoken';
-import * as request from 'supertest';
+import request from 'supertest';
 
 import { App } from 'supertest/types';
 import { ApplicationModule } from '../../app.module';
@@ -35,16 +35,14 @@ describe('Passenger API', () => {
         app.close()
     );
 
-    it('Should return empty passenger list', async () =>
-
-        request(app.getHttpServer() as App)
+    it('Should return empty passenger list', async () => {
+        const response = await request(app.getHttpServer() as App)
             .get('/passengers')
-            .expect(HttpStatus.OK)
-            .then(response => {
-                expect(response.body).toBeInstanceOf(Array);
-                expect(response.body.length).toEqual(0);
-            })
-    );
+            .expect(HttpStatus.OK);
+
+        expect(response.body).toBeInstanceOf(Array);
+        expect(response.body.length).toEqual(0);
+    });
 
     it('Should insert new passenger in the API', async () => {
 
@@ -53,18 +51,17 @@ describe('Passenger API', () => {
             issuer: `${process.env.JWT_ISSUER}`
         });
 
-        return request(app.getHttpServer() as App)
+        const response = await request(app.getHttpServer() as App)
             .post('/passengers')
             .set('Authorization', `Bearer ${token}`)
             .send({
                 firstName: 'John',
                 lastName: 'Doe'
             })
-            .expect(HttpStatus.CREATED)
-            .then(response => {
-                expect(response.body.firstName).toEqual('John');
-                expect(response.body.lastName).toEqual('Doe');
-            });
+            .expect(HttpStatus.CREATED);
+
+        expect(response.body.firstName).toEqual('John');
+        expect(response.body.lastName).toEqual('Doe');
     });
 
 });

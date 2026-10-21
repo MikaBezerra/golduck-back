@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Passenger } from '@prisma/client';
+import { Passenger } from '../../../generated/prisma/client';
 
 export class PassengerData {
 

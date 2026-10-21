@@ -30,7 +30,7 @@ export function extractTokenPayload(request: FastifyRequest): { role: Role } | n
         return payload as { role: Role };
 
     }
-    catch (err) {
+    catch {
         return null;
     }
 }

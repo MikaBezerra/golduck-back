@@ -19,35 +19,11 @@ module.exports = {
         "@typescript-eslint"
     ],
     "root": true,
+    "ignorePatterns": ["src/generated/**"],
     "rules": {
         "@typescript-eslint/adjacent-overload-signatures": "error",
         "@typescript-eslint/array-type": "off",
         "@typescript-eslint/await-thenable": "error",
-        "@typescript-eslint/ban-types": [
-            "error",
-            {
-                "types": {
-                    "Object": {
-                        "message": "Avoid using the `Object` type. Did you mean `object`?"
-                    },
-                    "Function": {
-                        "message": "Avoid using the `Function` type. Prefer a specific function type, like `() => void`."
-                    },
-                    "Boolean": {
-                        "message": "Avoid using the `Boolean` type. Did you mean `boolean`?"
-                    },
-                    "Number": {
-                        "message": "Avoid using the `Number` type. Did you mean `number`?"
-                    },
-                    "String": {
-                        "message": "Avoid using the `String` type. Did you mean `string`?"
-                    },
-                    "Symbol": {
-                        "message": "Avoid using the `Symbol` type. Did you mean `symbol`?"
-                    }
-                }
-            }
-        ],
         "@typescript-eslint/consistent-type-assertions": "error",
         "@typescript-eslint/dot-notation": "error",
         "@typescript-eslint/explicit-function-return-type": "off",
@@ -58,19 +34,6 @@ module.exports = {
             }
         ],
         "@typescript-eslint/explicit-module-boundary-types": "off",
-        "@typescript-eslint/member-delimiter-style": [
-            "error",
-            {
-                "multiline": {
-                    "delimiter": "semi",
-                    "requireLast": true
-                },
-                "singleline": {
-                    "delimiter": "semi",
-                    "requireLast": false
-                }
-            }
-        ],
         "@typescript-eslint/member-ordering": "error",
         "@typescript-eslint/naming-convention": [
             "error",
@@ -107,15 +70,7 @@ module.exports = {
         "@typescript-eslint/prefer-namespace-keyword": "error",
         "@typescript-eslint/prefer-readonly": "error",
         "@typescript-eslint/promise-function-async": "error",
-        "@typescript-eslint/quotes": [
-            "error",
-            "single"
-        ],
         "@typescript-eslint/restrict-plus-operands": "error",
-        "@typescript-eslint/semi": [
-            "error",
-            "always"
-        ],
         "@typescript-eslint/triple-slash-reference": [
             "error",
             {
@@ -271,9 +226,9 @@ module.exports = {
         ],
         "prefer-const": "error",
         "prefer-template": "error",
-        "quotes": "off",
+        "quotes": ["error", "single"],
         "radix": "error",
-        "semi": "off",
+        "semi": ["error", "always"],
         "spaced-comment": [
             "error",
             "always",
