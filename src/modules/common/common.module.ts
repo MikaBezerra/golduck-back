@@ -3,9 +3,9 @@ import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { TerminusModule } from '@nestjs/terminus';
 
 import { HealthController } from './controller';
-import { LogInterceptor } from './flow';
 import { ApiExceptionFilter } from './http/api-exception.filter';
 import { ApiResponseInterceptor } from './http/api-response.interceptor';
+import { RequestLogContext } from './logging/request-log.context';
 import { configProvider, LoggerService, PrismaService } from './provider';
 
 @Module({
@@ -15,7 +15,7 @@ import { configProvider, LoggerService, PrismaService } from './provider';
     providers: [
         configProvider,
         LoggerService,
-        LogInterceptor,
+        RequestLogContext,
         PrismaService,
         { provide: APP_FILTER, useClass: ApiExceptionFilter },
         { provide: APP_INTERCEPTOR, useClass: ApiResponseInterceptor }
@@ -23,7 +23,7 @@ import { configProvider, LoggerService, PrismaService } from './provider';
     exports: [
         configProvider,
         LoggerService,
-        LogInterceptor,
+        RequestLogContext,
         PrismaService
     ],
     controllers: [

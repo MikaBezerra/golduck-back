@@ -132,10 +132,10 @@ npm run lint
 
 A healthcheck API is a REST endpoint that can be used to validate the status of the service along with its dependencies. The healthcheck API endpoint internally triggers an overall health check of the service. This can include database connection checks, system properties, disk availability and memory availability.
 
-The example healthcheck endpoint can be request with the token located in the `HEALTH_TOKEN` environment variable.
+The healthcheck endpoint requires an admin access token.
 
 ```sh
-curl -H 'Authorization: Bearer ThisMustBeChanged' http://localhost:3000/api/v1/health
+curl -H 'Authorization: Bearer <admin-access-token>' http://localhost:3000/api/health
 ```
 
 ## 6. Project goals

@@ -6,14 +6,18 @@ export class LoggerService {
 
     public constructor() {
 
-        const format = this.isProductionEnv() ?
-            winston.format.combine(
+        const format = this.isProductionEnv()
+            ? winston.format.combine(winston.format.timestamp(), winston.format.json())
+            : winston.format.combine(
                 winston.format.timestamp(),
-                winston.format.json()
-            ) :
-            winston.format.combine(
-                winston.format.colorize(),
-                winston.format.simple()
+                winston.format.printf(({ timestamp, level, message, ...metadata }) => {
+                    const fields = Object.entries(metadata)
+                        .filter(([, value]) => value !== undefined)
+                        .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
+                        .join(' ');
+
+                    return `${String(timestamp)} ${level.toUpperCase()} ${String(message)}${fields ? ` ${fields}` : ''}`;
+                })
             );
 
         this.instance = winston.createLogger({
@@ -28,12 +32,16 @@ export class LoggerService {
         });
     }
 
-    public info(message: string) {
-        this.instance.info(message);
+    public info(message: string, metadata: Record<string, unknown> = {}): void {
+        this.instance.info(message, metadata);
     }
 
-    public error(message: string) {
-        this.instance.error(message);
+    public warn(message: string, metadata: Record<string, unknown> = {}): void {
+        this.instance.warn(message, metadata);
+    }
+
+    public error(message: string, metadata: Record<string, unknown> = {}): void {
+        this.instance.error(message, metadata);
     }
 
     private isTestEnv(): boolean {

@@ -7,8 +7,8 @@ import {
 import { Reflector } from '@nestjs/core';
 import type { FastifyRequest } from 'fastify';
 
+import { AUTH_ERRORS } from '../errors/auth.errors';
 import { AuthRepository } from '../repository/auth.repository';
-import { AuthErrors } from '../errors/auth.errors';
 import { AccessTokenService } from './access-token.service';
 import { IS_PUBLIC_KEY } from './auth.decorators';
 
@@ -47,19 +47,19 @@ export class JwtAuthGuard implements CanActivate {
             : null;
 
         if (!match) {
-            throw AuthErrors.unauthenticated('bearer_missing_or_malformed');
+            throw AUTH_ERRORS.unauthenticated('bearer_missing_or_malformed');
         }
 
         const identity = this.accessTokenService.verify(match[1]);
 
         if (!identity) {
-            throw AuthErrors.unauthenticated('access_token_invalid');
+            throw AUTH_ERRORS.unauthenticated('access_token_invalid');
         }
 
         const user = await this.repository.findByUserId(identity.userId);
 
         if (!user || !user.active) {
-            throw AuthErrors.unauthenticated('user_missing_or_inactive');
+            throw AUTH_ERRORS.unauthenticated('user_missing_or_inactive');
         }
 
         const session = await this.repository.findSessionById(identity.sessionId);
@@ -70,7 +70,7 @@ export class JwtAuthGuard implements CanActivate {
             session.revokedAt !== null ||
             session.expiresAt.getTime() <= Date.now()
         ) {
-            throw AuthErrors.unauthenticated('session_missing_revoked_or_expired');
+            throw AUTH_ERRORS.unauthenticated('session_missing_revoked_or_expired');
         }
 
         request.auth = {

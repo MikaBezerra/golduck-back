@@ -1,7 +1,7 @@
+import type { ApiErrorDetail } from '../http/response.types';
 import { HttpStatus } from '@nestjs/common';
 
 import { AppError } from '../errors/app-error';
-import type { ApiErrorDetail } from '../http/response.types';
 
 export class ValidationError extends AppError {
     public constructor(public readonly details: ApiErrorDetail[]) {

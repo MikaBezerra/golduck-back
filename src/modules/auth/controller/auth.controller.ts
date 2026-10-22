@@ -10,7 +10,7 @@ import {
 
 import { Role } from '../../../generated/prisma/client';
 import { AuthTokensDto, LoginDto, RefreshDto } from '../dto/auth.dto';
-import { AuthErrors } from '../errors/auth.errors';
+import { AUTH_ERRORS } from '../errors/auth.errors';
 import { LoginPipe, RefreshPipe } from '../flow/auth.pipe';
 import { Public, Roles } from '../security/auth.decorators';
 import { AuthService } from '../service/auth.service';
@@ -42,7 +42,7 @@ export class AuthController {
         const identity = request.auth;
 
         if (!identity) {
-            throw AuthErrors.unauthenticated('identity_missing_after_guard');
+            throw AUTH_ERRORS.unauthenticated('identity_missing_after_guard');
         }
 
         await this.authService.logout(identity.userId, identity.sessionId);

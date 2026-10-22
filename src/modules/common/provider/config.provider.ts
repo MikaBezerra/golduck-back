@@ -14,7 +14,6 @@ export const configProvider = {
             API_PREFIX: Joi.string().required(),
             JWT_SECRET: Joi.string().required(),
             JWT_ISSUER: Joi.string().required(),
-            HEALTH_TOKEN: Joi.string().required(),
             PASSENGERS_ALLOWED: Joi.string().valid('yes', 'no').required()
         });
 

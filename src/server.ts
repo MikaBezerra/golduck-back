@@ -2,7 +2,9 @@ import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 
 import { ApplicationModule } from './modules/app.module';
-import { CommonModule, LogInterceptor } from './modules/common';
+import { CommonModule, LoggerService } from './modules/common';
+import { RequestLogContext } from './modules/common/logging/request-log.context';
+import { registerRequestLogging } from './modules/common/logging/request-logging';
 
 /**
  * These are API defaults that can be changed using environment variables,
@@ -28,8 +30,12 @@ async function bootstrap(): Promise<void> {
 
     app.setGlobalPrefix(process.env.API_PREFIX || API_DEFAULT_PREFIX);
 
-    const logInterceptor = app.select(CommonModule).get(LogInterceptor);
-    app.useGlobalInterceptors(logInterceptor);
+    const common = app.select(CommonModule);
+    registerRequestLogging(
+        app.getHttpAdapter().getInstance(),
+        common.get(LoggerService),
+        common.get(RequestLogContext)
+    );
 
     await app.listen(process.env.API_PORT || API_DEFAULT_PORT);
 }

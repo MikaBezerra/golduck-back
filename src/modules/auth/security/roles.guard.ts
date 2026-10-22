@@ -7,7 +7,7 @@ import {
 import { Reflector } from '@nestjs/core';
 
 import { Role } from '../../../generated/prisma/client';
-import { AuthErrors } from '../errors/auth.errors';
+import { AUTH_ERRORS } from '../errors/auth.errors';
 import { IS_PUBLIC_KEY, ROLES_KEY } from './auth.decorators';
 
 @Injectable()
@@ -30,7 +30,7 @@ export class RolesGuard implements CanActivate {
         const identity = request.auth;
 
         if (!identity) {
-            throw AuthErrors.unauthenticated('identity_missing_after_guard');
+            throw AUTH_ERRORS.unauthenticated('identity_missing_after_guard');
         }
 
         if (identity.role === Role.ADMIN) {
@@ -46,6 +46,6 @@ export class RolesGuard implements CanActivate {
             return true;
         }
 
-        throw AuthErrors.forbidden('role_not_allowed');
+        throw AUTH_ERRORS.forbidden('role_not_allowed');
     }
 }

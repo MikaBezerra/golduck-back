@@ -1,11 +1,12 @@
+import type { ApiErrorResponse } from './response.types';
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { AppError } from '../errors/app-error';
+import { RequestLogContext } from '../logging/request-log.context';
 import { ValidationError } from '../validation/validation-error';
-import type { ApiErrorResponse } from './response.types';
 
-const HTTP_MESSAGES: Partial<Record<HttpStatus, string>> = {
+const HTTP_MESSAGES: Partial<Record<number, string>> = {
     [HttpStatus.BAD_REQUEST]: 'Requisição inválida',
     [HttpStatus.UNAUTHORIZED]: 'Autenticação necessária',
     [HttpStatus.FORBIDDEN]: 'Acesso negado',
@@ -18,6 +19,8 @@ const HTTP_MESSAGES: Partial<Record<HttpStatus, string>> = {
 @Catch()
 @Injectable()
 export class ApiExceptionFilter implements ExceptionFilter {
+    public constructor(private readonly requestLogContext: RequestLogContext) {}
+
     public catch(exception: unknown, host: ArgumentsHost): void {
         const http = host.switchToHttp();
         const request = http.getRequest<FastifyRequest>();
@@ -30,7 +33,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
         const code = exception instanceof AppError ? exception.code : `HTTP_${statusCode}`;
         const message = exception instanceof AppError
             ? exception.publicMessage
-            : HTTP_MESSAGES[statusCode as HttpStatus] ?? (statusCode >= 500 ? 'Erro interno do servidor' : 'Não foi possível processar a requisição');
+            : HTTP_MESSAGES[statusCode] ?? (statusCode >= 500 ? 'Erro interno do servidor' : 'Não foi possível processar a requisição');
         const response: ApiErrorResponse = {
             error: {
                 code,
@@ -39,6 +42,16 @@ export class ApiExceptionFilter implements ExceptionFilter {
                 ...(exception instanceof ValidationError ? { details: exception.details } : {})
             }
         };
+
+        this.requestLogContext.recordFailure(request, {
+            code,
+            ...(exception instanceof AppError && exception.reason ? { reason: exception.reason } : {}),
+            ...(statusCode >= 500 && exception instanceof Error ? {
+                errorName: exception.name,
+                errorMessage: exception.message,
+                stack: exception.stack
+            } : {})
+        });
 
         reply.status(statusCode).send(response);
     }

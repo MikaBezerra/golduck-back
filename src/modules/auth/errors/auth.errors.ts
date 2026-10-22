@@ -2,7 +2,7 @@ import { HttpStatus } from '@nestjs/common';
 
 import { AppError } from '../../common/errors/app-error';
 
-export const AuthErrors = {
+export const AUTH_ERRORS = {
     invalidCredentials: (reason?: string): AppError =>
         new AppError('AUTH_INVALID_CREDENTIALS', HttpStatus.UNAUTHORIZED, 'Credenciais inválidas', reason),
     invalidSession: (reason?: string): AppError =>

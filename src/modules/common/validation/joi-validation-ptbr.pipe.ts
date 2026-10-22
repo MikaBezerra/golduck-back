@@ -1,7 +1,7 @@
+import type { ApiErrorDetail } from '../http/response.types';
 import { Injectable, PipeTransform } from '@nestjs/common';
 import * as Joi from 'joi';
 
-import type { ApiErrorDetail } from '../http/response.types';
 import { JOI_MESSAGES_PTBR } from './joi-messages.ptbr';
 import { ValidationError } from './validation-error';
 
@@ -27,8 +27,6 @@ export abstract class JoiValidationPipePtbr implements PipeTransform<unknown> {
         return result.value;
     }
 
-    public abstract buildSchema(): Joi.Schema;
-
     private formatPath(path: Array<string | number>): string {
         if (path.length === 0) {
             return '$';
@@ -42,4 +40,6 @@ export abstract class JoiValidationPipePtbr implements PipeTransform<unknown> {
             return result ? `${result}.${part}` : part;
         }, '');
     }
+
+    public abstract buildSchema(): Joi.Schema;
 }

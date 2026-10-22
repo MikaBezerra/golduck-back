@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { AuthErrors } from '../errors/auth.errors';
+import { AUTH_ERRORS } from '../errors/auth.errors';
 import { AuthRepository } from '../repository/auth.repository';
 import { AccessTokenService } from '../security/access-token.service';
 import { PasswordService } from '../security/password.service';
@@ -26,13 +26,13 @@ export class AuthService {
         const user = await this.repository.findUserByEmail(email);
 
         if (!user || !user.active) {
-            throw AuthErrors.invalidCredentials('user_missing_or_inactive');
+            throw AUTH_ERRORS.invalidCredentials('user_missing_or_inactive');
         }
 
         const passwordCorrect = await this.passwordService.verifyPassword(password, user.hash);
 
         if (!passwordCorrect) {
-            throw AuthErrors.invalidCredentials('password_mismatch');
+            throw AUTH_ERRORS.invalidCredentials('password_mismatch');
         }
 
         const refresh = this.refreshTokenService.generate();
@@ -55,7 +55,7 @@ export class AuthService {
         const parsed = this.refreshTokenService.parse(refreshToken);
 
         if (!parsed) {
-            throw AuthErrors.invalidSession('refresh_malformed');
+            throw AUTH_ERRORS.invalidSession('refresh_malformed');
         }
 
         const session = await this.repository.findSessionById(parsed.sessionId);
@@ -64,13 +64,13 @@ export class AuthService {
             session.revokedAt !== null ||
             session.expiresAt.getTime() <= Date.now()
         ) {
-            throw AuthErrors.invalidSession('session_missing_revoked_or_expired');
+            throw AUTH_ERRORS.invalidSession('session_missing_revoked_or_expired');
         }
 
         const user = await this.repository.findByUserId(session.userId);
 
         if (!user || !user.active) {
-            throw AuthErrors.invalidSession('user_missing_or_inactive');
+            throw AUTH_ERRORS.invalidSession('user_missing_or_inactive');
         }
 
         const nextRefresh = this.refreshTokenService.generate(session.id);
@@ -85,7 +85,7 @@ export class AuthService {
 
         if (!rotated) {
             await this.repository.revokeSession(session.id, user.id);
-            throw AuthErrors.invalidSession('refresh_reuse_or_race');
+            throw AUTH_ERRORS.invalidSession('refresh_reuse_or_race');
         }
 
         return {
