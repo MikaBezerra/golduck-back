@@ -11,12 +11,6 @@ datasource db {
   provider = "postgresql"
 }
 
-model Passenger {
-  id        Int    @id @default(autoincrement())
-  firstName String @unique
-  lastName  String
-}
-
 model User {
   id           String        @id @default(uuid()) @db.Uuid
   email        String        @unique
@@ -41,6 +35,18 @@ model AuthSession {
 
   @@index([userId])
   @@index([expiresAt])
+}
+
+model Person {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(120)
+  email     String?  @db.VarChar(254)
+  phone     String?  @db.VarChar(16)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([active, name])
 }
 
 enum Role {

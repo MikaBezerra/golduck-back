@@ -2,13 +2,13 @@ import { Module } from '@nestjs/common';
 
 import { AuthModule } from './auth/auth.module';
 import { CommonModule } from './common';
-import { PassengerModule } from './passenger/passenger.module';
+import { PeopleModule } from './people/people.module';
 
 @Module({
     imports: [
         CommonModule,
-        PassengerModule,
-        AuthModule
+        AuthModule,
+        PeopleModule
     ]
 })
 export class ApplicationModule { }
