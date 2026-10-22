@@ -16,3 +16,18 @@ model Passenger {
   firstName String @unique
   lastName  String
 }
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  role      Role     @default(USER)
+  active    Boolean  @default(true)
+  hash      String
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+}
+
+enum Role {
+  ADMIN
+  USER
+}

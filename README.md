@@ -49,6 +49,8 @@ For a standard development configuration, you can leave the default values for `
 
 Next comes to the Prisma configuration: change the DATABASE_URL according to your own database setup.
 
+Store date-time values as UTC instants. In the Prisma schema, use `DateTime @db.Timestamptz(3)` for fields that represent a point in time. The development PostgreSQL container uses UTC as its session timezone; configure the same setting for other database environments. Convert user-facing local times to UTC before saving them, and include a timezone offset when accepting date-time input.
+
 Last but not least, define a `JWT_SECRET` to sign the JWT tokens or leave the default value in a development environment. Update the `JWT_ISSUER` to the correct value as set in the JWT. 
 
 ### 1.3 Launch and discover
