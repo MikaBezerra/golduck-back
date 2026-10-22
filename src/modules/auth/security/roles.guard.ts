@@ -2,13 +2,12 @@ import type { AuthenticatedRequest } from './jwt-auth.guard';
 import {
     CanActivate,
     ExecutionContext,
-    ForbiddenException,
-    Injectable,
-    UnauthorizedException
+    Injectable
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
 import { Role } from '../../../generated/prisma/client';
+import { AuthErrors } from '../errors/auth.errors';
 import { IS_PUBLIC_KEY, ROLES_KEY } from './auth.decorators';
 
 @Injectable()
@@ -31,7 +30,7 @@ export class RolesGuard implements CanActivate {
         const identity = request.auth;
 
         if (!identity) {
-            throw new UnauthorizedException();
+            throw AuthErrors.unauthenticated('identity_missing_after_guard');
         }
 
         if (identity.role === Role.ADMIN) {
@@ -47,6 +46,6 @@ export class RolesGuard implements CanActivate {
             return true;
         }
 
-        throw new ForbiddenException();
+        throw AuthErrors.forbidden('role_not_allowed');
     }
 }

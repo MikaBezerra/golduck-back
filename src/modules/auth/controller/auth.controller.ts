@@ -5,12 +5,12 @@ import {
     HttpCode,
     HttpStatus,
     Post,
-    Req,
-    UnauthorizedException
+    Req
 } from '@nestjs/common';
 
 import { Role } from '../../../generated/prisma/client';
 import { AuthTokensDto, LoginDto, RefreshDto } from '../dto/auth.dto';
+import { AuthErrors } from '../errors/auth.errors';
 import { LoginPipe, RefreshPipe } from '../flow/auth.pipe';
 import { Public, Roles } from '../security/auth.decorators';
 import { AuthService } from '../service/auth.service';
@@ -42,7 +42,7 @@ export class AuthController {
         const identity = request.auth;
 
         if (!identity) {
-            throw new UnauthorizedException();
+            throw AuthErrors.unauthenticated('identity_missing_after_guard');
         }
 
         await this.authService.logout(identity.userId, identity.sessionId);

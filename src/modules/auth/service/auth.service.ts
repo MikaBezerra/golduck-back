@@ -1,5 +1,6 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 
+import { AuthErrors } from '../errors/auth.errors';
 import { AuthRepository } from '../repository/auth.repository';
 import { AccessTokenService } from '../security/access-token.service';
 import { PasswordService } from '../security/password.service';
@@ -25,13 +26,13 @@ export class AuthService {
         const user = await this.repository.findUserByEmail(email);
 
         if (!user || !user.active) {
-            throw new UnauthorizedException('Credenciais inválidas');
+            throw AuthErrors.invalidCredentials('user_missing_or_inactive');
         }
 
         const passwordCorrect = await this.passwordService.verifyPassword(password, user.hash);
 
         if (!passwordCorrect) {
-            throw new UnauthorizedException('Credenciais inválidas');
+            throw AuthErrors.invalidCredentials('password_mismatch');
         }
 
         const refresh = this.refreshTokenService.generate();
@@ -54,7 +55,7 @@ export class AuthService {
         const parsed = this.refreshTokenService.parse(refreshToken);
 
         if (!parsed) {
-            throw new UnauthorizedException('Sessão inválida');
+            throw AuthErrors.invalidSession('refresh_malformed');
         }
 
         const session = await this.repository.findSessionById(parsed.sessionId);
@@ -63,13 +64,13 @@ export class AuthService {
             session.revokedAt !== null ||
             session.expiresAt.getTime() <= Date.now()
         ) {
-            throw new UnauthorizedException('Sessão inválida');
+            throw AuthErrors.invalidSession('session_missing_revoked_or_expired');
         }
 
         const user = await this.repository.findByUserId(session.userId);
 
         if (!user || !user.active) {
-            throw new UnauthorizedException('Sessão inválida');
+            throw AuthErrors.invalidSession('user_missing_or_inactive');
         }
 
         const nextRefresh = this.refreshTokenService.generate(session.id);
@@ -84,7 +85,7 @@ export class AuthService {
 
         if (!rotated) {
             await this.repository.revokeSession(session.id, user.id);
-            throw new UnauthorizedException('Sessão inválida');
+            throw AuthErrors.invalidSession('refresh_reuse_or_race');
         }
 
         return {
