@@ -1,8 +1,9 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get} from '@nestjs/common';
 import { HealthCheckService, PrismaHealthIndicator } from '@nestjs/terminus';
 
+import { Role } from '../../../generated/prisma/enums';
+import { Roles } from '../../auth/security/auth.decorators';
 import { PrismaService } from '../provider';
-import { HealthGuard } from '../security/health.guard';
 
 @Controller('health')
 export class HealthController {
@@ -11,10 +12,10 @@ export class HealthController {
         private readonly health: HealthCheckService,
         private readonly database: PrismaHealthIndicator,
         private readonly prisma: PrismaService
-    ) {}
+    ) { }
 
     @Get()
-    @UseGuards(HealthGuard)
+    @Roles(Role.ADMIN)
     public async healthCheck() {
 
         return this.health.check([

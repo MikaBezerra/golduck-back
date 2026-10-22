@@ -20,6 +20,15 @@ module.exports = {
     ],
     "root": true,
     "ignorePatterns": ["src/generated/**"],
+    "overrides": [
+        {
+            "files": ["scripts/**/*.ts"],
+            "rules": {
+                "import/no-extraneous-dependencies": ["error", { "devDependencies": true }],
+                "no-console": "off"
+            }
+        }
+    ],
     "rules": {
         "@typescript-eslint/adjacent-overload-signatures": "error",
         "@typescript-eslint/array-type": "off",
@@ -178,10 +187,6 @@ module.exports = {
                     }
                 ]
             }
-        ],
-        "max-classes-per-file": [
-            "error",
-            1
         ],
         "max-len": [
             "error",

@@ -12,7 +12,6 @@ export const configProvider = {
         const validationSchema = Joi.object<Config>().unknown().keys({
             API_PORT: Joi.number().required(),
             API_PREFIX: Joi.string().required(),
-            SWAGGER_ENABLE: Joi.number().required(),
             JWT_SECRET: Joi.string().required(),
             JWT_ISSUER: Joi.string().required(),
             HEALTH_TOKEN: Joi.string().required(),
