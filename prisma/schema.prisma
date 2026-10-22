@@ -49,6 +49,18 @@ model Person {
   @@index([active, name])
 }
 
+model Category {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @db.VarChar(120)
+  nameKey   String   @unique @db.VarChar(120)
+  active    Boolean  @default(true)
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([active, name])
+}
+
 enum Role {
   ADMIN
   USER
