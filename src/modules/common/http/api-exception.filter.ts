@@ -2,6 +2,7 @@ import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Injec
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { AppError } from '../errors/app-error';
+import { ValidationError } from '../validation/validation-error';
 import type { ApiErrorResponse } from './response.types';
 
 const HTTP_MESSAGES: Partial<Record<HttpStatus, string>> = {
@@ -31,7 +32,12 @@ export class ApiExceptionFilter implements ExceptionFilter {
             ? exception.publicMessage
             : HTTP_MESSAGES[statusCode as HttpStatus] ?? (statusCode >= 500 ? 'Erro interno do servidor' : 'Não foi possível processar a requisição');
         const response: ApiErrorResponse = {
-            error: { code, message, requestId: request.id }
+            error: {
+                code,
+                message,
+                requestId: request.id,
+                ...(exception instanceof ValidationError ? { details: exception.details } : {})
+            }
         };
 
         reply.status(statusCode).send(response);

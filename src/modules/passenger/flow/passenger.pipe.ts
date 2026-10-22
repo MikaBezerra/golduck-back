@@ -1,9 +1,9 @@
 import * as Joi from 'joi';
 
-import { JoiValidationPipe } from '../../common';
+import { JoiValidationPipePtbr } from '../../common';
 import { PassengerData, PassengerInput } from '../model';
 
-export class PassengerPipe extends JoiValidationPipe {
+export class PassengerPipe extends JoiValidationPipePtbr {
 
     public buildSchema(): Joi.Schema {
 

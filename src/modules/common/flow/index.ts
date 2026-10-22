@@ -1,2 +1,2 @@
 export { LogInterceptor } from './log.interceptor';
-export { JoiValidationPipe } from './joi-validation.pipe';
+export { JoiValidationPipePtbr } from '../validation/joi-validation-ptbr.pipe';
