@@ -32,6 +32,6 @@ export class UpdatePersonPipe extends JoiValidationPipePtbr {
 
 export class PersonIdPipe extends JoiValidationPipePtbr {
     public buildSchema(): Joi.Schema {
-        return Joi.string().guid({ version: 'uuidv4' }).required();
+        return Joi.string().guid({ version: 'uuidv4' }).required().label('id');
     }
 }

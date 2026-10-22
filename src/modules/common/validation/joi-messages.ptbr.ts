@@ -1,5 +1,6 @@
 // Joi 18: mensagens para os códigos internos; regras personalizadas usam o fallback.
 export const JOI_MESSAGES_PTBR: Record<string, string> = {
+    'root': 'valor',
     'any.custom': '{{#label}} não passou na validação personalizada',
     'any.default': 'Não foi possível definir o valor padrão de {{#label}}',
     'any.empty': '{{#label}} não pode estar vazio',
