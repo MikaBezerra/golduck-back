@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { MonthlyIncome, Prisma } from '../../../generated/prisma/client';
 
+import { formatAmountCents, parsePositiveAmountCents } from '../../common/money/money';
 import {
     CreateIncomeDto,
     IncomeResponse,
@@ -9,8 +10,6 @@ import {
 } from '../dto/income.dto';
 import { INCOME_ERRORS } from '../errors/income.errors';
 import { IncomeRepository } from '../repository/income.repository';
-
-const MAX_AMOUNT_CENTS = 9223372036854775807n;
 
 @Injectable()
 export class IncomeService {
@@ -99,31 +98,20 @@ export class IncomeService {
     }
 
     private parseAmount(amount: string): bigint {
-        if (!/^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/.test(amount)) {
-            throw INCOME_ERRORS.invalidAmount('income_amount_format');
-        }
+        const cents = parsePositiveAmountCents(amount);
 
-        const [whole, fraction = ''] = amount.split('.');
-        const cents = BigInt(whole) * 100n
-            + BigInt(fraction.padEnd(2, '0'));
-
-        if (cents <= 0n || cents > MAX_AMOUNT_CENTS) {
-            throw INCOME_ERRORS.invalidAmount('income_amount_out_of_range');
+        if (cents === null) {
+            throw INCOME_ERRORS.invalidAmount('income_amount_invalid');
         }
 
         return cents;
     }
 
     private toResponse(income: MonthlyIncome): IncomeResponse {
-        const reais = income.amountCents / 100n;
-        const centavos = (income.amountCents % 100n)
-            .toString()
-            .padStart(2, '0');
-
         return {
             id: income.id,
             month: income.month.toISOString().slice(0, 7),
-            amount: `${reais}.${centavos}`,
+            amount: formatAmountCents(income.amountCents),
             createdAt: income.createdAt,
             updatedAt: income.updatedAt
         };

@@ -38,25 +38,27 @@ model AuthSession {
 }
 
 model Person {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String   @db.VarChar(120)
-  email     String?  @db.VarChar(254)
-  phone     String?  @db.VarChar(16)
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  id             String          @id @default(uuid()) @db.Uuid
+  name           String          @db.VarChar(120)
+  email          String?         @db.VarChar(254)
+  phone          String?         @db.VarChar(16)
+  active         Boolean         @default(true)
+  createdAt      DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime        @updatedAt @db.Timestamptz(3)
+  manualExpenses ManualExpense[]
 
   @@index([active, name])
 }
 
 model Category {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String   @db.VarChar(120)
-  nameKey   String   @unique @db.VarChar(120)
-  active    Boolean  @default(true)
-  isDefault Boolean  @default(false)
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  id             String          @id @default(uuid()) @db.Uuid
+  name           String          @db.VarChar(120)
+  nameKey        String          @unique @db.VarChar(120)
+  active         Boolean         @default(true)
+  isDefault      Boolean         @default(false)
+  createdAt      DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime        @updatedAt @db.Timestamptz(3)
+  manualExpenses ManualExpense[]
 
   @@index([active, name])
 }
@@ -67,6 +69,24 @@ model MonthlyIncome {
   amountCents BigInt   @db.BigInt
   createdAt   DateTime @default(now()) @db.Timestamptz(3)
   updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+}
+
+model ManualExpense {
+  id          String   @id @default(uuid()) @db.Uuid
+  month       DateTime @db.Date
+  title       String   @db.VarChar(160)
+  amountCents BigInt   @db.BigInt
+  categoryId  String   @db.Uuid
+  personId    String?  @db.Uuid
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  person   Person?  @relation(fields: [personId], references: [id], onDelete: Restrict)
+
+  @@index([month])
+  @@index([categoryId])
+  @@index([personId])
 }
 
 enum Role {
