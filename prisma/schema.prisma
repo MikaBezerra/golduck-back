@@ -61,6 +61,14 @@ model Category {
   @@index([active, name])
 }
 
+model MonthlyIncome {
+  id          String   @id @default(uuid()) @db.Uuid
+  month       DateTime @unique @db.Date
+  amountCents BigInt   @db.BigInt
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+}
+
 enum Role {
   ADMIN
   USER

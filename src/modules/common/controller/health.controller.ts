@@ -6,6 +6,7 @@ import { Roles } from '../../auth/security/auth.decorators';
 import { PrismaService } from '../provider';
 
 @Controller('health')
+@Roles(Role.ADMIN)
 export class HealthController {
 
     public constructor(
@@ -15,7 +16,6 @@ export class HealthController {
     ) { }
 
     @Get()
-    @Roles(Role.ADMIN)
     public async healthCheck() {
 
         return this.health.check([
