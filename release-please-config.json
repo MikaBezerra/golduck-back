@@ -3,7 +3,6 @@
   "release-type": "node",
   "include-component-in-tag": false,
   "bump-minor-pre-major": true,
-  "bootstrap-sha": "d10b46097021e9d1fe8286995a0b685c8a444dfe",
   "changelog-sections": [
     { "type": "feat", "section": "Funcionalidades" },
     { "type": "fix", "section": "Correções" },
