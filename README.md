@@ -148,6 +148,29 @@ npm run test
 npm run lint
 ```
 
+## 4. CI/CD e versões
+
+Workflows em `.github/workflows`:
+
+| Workflow | Quando roda | O que faz |
+| --- | --- | --- |
+| `ci.yml` | PR para `develop`/`main` e push nessas branches | lint, tipos, testes com cobertura mínima, build; migrações aplicadas do zero num Postgres 18 e checagem de que o `schema.prisma` não mudou sem migração |
+| `pr-title.yml` | abertura/edição de PR | exige título no padrão Conventional Commits (`feat: ...`, `fix: ...`), usado no squash merge |
+| `release.yml` | push na `main` | [release-please](https://github.com/googleapis/release-please): mantém um PR de release com `CHANGELOG.md` e versão; ao fazer merge, cria a tag `vX.Y.Z` e a release |
+| `deploy.yml` | push na `develop` (ambiente develop) e na `main` (produção) | aplica as migrações no banco do ambiente e depois publica na Vercel. **Desligado** até a variável `DEPLOY_ENABLED` ser `true` |
+
+Fluxo: `feature` → PR (squash) para `develop` → PR de `develop` para `main` → release-please.
+`feat` sobe a versão minor; `fix` sobe a patch; `feat!`/`BREAKING CHANGE` sobe a major.
+
+Configuração no GitHub (Settings):
+
+- **Environments** `develop` e `production`, cada um com o secret `DOTENV_PRIVATE_KEY_DEVELOP` ou
+  `DOTENV_PRIVATE_KEY_PRODUCTION` (copiado do `.env.keys`).
+- **Secrets** do repositório: `VERCEL_TOKEN`. **Variables**: `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` e
+  `DEPLOY_ENABLED=true` quando o deploy estiver pronto.
+- **Branch protection** em `develop` e `main`: PR obrigatório, checks `CI` e `PR title` verdes, squash merge.
+- Na Vercel, desligue o deploy automático por Git: quem publica é o `deploy.yml`, depois das migrações.
+
 ## 5. Healtcheck support
 
 A healthcheck API is a REST endpoint that can be used to validate the status of the service along with its dependencies. The healthcheck API endpoint internally triggers an overall health check of the service. This can include database connection checks, system properties, disk availability and memory availability.

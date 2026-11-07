@@ -1,0 +1,98 @@
+# Integração contínua: roda em todo PR para develop/main e nos pushes nessas branches.
+name: CI
+
+on:
+  pull_request:
+    branches: [develop, main]
+  push:
+    branches: [develop, main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Lint, tipos, testes e build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instala dependências
+        run: npm ci
+
+      # O client do Prisma é gerado (não versionado) e o lint usa os tipos dele.
+      - name: Gera o client do Prisma
+        run: npx prisma generate
+
+      - name: Lint
+        run: npm run lint:check
+
+      - name: Tipos
+        run: npm run typecheck
+
+      - name: Testes com cobertura mínima
+        run: npm run test:cov
+
+      - name: Publica o relatório de cobertura
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage
+          path: coverage/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Build
+        run: npm run build
+
+  migrations:
+    name: Migrações (Postgres 18)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: golduck_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d golduck_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/golduck_ci?schema=public
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instala dependências
+        run: npm ci
+
+      - name: Aplica todas as migrações num banco vazio
+        run: npx prisma migrate deploy
+
+      # Falha se o schema.prisma tiver mudanças sem a migração correspondente.
+      - name: Confere se toda mudança do schema tem migração
+        run: npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code
+
+      - name: Status das migrações
+        run: npx prisma migrate status

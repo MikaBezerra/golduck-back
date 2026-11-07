@@ -22,10 +22,36 @@
   "collectCoverageFrom": [
     "src/**/*.ts",
     "!src/generated/**",
+    "!src/**/*.spec.ts",
     "!**/node_modules/**"
   ],
   "coverageReporters": [
-    "json",
+    "text-summary",
+    "json-summary",
     "lcov"
-  ]
+  ],
+  "coverageThreshold": {
+    "global": {
+      "statements": 2,
+      "branches": 1,
+      "functions": 2,
+      "lines": 2
+    },
+    "./src/modules/card-imports/service/card-import.planner.ts": {
+      "lines": 95,
+      "branches": 90
+    },
+    "./src/modules/summary/service/summary.calculator.ts": {
+      "lines": 95,
+      "branches": 85
+    },
+    "./src/modules/card-imports/parsers/*-csv.parser.ts": {
+      "lines": 80,
+      "branches": 70
+    },
+    "./src/modules/card-imports/parsers/card-statement.parser.ts": {
+      "lines": 80,
+      "branches": 85
+    }
+  }
 }
