@@ -53,6 +53,26 @@ Store date-time values as UTC instants. In the Prisma schema, use `DateTime @db.
 
 Last but not least, define a `JWT_SECRET` to sign the JWT tokens or leave the default value in a development environment. Update the `JWT_ISSUER` to the correct value as set in the JWT. 
 
+### 1.2.1 Ambientes e variáveis (dotenvx)
+
+As variáveis são carregadas com o [dotenvx](https://dotenvx.com) (`npx dotenvx`, já instalado no projeto).
+
+| Arquivo | Para quê | Versionado? |
+| --- | --- | --- |
+| `.env` | desenvolvimento local, sem criptografia (copie do `.env.example`) | não |
+| `.env.example` | modelo do `.env`, com valores de exemplo | sim |
+| `.env.develop` | ambiente develop; `DATABASE_URL` e `JWT_SECRET` criptografados | sim |
+| `.env.production` | ambiente de produção; `DATABASE_URL` e `JWT_SECRET` criptografados | sim |
+| `.env.keys` | chaves privadas (`DOTENV_PRIVATE_KEY_DEVELOP` e `..._PRODUCTION`) | **nunca** |
+
+- Guarde uma cópia segura do `.env.keys`: sem ele não é possível ler os valores criptografados.
+- Para trocar um valor: `npx dotenvx set DATABASE_URL "postgresql://..." -f .env.production` (criptografa
+  automaticamente; use `--plain` para valores não sensíveis, como `API_PORT`).
+- Para ler um valor: `npx dotenvx get DATABASE_URL -f .env.develop`.
+- Scripts: `npm run dev` usa o `.env`; `npm run start:develop`/`start:production` e
+  `npm run db:migrate:develop`/`db:migrate:production` usam os arquivos criptografados (precisam da chave
+  privada no `.env.keys` ou na variável de ambiente correspondente).
+
 ### 1.3 Launch and discover
 
 You are now ready to launch the NestJS application using the command below.

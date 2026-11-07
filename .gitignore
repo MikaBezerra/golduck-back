@@ -22,7 +22,13 @@ npm-debug.log
 /src/generated/prisma
 
 # environment
+# .env é o ambiente local, sem criptografia. .env.keys guarda as chaves privadas do
+# dotenvx. Nenhum dos dois vai para o repositório; .env.develop, .env.production e
+# .env.example são versionados (os dois primeiros com valores sensíveis criptografados).
 .env
+.env.keys
+.env.local
+.env.*.local
 
 #skill
 .agents

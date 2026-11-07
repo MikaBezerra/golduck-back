@@ -1,23 +1,31 @@
 {
-  "name": "nest-template",
+  "name": "golduck-back",
   "version": "0.1.0",
-  "description": "NestJS API project template crafted for Docker environments",
+  "description": "API do Golduck, app de finanças pessoais (NestJS + Fastify + Prisma)",
   "author": "Saluki",
   "license": "MIT",
   "private": true,
   "engines": {
-    "node": "^20.19.0 || ^22.12.0 || >=24.0.0"
+    "node": "^22.13.0 || >=24.0.0"
   },
   "scripts": {
     "clean": "rimraf ./dist",
     "start": "node dist/server.js",
-    "dev": "prisma generate && env-cmd -f .env -- node --watch -r ts-node/register/transpile-only src/server.ts",
-    "admin:create": "prisma generate && env-cmd -f .env tsx scripts/create-admin.ts",
+    "start:develop": "dotenvx run -f .env.develop -- node dist/server.js",
+    "start:production": "dotenvx run -f .env.production -- node dist/server.js",
+    "dev": "prisma generate && dotenvx run -f .env -- node --watch -r ts-node/register/transpile-only src/server.ts",
+    "admin:create": "prisma generate && dotenvx run -f .env -- tsx scripts/create-admin.ts",
     "build": "prisma generate && npm run clean && tsc",
-    "test": "prisma generate && env-cmd -f .env -- node --experimental-vm-modules --disable-warning=ExperimentalWarning node_modules/jest/bin/jest.js --config=jest.json",
-    "lint": "eslint -c .eslintrc.js --fix --ext .ts src"
+    "typecheck": "prisma generate && tsc --noEmit",
+    "test": "prisma generate && node --experimental-vm-modules --disable-warning=ExperimentalWarning node_modules/jest/bin/jest.js --config=jest.json",
+    "test:cov": "prisma generate && node --experimental-vm-modules --disable-warning=ExperimentalWarning node_modules/jest/bin/jest.js --config=jest.json --coverage",
+    "lint": "eslint -c .eslintrc.js --fix --ext .ts src",
+    "lint:check": "eslint -c .eslintrc.js --ext .ts src --max-warnings=0",
+    "db:migrate:develop": "dotenvx run -f .env.develop -- prisma migrate deploy",
+    "db:migrate:production": "dotenvx run -f .env.production -- prisma migrate deploy"
   },
   "dependencies": {
+    "@dotenvx/dotenvx": "^2.38.2",
     "@fastify/helmet": "^13.2.0",
     "@fastify/multipart": "^10.1.4",
     "@fastify/static": "^10.1.6",
@@ -50,7 +58,6 @@
     "@types/supertest": "^7.2.1",
     "@typescript-eslint/eslint-plugin": "^8.72.0",
     "@typescript-eslint/parser": "^8.72.0",
-    "env-cmd": "^11.0.0",
     "eslint": "^8.56.0",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-prefer-arrow": "^1.2.3",
