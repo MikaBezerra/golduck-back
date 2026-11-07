@@ -9,6 +9,7 @@ import { CreditCardsModule } from './credit-cards/credit-cards.module';
 import { IncomesModule } from './incomes/incomes.module';
 import { ManualExpensesModule } from './manual-expenses/manual-expenses.module';
 import { PeopleModule } from './people/people.module';
+import { ReservesModule } from './reserves/reserves.module';
 import { SummaryModule } from './summary/summary.module';
 
 @Module({
@@ -22,6 +23,7 @@ import { SummaryModule } from './summary/summary.module';
         IncomesModule,
         ManualExpensesModule,
         PeopleModule,
+        ReservesModule,
         SummaryModule
     ]
 })

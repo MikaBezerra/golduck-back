@@ -73,6 +73,15 @@ model MonthlyIncome {
   updatedAt   DateTime @updatedAt @db.Timestamptz(3)
 }
 
+/// Reserva do mês: quanto foi guardado. No resumo, conta como um gasto compartilhado.
+model MonthlyReserve {
+  id          String   @id @default(uuid()) @db.Uuid
+  month       DateTime @unique @db.Date
+  amountCents BigInt   @db.BigInt
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+}
+
 model ManualExpense {
   id          String   @id @default(uuid()) @db.Uuid
   month       DateTime @db.Date
