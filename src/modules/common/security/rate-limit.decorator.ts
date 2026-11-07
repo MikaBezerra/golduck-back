@@ -27,6 +27,18 @@ export class RateLimitStore {
     private readonly windows = new Map<string, RateLimitWindow>();
     private nextSweepAt = 0;
 
+    /** Janela atual da chave, sem contar uma chamada nova (undefined se não houver ou já tiver vencido). */
+    public peek(key: string, now: number = Date.now()): Readonly<RateLimitWindow> | undefined {
+        const window = this.windows.get(key);
+
+        return window && window.resetAt > now ? window : undefined;
+    }
+
+    /** Zera a contagem da chave (ex.: login certo apaga os erros anteriores daquele e-mail). */
+    public reset(key: string): void {
+        this.windows.delete(key);
+    }
+
     /** Registra uma chamada e devolve a janela atual da chave. */
     public hit(key: string, windowMs: number, now: number = Date.now()): Readonly<RateLimitWindow> {
         this.sweep(now);
@@ -89,8 +101,7 @@ export class RateLimitGuard implements CanActivate {
         reply.header('x-ratelimit-reset', resetSeconds);
 
         if (window.count > options.limit) {
-            reply.header('retry-after', resetSeconds);
-            throw ERRORS.tooManyRequests(`rate_limit: ${options.limit}/${Math.round(options.windowMs / 1000)}s`);
+            throw ERRORS.tooManyRequests(`rate_limit: ${options.limit}/${Math.round(options.windowMs / 1000)}s`, resetSeconds);
         }
 
         return true;

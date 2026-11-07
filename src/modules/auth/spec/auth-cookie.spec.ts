@@ -24,6 +24,7 @@ const JWT_ISSUER = 'testes';
 const EMAIL = 'pessoa@exemplo.com';
 const PASSWORD = 'senha-correta-123';
 const SEVEN_DAYS_IN_SECONDS = 7 * 24 * 60 * 60;
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 Object.assign(process.env, {
     API_PORT: '3000',
@@ -85,6 +86,16 @@ class InMemoryAuthRepository {
 }
 /* eslint-enable @typescript-eslint/require-await */
 
+/** PasswordService real, contando quantas comparações de senha (Argon2) foram feitas. */
+class CountingPasswordService extends PasswordService {
+    public verifications = 0;
+
+    public override async verifyPassword(password: string, storedHash: string): Promise<boolean> {
+        this.verifications++;
+        return super.verifyPassword(password, storedHash);
+    }
+}
+
 interface ParsedCookie {
     name: string;
     value: string;
@@ -111,6 +122,7 @@ function parseSetCookies(response: Response): ParsedCookie[] {
 describe('sessão com refresh token em cookie httpOnly', () => {
     let passwordHash: string;
     let repository: InMemoryAuthRepository;
+    let passwords: CountingPasswordService;
     let app: NestFastifyApplication;
     let baseUrl: string;
 
@@ -125,13 +137,17 @@ describe('sessão com refresh token em cookie httpOnly', () => {
             id: 'user-1', email: EMAIL, role: Role.USER, active: true, hash: passwordHash, createdAt: now, updatedAt: now
         });
 
+        passwords = new CountingPasswordService();
+
         const moduleRef = await Test.createTestingModule({ imports: [AuthModule] })
             .overrideProvider(PrismaService).useValue({})
             .overrideProvider(AuthRepository).useValue(repository)
+            .overrideProvider(PasswordService).useValue(passwords)
             .compile();
 
+        // trustProxy deixa os testes simularem vários IPs pelo X-Forwarded-For (sem ele, o IP é 127.0.0.1).
         app = moduleRef.createNestApplication<NestFastifyApplication>(
-            new FastifyAdapter({ genReqId: generateRequestId }),
+            new FastifyAdapter({ genReqId: generateRequestId, trustProxy: true }),
             { logger: false }
         );
         await configureApp(app);
@@ -164,6 +180,12 @@ describe('sessão com refresh token em cookie httpOnly', () => {
 
     const errorCode = async (response: Response): Promise<string> =>
         ((await response.json()) as { error: { code: string } }).error.code;
+
+    /** Login vindo de um IP específico (para não esbarrar no limite de 5 por minuto por IP). */
+    const loginFrom = async (ip: string, email: string, password: string): Promise<Response> =>
+        post('login', { payload: { email, password }, headers: { 'x-forwarded-for': ip } });
+
+    const onlySession = (): AuthSession => [...repository.sessions.values()][0];
 
     const login = async (): Promise<{ accessToken: string; refreshToken: string }> => {
         const response = await post('login', { payload: { email: EMAIL, password: PASSWORD } });
@@ -304,6 +326,75 @@ describe('sessão com refresh token em cookie httpOnly', () => {
         expect(response.headers.get('access-control-allow-origin')).toBe(FRONT_ORIGIN);
         expect(response.headers.get('access-control-allow-credentials')).toBe('true');
         expect(response.headers.get('access-control-allow-headers')?.toLowerCase()).toEqual(expect.stringContaining('x-request-id'));
+    });
+
+    it('e-mail inexistente também passa pela comparação de senha (tempo de resposta igual)', async () => {
+        const unknown = await post('login', { payload: { email: 'ninguem@exemplo.com', password: PASSWORD } });
+        expect(unknown.status).toBe(401);
+        expect(passwords.verifications).toBe(1);
+
+        const wrongPassword = await post('login', { payload: { email: EMAIL, password: 'senha-errada' } });
+        expect(wrongPassword.status).toBe(401);
+        expect(passwords.verifications).toBe(2);
+
+        // A mesma resposta nos dois casos.
+        expect(await errorCode(unknown)).toBe('AUTH_INVALID_CREDENTIALS');
+        expect(await errorCode(wrongPassword)).toBe('AUTH_INVALID_CREDENTIALS');
+    });
+
+    it('trava o e-mail após 10 erros, mesmo vindos de IPs diferentes', async () => {
+        for (let attempt = 1; attempt <= 10; attempt++) {
+            expect((await loginFrom(`10.0.0.${attempt}`, EMAIL, 'senha-errada')).status).toBe(401);
+        }
+
+        const verificationsBefore = passwords.verifications;
+        const locked = await loginFrom('10.0.1.1', EMAIL, PASSWORD);
+
+        expect(locked.status).toBe(429);
+        expect(await errorCode(locked)).toBe('TOO_MANY_REQUESTS');
+        expect(Number(locked.headers.get('retry-after'))).toBeGreaterThan(0);
+        expect(Number(locked.headers.get('retry-after'))).toBeLessThanOrEqual(15 * 60);
+        expect(sessionCookie(locked)).toBeUndefined();
+        // Travado, nem compara a senha.
+        expect(passwords.verifications).toBe(verificationsBefore);
+
+        // Outro e-mail segue normal.
+        expect((await loginFrom('10.0.1.2', 'outra@exemplo.com', PASSWORD)).status).toBe(401);
+    });
+
+    it('login certo zera os erros do e-mail', async () => {
+        for (const round of [1, 2]) {
+            for (let attempt = 1; attempt <= 9; attempt++) {
+                expect((await loginFrom(`10.${round}.0.${attempt}`, EMAIL, 'senha-errada')).status).toBe(401);
+            }
+
+            expect((await loginFrom(`10.${round}.1.1`, EMAIL, PASSWORD)).status).toBe(200);
+        }
+    });
+
+    it('a renovação não passa de 30 dias desde o login', async () => {
+        const session = await login();
+        onlySession().createdAt = new Date(Date.now() - 29 * ONE_DAY_MS);
+
+        const nearLimit = await post('refresh', { cookie: session.refreshToken });
+        expect(nearLimit.status).toBe(200);
+
+        // Resta 1 dia: o cookie novo vale só isso, e não mais 7 dias.
+        const maxAge = Number(sessionCookie(nearLimit)?.attributes['max-age']);
+        expect(maxAge).toBeGreaterThan(ONE_DAY_MS / 1000 - 60);
+        expect(maxAge).toBeLessThanOrEqual(ONE_DAY_MS / 1000);
+    });
+
+    it('sessão com mais de 30 dias exige senha de novo', async () => {
+        const session = await login();
+        onlySession().createdAt = new Date(Date.now() - 31 * ONE_DAY_MS);
+
+        const response = await post('refresh', { cookie: session.refreshToken });
+
+        expect(response.status).toBe(401);
+        expect(await errorCode(response)).toBe('AUTH_INVALID_SESSION');
+        expectClearedCookie(response);
+        expect(onlySession().revokedAt).not.toBeNull();
     });
 
     it('refresh mantém o limite de 20 por minuto, com 429 e Retry-After', async () => {

@@ -4,12 +4,15 @@ import { AuthUserResponse } from '../dto/auth.dto';
 import { AUTH_ERRORS } from '../errors/auth.errors';
 import { AuthRepository } from '../repository/auth.repository';
 import { AccessTokenService } from '../security/access-token.service';
+import { LoginAttemptsService } from '../security/login-attempts.service';
 import { PasswordService } from '../security/password.service';
-import { REFRESH_TOKEN_TTL_MS, RefreshTokenService } from '../security/refresh-token.service';
+import { REFRESH_TOKEN_TTL_MS, RefreshTokenService, SESSION_MAX_AGE_MS } from '../security/refresh-token.service';
 
 export interface AuthTokens {
     readonly accessToken: string;
     readonly refreshToken: string;
+    /** Até quando o refresh token vale (define o Max-Age do cookie). */
+    readonly refreshExpiresAt: Date;
 }
 
 @Injectable()
@@ -19,20 +22,36 @@ export class AuthService {
         private readonly passwordService: PasswordService,
         private readonly refreshTokenService: RefreshTokenService,
         private readonly accessTokenService: AccessTokenService,
+        private readonly loginAttempts: LoginAttemptsService
     ) { }
 
+    /**
+     * Confere e-mail e senha e abre uma sessão.
+     *
+     * - e-mail com erros demais na janela: 429 antes de olhar a senha;
+     * - a senha é sempre comparada (com um hash descartável se o e-mail não existir), para o tempo
+     *   de resposta não revelar quais e-mails têm conta;
+     * - qualquer falha responde a mesma mensagem e conta um erro para o e-mail; acertar zera os erros.
+     */
     public async login(email: string, password: string): Promise<AuthTokens> {
+        this.loginAttempts.assertAllowed(email);
+
         const user = await this.repository.findUserByEmail(email);
+        const passwordCorrect = user
+            ? await this.passwordService.verifyPassword(password, user.hash)
+            : await this.passwordService.verifyAgainstDummy(password);
 
         if (!user || !user.active) {
+            this.loginAttempts.registerFailure(email);
             throw AUTH_ERRORS.invalidCredentials('user_missing_or_inactive');
         }
 
-        const passwordCorrect = await this.passwordService.verifyPassword(password, user.hash);
-
         if (!passwordCorrect) {
+            this.loginAttempts.registerFailure(email);
             throw AUTH_ERRORS.invalidCredentials('password_mismatch');
         }
+
+        this.loginAttempts.reset(email);
 
         const refresh = this.refreshTokenService.generate();
         const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS);
@@ -46,7 +65,8 @@ export class AuthService {
 
         return {
             accessToken: this.accessTokenService.generate(user.id, refresh.sessionId),
-            refreshToken: refresh.token
+            refreshToken: refresh.token,
+            refreshExpiresAt: expiresAt
         };
     }
 
@@ -72,8 +92,17 @@ export class AuthService {
             throw AUTH_ERRORS.invalidSession('user_missing_or_inactive');
         }
 
+        // A renovação estende a sessão por mais 7 dias, mas nunca além de 30 dias desde o login.
+        const now = Date.now();
+        const maxExpiresAt = session.createdAt.getTime() + SESSION_MAX_AGE_MS;
+
+        if (maxExpiresAt <= now) {
+            await this.repository.revokeSession(session.id, user.id);
+            throw AUTH_ERRORS.invalidSession('session_max_age_reached');
+        }
+
         const nextRefresh = this.refreshTokenService.generate(session.id);
-        const nextExpiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS);
+        const nextExpiresAt = new Date(Math.min(now + REFRESH_TOKEN_TTL_MS, maxExpiresAt));
 
         const rotated = await this.repository.rotateSession(
             session.id,
@@ -89,7 +118,8 @@ export class AuthService {
 
         return {
             accessToken: this.accessTokenService.generate(user.id, session.id),
-            refreshToken: nextRefresh.token
+            refreshToken: nextRefresh.token,
+            refreshExpiresAt: nextExpiresAt
         };
     }
 

@@ -71,6 +71,10 @@ export class ApiExceptionFilter implements ExceptionFilter {
             } : {})
         });
 
+        if (exception instanceof AppError) {
+            reply.headers(exception.headers);
+        }
+
         reply.status(statusCode).send(response);
     }
 }

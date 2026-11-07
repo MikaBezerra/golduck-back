@@ -58,7 +58,7 @@ export class AuthController {
     ): Promise<AuthTokensDto> {
         const tokens = await this.authService.login(body.email, body.password);
 
-        this.refreshCookie.set(reply, tokens.refreshToken);
+        this.refreshCookie.set(reply, tokens.refreshToken, tokens.refreshExpiresAt);
 
         return { accessToken: tokens.accessToken };
     }
@@ -87,7 +87,7 @@ export class AuthController {
             }
 
             const tokens = await this.authService.newRefresh(refreshToken);
-            this.refreshCookie.set(reply, tokens.refreshToken);
+            this.refreshCookie.set(reply, tokens.refreshToken, tokens.refreshExpiresAt);
 
             return { accessToken: tokens.accessToken };
         } catch (error) {

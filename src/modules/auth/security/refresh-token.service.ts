@@ -4,6 +4,9 @@ import { createHash, randomBytes, randomUUID } from 'node:crypto';
 /** Validade da sessão (e do cookie do refresh token): 7 dias, renovados a cada refresh. */
 export const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
+/** Prazo máximo de uma sessão desde o login, mesmo com refresh frequente: depois disso, senha de novo. */
+export const SESSION_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
+
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const SECRET_PATTERN = /^[A-Za-z0-9_-]{43}$/;
 

@@ -6,6 +6,7 @@ import { AuthController } from './controller/auth.controller';
 import { AuthRepository } from './repository/auth.repository';
 import { AccessTokenService } from './security/access-token.service';
 import { JwtAuthGuard } from './security/jwt-auth.guard';
+import { LoginAttemptsService } from './security/login-attempts.service';
 import { PasswordService } from './security/password.service';
 import { RefreshCookieService } from './security/refresh-cookie.service';
 import { RefreshTokenService } from './security/refresh-token.service';
@@ -21,6 +22,7 @@ import { AuthService } from './service/auth.service';
         RefreshTokenService,
         RefreshCookieService,
         AccessTokenService,
+        LoginAttemptsService,
         AuthService,
         {
             provide: APP_GUARD,

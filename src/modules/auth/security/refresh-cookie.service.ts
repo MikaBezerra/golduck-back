@@ -4,7 +4,6 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import { Service } from '../../tokens';
-import { REFRESH_TOKEN_TTL_MS } from './refresh-token.service';
 
 const DEFAULT_API_PREFIX = '/api';
 
@@ -14,7 +13,7 @@ const DEFAULT_API_PREFIX = '/api';
  *
  * - HttpOnly e Secure sempre; os navegadores aceitam Secure em http://localhost;
  * - Path = <prefixo>/auth: só vai nas rotas de autenticação, não em toda chamada à API;
- * - Max-Age = validade da sessão, renovada a cada refresh;
+ * - Max-Age = tempo até a sessão vencer (7 dias, renovados a cada refresh, até 30 dias desde o login);
  * - SameSite e Domain vêm de AUTH_COOKIE_SAMESITE e AUTH_COOKIE_DOMAIN.
  */
 @Injectable()
@@ -34,10 +33,10 @@ export class RefreshCookieService {
         return value ? value : undefined;
     }
 
-    public set(reply: FastifyReply, refreshToken: string): void {
+    public set(reply: FastifyReply, refreshToken: string, expiresAt: Date): void {
         reply.setCookie(this.name, refreshToken, {
             ...this.options(),
-            maxAge: Math.floor(REFRESH_TOKEN_TTL_MS / 1000)
+            maxAge: Math.max(0, Math.round((expiresAt.getTime() - Date.now()) / 1000))
         });
     }
 

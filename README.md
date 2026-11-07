@@ -47,11 +47,14 @@ Regras principais:
 - **Líquido por pessoa:** (entrada − compartilhadas − reserva) dividido entre as pessoas ativas, menos as
   despesas individuais de cada uma.
 - **Sessão:** o login devolve o access token (JWT de 15 min, enviado como `Authorization: Bearer`) e grava o
-  refresh token (7 dias, uso único) num cookie httpOnly com `Path=/api/auth`. O `/auth/refresh` não tem corpo:
+  refresh token (uso único; 7 dias renovados a cada uso, até no máximo 30 dias desde o login) num cookie httpOnly
+  com `Path=/api/auth`. O `/auth/refresh` não tem corpo:
   lê o cookie, gira o token e grava o novo; reusar um token antigo encerra a sessão. O `/auth/logout` encerra a
   sessão do cookie e/ou do Bearer (mesmo vencido), apaga o cookie e sempre responde 204.
 - **Segurança:** headers do Helmet; limite de tentativas por IP no login (5/min) e no refresh (20/min), com
-  `429 TOO_MANY_REQUESTS` e o header `Retry-After` (`@RateLimit()`); contra CSRF, login, refresh e logout recusam
+  `429 TOO_MANY_REQUESTS` e o header `Retry-After` (`@RateLimit()`); depois de 10 erros no mesmo e-mail, vindos de
+  qualquer IP, o login dele fica travado por 15 minutos (um acerto zera a contagem); e-mail inexistente também passa
+  pela comparação de senha, para o tempo de resposta não revelar quais contas existem; contra CSRF, login, refresh e logout recusam
   com `403 FORBIDDEN` um header `Origin` que não seja o front (`API_CORS_ORIGINS`) nem a própria API; a configuração é validada na subida (sem `DATABASE_URL`
   válida ou com `JWT_SECRET` abaixo de 32 caracteres, a API nem sobe).
 
