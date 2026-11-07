@@ -4,14 +4,18 @@ import {
     ApiExtraModels,
     ApiProperty,
     ApiPropertyOptional,
+    ApiQuery,
     ApiResponse,
     getSchemaPath
 } from '@nestjs/swagger';
+
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '../pagination/pagination';
 
 /*
  * Peças comuns da documentação OpenAPI (Swagger):
  * - o envelope { data } de toda resposta de sucesso com conteúdo;
  * - o formato { error } das respostas de erro (ApiExceptionFilter);
+ * - o formato das respostas paginadas (ApiPaginatedResponse);
  * - exemplos e padrões reutilizados (dinheiro, mês, UUID).
  */
 
@@ -93,6 +97,45 @@ export function ApiDataResponse(model: Type<unknown>, options: DataResponseOptio
                 required: ['data'],
                 properties: {
                     data: options.isArray ? { type: 'array', items: item } : item
+                }
+            }
+        })
+    );
+}
+
+/**
+ * Documenta uma rota paginada: as queries page e pageSize e a resposta
+ * { data: { items: Model[], page, pageSize, total, totalPages } }.
+ */
+export function ApiPaginatedResponse(model: Type<unknown>, options: Pick<DataResponseOptions, 'description'> = {}): MethodDecorator {
+    const integer = (example: number) => ({ type: 'integer', example });
+
+    return applyDecorators(
+        ApiExtraModels(model),
+        ApiQuery({ name: 'page', required: false, schema: { type: 'integer', minimum: 1, default: 1 } }),
+        ApiQuery({
+            name: 'pageSize',
+            required: false,
+            schema: { type: 'integer', minimum: 1, maximum: MAX_PAGE_SIZE, default: DEFAULT_PAGE_SIZE }
+        }),
+        ApiResponse({
+            status: HttpStatus.OK,
+            description: options.description ?? 'Página de resultados',
+            schema: {
+                type: 'object',
+                required: ['data'],
+                properties: {
+                    data: {
+                        type: 'object',
+                        required: ['items', 'page', 'pageSize', 'total', 'totalPages'],
+                        properties: {
+                            items: { type: 'array', items: { $ref: getSchemaPath(model) } },
+                            page: integer(1),
+                            pageSize: integer(DEFAULT_PAGE_SIZE),
+                            total: integer(42),
+                            totalPages: integer(3)
+                        }
+                    }
                 }
             }
         })

@@ -38,6 +38,10 @@ Regras principais:
 - **Dinheiro** é guardado em centavos (`BIGINT`) e trafega como texto (`"1234.56"`); nenhuma conta usa ponto flutuante.
 - **Mês** trafega como `"AAAA-MM"` e datas como `"AAAA-MM-DD"`; horários são gravados em UTC.
 - **Respostas** vêm em `{ "data": ... }`; erros em `{ "error": { "code", "message", "requestId", "details"? } }`.
+- **Listas paginadas** recebem `?page=1&pageSize=20` (máximo 100) e respondem
+  `{ "data": { "items", "page", "pageSize", "total", "totalPages" } }`. Peças em `common/pagination`
+  (`PageQueryPipe`, `pageQueryKeys` para combinar com outros filtros, `paginate` e `mapPage`) e
+  `@ApiPaginatedResponse(Dto)` para o Swagger. As listas atuais do Golduck não são paginadas.
 - **Fatura do cartão:** cada upload é absoluto para o mês da fatura; parcelas futuras são projetadas e
   confirmadas pelos uploads seguintes; apelido, categoria e pessoa sobrevivem aos reenvios.
 - **Líquido por pessoa:** (entrada − compartilhadas − reserva) dividido entre as pessoas ativas, menos as
