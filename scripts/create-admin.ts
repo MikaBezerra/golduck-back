@@ -8,11 +8,27 @@ import { PrismaService } from '../src/modules/common/provider/prisma.provider';
 
 const emailSchema = Joi.string().email().required();
 
+/** Onde o admin será criado (ambiente, host, banco e schema), sem usuário nem senha da URL. */
+function describeTarget(): string {
+    const environment = process.env.APP_ENV || 'local';
+
+    try {
+        const url = new URL(process.env.DATABASE_URL ?? '');
+        const schema = url.searchParams.get('schema') || 'public';
+
+        return `${environment} (banco ${url.pathname.slice(1)} em ${url.hostname}, schema ${schema})`;
+    } catch {
+        throw new Error('DATABASE_URL ausente ou inválida no arquivo de ambiente.');
+    }
+}
+
 async function createAdmin(): Promise<void> {
     if (!process.stdin.isTTY) {
         throw new Error('Execute este comando em um terminal interativo');
 
     }
+
+    console.log(`Criando administrador em: ${describeTarget()}`);
 
     const email = (await input({
         message: 'E-mail de administrador',

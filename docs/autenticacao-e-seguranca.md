@@ -42,7 +42,7 @@ GET  /auth/me      →  { id, email, role }
 
 `USER` e `ADMIN`. `@Roles(Role.USER)` no controller libera usuários comuns; ADMIN passa em tudo
 (`RolesGuard`). Rotas abertas usam `@Public()`. Hoje só `GET /health` é exclusiva de ADMIN.
-Usuários são criados por `npm run admin:create`.
+Usuários são criados por `npm run admin:create` (local), `admin:create:develop` ou `admin:create:production`.
 
 ## Proteções da API
 
