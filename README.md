@@ -47,7 +47,7 @@ vi .env
 
 For a standard development configuration, you can leave the default values for `API_PORT`, `API_PREFIX` and `API_CORS` under the `Api configuration` section. The `SWAGGER_ENABLE` rule allows you to control the Swagger documentation module for NestJS. Leave it to `1` when starting this example.
 
-Next comes to the Prisma configuration: change the DATABASE_URL according to your own database setup.
+Next comes to the Prisma configuration: change the DATABASE_URL according to your own database setup. The development container from `docker-compose.yml` publishes PostgreSQL on host port `5433` (not `5432`), so it does not clash with a PostgreSQL installed directly on the machine.
 
 Store date-time values as UTC instants. In the Prisma schema, use `DateTime @db.Timestamptz(3)` for fields that represent a point in time. The development PostgreSQL container uses UTC as its session timezone; configure the same setting for other database environments. Convert user-facing local times to UTC before saving them, and include a timezone offset when accepting date-time input.
 
