@@ -20,7 +20,8 @@ npm run dev                     # http://localhost:3000/api
   máquina.
 - Com `SWAGGER_ENABLE=1` no `.env`, a documentação fica em `http://localhost:3000/docs` e o JSON em
   `/docs-json` (o front gera os tipos da API a partir dele).
-- O `npm install` liga os hooks do Husky (commitlint no `commit-msg`); veja [contribuindo.md](contribuindo.md).
+- O `npm install` liga os hooks do Husky (commitlint no `commit-msg` e checagem dos `.env` criptografados
+  no `pre-commit`); veja [contribuindo.md](contribuindo.md).
 
 ## Scripts
 
@@ -36,7 +37,7 @@ npm run dev                     # http://localhost:3000/api
 | `npm run db:check` | confere se o banco local tem todas as migrações e se o `schema.prisma` não mudou sem migração |
 | **`npm run verify`** | **o que o CI roda:** client do Prisma, `lint:check`, `typecheck`, `test:cov`, `build` e `db:check` (precisa do Postgres no ar) |
 | `npm run verify:full` | `verify` + testes de mutação do projeto todo (demorado; antes de PR para `main`) |
-| `npm run admin:create` | cria um usuário ADMIN |
+| `npm run admin:create` / `admin:create:develop` / `admin:create:production` | cria um usuário ADMIN (interativo) no banco local / develop / produção; antes de pedir os dados, mostra o ambiente, o banco e o schema de destino |
 | `npm run db:migrate:develop` / `db:migrate:production` | aplica as migrações no banco do ambiente |
 | `npx prisma migrate dev --name <nome>` | cria uma migração a partir do `schema.prisma` (desenvolvimento) |
 
@@ -50,9 +51,14 @@ npm run dev                     # http://localhost:3000/api
 | `.env.production` | produção; `DATABASE_URL`, `DATABASE_DIRECT_URL` e `JWT_SECRET` criptografados | sim |
 | `.env.keys` | chaves privadas (`DOTENV_PRIVATE_KEY_DEVELOP` e `..._PRODUCTION`) | **nunca** |
 
+- Os quatro arquivos seguem a mesma ordem, agrupada: Ambiente, API, Banco, Autenticação e Logs. Cada
+  variável está explicada na tabela abaixo; os arquivos só têm comentários curtos.
 - Guarde uma cópia segura do `.env.keys`: sem ele não é possível ler os valores criptografados.
 - Trocar um valor: `npx dotenvx set DATABASE_URL "postgresql://..." -f .env.production` (criptografa
-  automaticamente; use `--plain` para valores não sensíveis, como `API_PORT`).
+  automaticamente; use `--plain` para valores não sensíveis, como `API_PORT`). Sempre com o `-f`: sem
+  ele, o valor vai criptografado para o `.env` local.
+- Depois de abrir um arquivo com `npx dotenvx decrypt`, rode `npx dotenvx encrypt -f <arquivo>` antes
+  do commit (o hook `pre-commit` recusa valores sensíveis em texto puro).
 - Ler um valor: `npx dotenvx get DATABASE_URL -f .env.develop`.
 - Os testes automatizados não usam nenhum desses arquivos: as variáveis de teste ficam em
   `src/testing/http-test-app.ts`.

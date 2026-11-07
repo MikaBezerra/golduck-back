@@ -38,6 +38,9 @@ jobs:
       - name: Lint
         run: npm run lint:check
 
+      - name: Valores sensíveis dos .env criptografados
+        run: node scripts/check-env-encrypted.mjs
+
       - name: Tipos
         run: npm run typecheck
 

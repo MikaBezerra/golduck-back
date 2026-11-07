@@ -23,7 +23,8 @@ descrição do PR.
 5. Rode `npm run verify` (o mesmo do CI).
 6. Commit no padrão Conventional Commits, em português: `feat: ...`, `fix: ...`, `test: ...`,
    `docs: ...`, `refactor: ...`, `chore: ...`, `ci: ...`. O hook `commit-msg` (Husky + commitlint)
-   barra mensagens fora do padrão.
+   barra mensagens fora do padrão, e o `pre-commit` barra `DATABASE_URL`, `DATABASE_DIRECT_URL` ou
+   `JWT_SECRET` sem criptografia no `.env.develop`/`.env.production` (`scripts/check-env-encrypted.mjs`).
 7. Abra o PR para a `develop` com o título no mesmo padrão (vira o commit do squash) e preencha o
    checklist do template.
 
