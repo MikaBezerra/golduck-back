@@ -21,7 +21,7 @@
   "testRegex": "/src/.*\\.(test|spec)\\.ts$",
   "testPathIgnorePatterns": [
     "/node_modules/",
-    "/\\.stryker-tmp/"
+    "<rootDir>/\\.stryker-tmp/"
   ],
   "modulePathIgnorePatterns": [
     "<rootDir>/\\.stryker-tmp/"
