@@ -74,11 +74,9 @@ export class SummaryNetByPersonDto {
     public net!: string;
 }
 
-export class SummaryResponse {
-    @ApiProperty(MONTH_PROPERTY)
-    public month!: string;
-
-    @ApiProperty({ ...MONEY_PROPERTY, nullable: true, description: 'null quando não há entrada cadastrada no mês' })
+/** Campos comuns ao resumo mensal e ao anual. */
+export class SummaryTotalsDto {
+    @ApiProperty({ ...MONEY_PROPERTY, nullable: true, description: 'null quando não há entrada cadastrada no período' })
     public income!: string | null;
 
     @ApiProperty({ ...MONEY_PROPERTY, description: 'Despesas fora do cartão + do cartão (sem as excluídas)' })
@@ -93,12 +91,50 @@ export class SummaryResponse {
     @ApiProperty({ type: () => SummaryBySourceDto })
     public bySource!: SummaryBySourceDto;
 
-    @ApiProperty({ type: () => [SummaryCategoryDto], description: 'Valor decrescente; inclui categorias inativas com despesas no mês' })
+    @ApiProperty({ type: () => [SummaryCategoryDto], description: 'Valor decrescente; inclui categorias inativas com despesas no período' })
     public byCategory!: SummaryCategoryDto[];
 
     @ApiProperty({ type: () => [SummaryPersonDto], description: 'Valor decrescente; o item com personId null são as despesas compartilhadas' })
     public byPerson!: SummaryPersonDto[];
 
-    @ApiProperty({ type: () => [SummaryNetByPersonDto], description: 'Líquido de cada pessoa ativa, em ordem alfabética' })
+    @ApiProperty({
+        type: () => [SummaryNetByPersonDto],
+        description: 'Líquido de cada pessoa ativa, em ordem alfabética (no anual, a soma dos líquidos mensais)'
+    })
     public netByPerson!: SummaryNetByPersonDto[];
+}
+
+export class SummaryResponse extends SummaryTotalsDto {
+    @ApiProperty(MONTH_PROPERTY)
+    public month!: string;
+}
+
+export class AnnualSummaryQueryDto {
+    @ApiProperty({ type: Number, minimum: 2000, maximum: 2100, example: 2026 })
+    public year!: number;
+}
+
+export class SummaryMonthDto {
+    @ApiProperty(MONTH_PROPERTY)
+    public month!: string;
+
+    @ApiProperty({ ...MONEY_PROPERTY, nullable: true, description: 'null quando não há entrada cadastrada no mês' })
+    public income!: string | null;
+
+    @ApiProperty(MONEY_PROPERTY)
+    public expensesTotal!: string;
+
+    @ApiProperty({ type: Number })
+    public expensesCount!: number;
+
+    @ApiProperty({ ...MONEY_PROPERTY, description: 'entrada (ou 0) − despesas; pode ser negativo' })
+    public balance!: string;
+}
+
+export class AnnualSummaryResponse extends SummaryTotalsDto {
+    @ApiProperty({ type: Number, example: 2026 })
+    public year!: number;
+
+    @ApiProperty({ type: () => [SummaryMonthDto], description: 'Sempre os 12 meses, de janeiro a dezembro, inclusive os vazios' })
+    public months!: SummaryMonthDto[];
 }

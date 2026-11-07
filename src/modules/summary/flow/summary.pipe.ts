@@ -1,7 +1,7 @@
 import * as Joi from 'joi';
 
 import { JoiValidationPipePtbr } from '../../common';
-import { SummaryQueryDto } from '../dto/summary.dto';
+import { AnnualSummaryQueryDto, SummaryQueryDto } from '../dto/summary.dto';
 
 export class SummaryQueryPipe extends JoiValidationPipePtbr {
     public buildSchema(): Joi.Schema {
@@ -9,6 +9,14 @@ export class SummaryQueryPipe extends JoiValidationPipePtbr {
             month: Joi.string().pattern(/^[1-9]\d{3}-(0[1-9]|1[0-2])$/).required().messages({
                 'string.pattern.base': 'O mês deve estar no formato AAAA-MM'
             })
+        }).unknown(false);
+    }
+}
+
+export class AnnualSummaryQueryPipe extends JoiValidationPipePtbr {
+    public buildSchema(): Joi.Schema {
+        return Joi.object<AnnualSummaryQueryDto>({
+            year: Joi.number().integer().min(2000).max(2100).required()
         }).unknown(false);
     }
 }
