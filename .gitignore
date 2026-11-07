@@ -30,7 +30,5 @@ npm-debug.log
 .env.local
 .env.*.local
 
-# ferramentas de agentes de IA (ficam só na máquina local)
-.agents
+# configurações locais de ferramentas (ficam só na máquina)
 .claude/
-skills-lock.json
