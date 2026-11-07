@@ -1,7 +1,9 @@
+import fastifyMultipart from '@fastify/multipart';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 
 import { ApplicationModule } from './modules/app.module';
+import { MAX_STATEMENT_FILE_BYTES } from './modules/card-imports/flow/multipart-upload';
 import { CommonModule, LoggerService } from './modules/common';
 import { RequestLogContext } from './modules/common/logging/request-log.context';
 import { registerRequestLogging } from './modules/common/logging/request-logging';
@@ -27,6 +29,11 @@ async function bootstrap(): Promise<void> {
     );
 
     // @todo Enable Helmet for better API security headers
+
+    // Uploads de faturas; os limites de cada rota são definidos ao ler o formulário.
+    await app.register(fastifyMultipart, {
+        limits: { files: 1, fileSize: MAX_STATEMENT_FILE_BYTES }
+    });
 
     app.setGlobalPrefix(process.env.API_PREFIX || API_DEFAULT_PREFIX);
 

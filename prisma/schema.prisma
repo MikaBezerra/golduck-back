@@ -46,6 +46,7 @@ model Person {
   createdAt      DateTime        @default(now()) @db.Timestamptz(3)
   updatedAt      DateTime        @updatedAt @db.Timestamptz(3)
   manualExpenses ManualExpense[]
+  cardExpenses   CardExpense[]
 
   @@index([active, name])
 }
@@ -59,6 +60,7 @@ model Category {
   createdAt      DateTime        @default(now()) @db.Timestamptz(3)
   updatedAt      DateTime        @updatedAt @db.Timestamptz(3)
   manualExpenses ManualExpense[]
+  cardExpenses   CardExpense[]
 
   @@index([active, name])
 }
@@ -96,8 +98,60 @@ model CreditCard {
   active    Boolean  @default(true)
   createdAt DateTime @default(now()) @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  imports   CardImport[]
+  expenses  CardExpense[]
 
   @@index([active, name])
+}
+
+model CardImport {
+  id            String   @id @default(uuid()) @db.Uuid
+  cardId        String   @db.Uuid
+  month         DateTime @db.Date
+  fileName      String   @db.VarChar(255)
+  fileHash      String   @db.VarChar(64)
+  parserVersion String   @db.VarChar(40)
+  rowCount      Int
+  ignoredCount  Int
+  createdAt     DateTime @default(now()) @db.Timestamptz(3)
+
+  card     CreditCard    @relation(fields: [cardId], references: [id], onDelete: Restrict)
+  expenses CardExpense[]
+
+  @@index([cardId, month])
+}
+
+model CardExpense {
+  id                  String   @id @default(uuid()) @db.Uuid
+  cardId              String   @db.Uuid
+  importId            String   @db.Uuid
+  month               DateTime @db.Date
+  sourceMonth         DateTime @db.Date
+  purchaseKey         String   @db.VarChar(320)
+  transactionDate     DateTime @db.Date
+  originalDescription String   @db.VarChar(200)
+  holderName          String?  @db.VarChar(120)
+  cardLastDigits      String?  @db.VarChar(4)
+  amountCents         BigInt   @db.BigInt
+  installmentNumber   Int?
+  installmentTotal    Int?
+  nickname            String?  @db.VarChar(160)
+  categoryId          String   @db.Uuid
+  personId            String?  @db.Uuid
+  createdAt           DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime @updatedAt @db.Timestamptz(3)
+
+  card     CreditCard @relation(fields: [cardId], references: [id], onDelete: Restrict)
+  import   CardImport @relation(fields: [importId], references: [id], onDelete: Cascade)
+  category Category   @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  person   Person?    @relation(fields: [personId], references: [id], onDelete: Restrict)
+
+  @@unique([cardId, month, purchaseKey])
+  @@index([cardId, purchaseKey])
+  @@index([month])
+  @@index([importId])
+  @@index([categoryId])
+  @@index([personId])
 }
 
 enum CardBank {

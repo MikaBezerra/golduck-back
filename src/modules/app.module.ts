@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 
 import { AuthModule } from './auth/auth.module';
+import { CardExpensesModule } from './card-expenses/card-expenses.module';
+import { CardImportsModule } from './card-imports/card-imports.module';
 import { CategoriesModule } from './categories/categories.module';
 import { CommonModule } from './common';
 import { CreditCardsModule } from './credit-cards/credit-cards.module';
@@ -12,6 +14,8 @@ import { PeopleModule } from './people/people.module';
     imports: [
         CommonModule,
         AuthModule,
+        CardExpensesModule,
+        CardImportsModule,
         CategoriesModule,
         CreditCardsModule,
         IncomesModule,
