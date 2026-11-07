@@ -2,7 +2,7 @@
   "name": "golduck-back",
   "version": "0.1.0",
   "description": "API do Golduck, app de finanças pessoais (NestJS + Fastify + Prisma)",
-  "author": "Saluki",
+  "author": "Mikaell Silva",
   "license": "MIT",
   "private": true,
   "engines": {
