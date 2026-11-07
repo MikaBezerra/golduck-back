@@ -32,7 +32,7 @@
     "csv-parse": "^7.0.3",
     "dotenv": "^18.0.8",
     "fastify": "^5.12.7",
-    "joi": "^18.3.0",
+    "joi": "^18.3.2",
     "jsonwebtoken": "^9.0.3",
     "pdfjs-dist": "^6.4.299",
     "pg": "^8.23.1",
@@ -62,5 +62,23 @@
     "ts-node": "^10.9.2",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3"
+  },
+  "overrides": {
+    "@jest/reporters": {
+      "glob": "^14.0.4"
+    },
+    "jest-config": {
+      "glob": "^14.0.4"
+    },
+    "jest-runtime": {
+      "glob": "^14.0.4"
+    },
+    "test-exclude": {
+      "glob": "^14.0.4",
+      "minimatch": "^11.0.5"
+    },
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "^11.0.5"
+    }
   }
 }
