@@ -32,12 +32,17 @@ export class AccessTokenService {
         );
     }
 
-    public verify(token: string): AccessTokenIdentity | null {
+    /**
+     * Confere assinatura, emissor e público do token. `ignoreExpiration` aceita token vencido e
+     * serve só para o logout, que precisa saber de qual sessão o token era.
+     */
+    public verify(token: string, options: { ignoreExpiration?: boolean } = {}): AccessTokenIdentity | null {
         try {
             const payload = jwt.verify(token, this.config.JWT_SECRET, {
                 algorithms: ['HS256'],
                 audience: ACCESS_TOKEN_AUDIENCE,
-                issuer: this.config.JWT_ISSUER
+                issuer: this.config.JWT_ISSUER,
+                ignoreExpiration: options.ignoreExpiration === true
             });
 
             if (typeof payload === 'string') {

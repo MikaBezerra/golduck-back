@@ -24,6 +24,14 @@ export type AuthenticatedRequest = FastifyRequest & {
     auth?: AuthenticatedIdentity;
 };
 
+/** Token do header "Authorization: Bearer <token>", ou undefined se ausente ou malformado. */
+export function readBearerToken(request: FastifyRequest): string | undefined {
+    const header = request.headers.authorization;
+    const match = typeof header === 'string' ? /^Bearer +(\S+)$/i.exec(header) : null;
+
+    return match?.[1];
+}
+
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
     public constructor(
@@ -43,16 +51,13 @@ export class JwtAuthGuard implements CanActivate {
         }
 
         const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
-        const header = request.headers.authorization;
-        const match = typeof header === 'string'
-            ? /^Bearer +(\S+)$/i.exec(header)
-            : null;
+        const token = readBearerToken(request);
 
-        if (!match) {
+        if (!token) {
             throw AUTH_ERRORS.unauthenticated('bearer_missing_or_malformed');
         }
 
-        const identity = this.accessTokenService.verify(match[1]);
+        const identity = this.accessTokenService.verify(token);
 
         if (!identity) {
             throw AUTH_ERRORS.unauthenticated('access_token_invalid');

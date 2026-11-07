@@ -59,7 +59,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
         this.requestLogContext.recordFailure(request, {
             code,
             ...(exception instanceof AppError && exception.reason ? { reason: exception.reason } : {}),
-            // Ex.: "Cannot GET /api/xyz" ou "ThrottlerException: Too Many Requests".
+            // Ex.: "Cannot GET /api/xyz".
             ...(!(exception instanceof AppError) && exception instanceof HttpException && statusCode < 500
                 ? { reason: exception.message }
                 : {}),

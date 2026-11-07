@@ -2,7 +2,7 @@ import * as Joi from 'joi';
 
 import { Service } from '../../tokens';
 import { LOG_FORMATS, LOG_LEVELS, LOG_REQUEST_BODY_MODES } from '../logging/log-settings';
-import { Config } from '../model';
+import { AUTH_COOKIE_SAMESITE_VALUES, Config } from '../model';
 import { parseTrustProxy } from './trust-proxy';
 
 /** Tamanho mínimo do segredo do JWT (HS256 pede pelo menos 256 bits). */
@@ -48,6 +48,9 @@ export const configProvider = {
             DATABASE_URL: Joi.string().uri({ scheme: ['postgresql', 'postgres'] }).required(),
             JWT_SECRET: Joi.string().min(JWT_SECRET_MIN_LENGTH).required(),
             JWT_ISSUER: Joi.string().required(),
+            AUTH_COOKIE_NAME: Joi.string().empty('').default('refresh_token').pattern(/^[A-Za-z0-9_-]+$/),
+            AUTH_COOKIE_SAMESITE: Joi.string().empty('').default('strict').valid(...AUTH_COOKIE_SAMESITE_VALUES),
+            AUTH_COOKIE_DOMAIN: Joi.string().empty('').pattern(/^\.?(?:[a-z0-9-]+\.)*[a-z0-9-]+$/i).optional(),
             LOG_LEVEL: Joi.string().empty('').valid(...LOG_LEVELS).optional(),
             LOG_FORMAT: Joi.string().empty('').valid(...LOG_FORMATS).optional(),
             LOG_REQUEST_BODY: Joi.string().empty('').valid(...LOG_REQUEST_BODY_MODES).optional(),

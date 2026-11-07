@@ -11,7 +11,7 @@ com o líquido de cada pessoa. O front-end fica em [golduck-front](https://githu
 | Framework | [NestJS 12](https://nestjs.com) sobre [Fastify 5](https://fastify.dev) |
 | Banco | PostgreSQL 18 + [Prisma 7](https://www.prisma.io) (migrações versionadas) |
 | Validação | [Joi](https://joi.dev), com mensagens em português |
-| Autenticação | JWT de curta duração + refresh token rotativo; senhas com Argon2id |
+| Autenticação | JWT de curta duração + refresh token rotativo em cookie httpOnly; senhas com Argon2id |
 | Faturas | `csv-parse` (Nubank e C6) e `pdfjs-dist` (Neon, PDF com senha) |
 | Documentação | OpenAPI/Swagger em `/docs` e `/docs-json` |
 | Testes | Jest em modo ESM (ts-jest) |
@@ -21,7 +21,7 @@ com o líquido de cada pessoa. O front-end fica em [golduck-front](https://githu
 
 | Módulo | Rotas | Para quê |
 | --- | --- | --- |
-| `auth` | `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/me` | login, renovação e encerramento da sessão; usuário logado |
+| `auth` | `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/me` | login, renovação (pelo cookie) e encerramento da sessão; usuário logado |
 | `people` | `/people` | pessoas que dividem as contas (ativas e inativas) |
 | `categories` | `/categories` | categorias de despesa; "Outros" é a padrão |
 | `incomes` | `/incomes` | entrada de cada mês (o mesmo valor pode ser lançado em vários meses) |
@@ -46,8 +46,13 @@ Regras principais:
   confirmadas pelos uploads seguintes; apelido, categoria e pessoa sobrevivem aos reenvios.
 - **Líquido por pessoa:** (entrada − compartilhadas − reserva) dividido entre as pessoas ativas, menos as
   despesas individuais de cada uma.
+- **Sessão:** o login devolve o access token (JWT de 15 min, enviado como `Authorization: Bearer`) e grava o
+  refresh token (7 dias, uso único) num cookie httpOnly com `Path=/api/auth`. O `/auth/refresh` não tem corpo:
+  lê o cookie, gira o token e grava o novo; reusar um token antigo encerra a sessão. O `/auth/logout` encerra a
+  sessão do cookie e/ou do Bearer (mesmo vencido), apaga o cookie e sempre responde 204.
 - **Segurança:** headers do Helmet; limite de tentativas por IP no login (5/min) e no refresh (20/min), com
-  `429 TOO_MANY_REQUESTS` e o header `Retry-After`; a configuração é validada na subida (sem `DATABASE_URL`
+  `429 TOO_MANY_REQUESTS` e o header `Retry-After` (`@RateLimit()`); contra CSRF, login, refresh e logout recusam
+  com `403 FORBIDDEN` um header `Origin` que não seja o front (`API_CORS_ORIGINS`) nem a própria API; a configuração é validada na subida (sem `DATABASE_URL`
   válida ou com `JWT_SECRET` abaixo de 32 caracteres, a API nem sobe).
 
 ## Como rodar
@@ -162,16 +167,23 @@ prisma/
 | --- | --- |
 | `APP_ENV` | nome do ambiente (`local`, `develop`, `production`...), nos logs e em `/api/version` |
 | `API_PORT`, `API_PREFIX` | porta e prefixo das rotas (`/api`) |
-| `API_CORS_ORIGINS` | origens liberadas no CORS, separadas por vírgula; vazio desliga |
+| `API_CORS_ORIGINS` | origens do front, separadas por vírgula: liberam o CORS com cookies e são aceitas no login/refresh/logout; vazio desliga o CORS (no local, `http://localhost:4200`) |
 | `SWAGGER_ENABLE` | `1` publica `/docs` e `/docs-json` (e desliga a CSP do Helmet, que bloquearia a interface) |
 | `TRUST_PROXY` | em quais proxies confiar para obter o IP real: vazio/`false` = nenhum, `true` = todos (Vercel), número de saltos ou IPs/CIDRs |
 | `DATABASE_URL` | conexão com o PostgreSQL (obrigatória) |
 | `JWT_SECRET`, `JWT_ISSUER` | assinatura (mínimo de 32 caracteres) e emissor dos tokens |
+| `AUTH_COOKIE_NAME` | nome do cookie do refresh token (padrão `refresh_token`; aqui `golduck_refresh`) |
+| `AUTH_COOKIE_SAMESITE` | `strict` (padrão), `lax` ou `none`: quando o navegador envia o cookie em chamadas de outro site |
+| `AUTH_COOKIE_DOMAIN` | domínio do cookie; vazio (recomendado) = só o endereço exato da API |
 | `LOG_LEVEL` | nível mínimo do log: `error`, `warn`, `info` (padrão) ou `debug` |
 | `LOG_FORMAT` | `pretty` ou `json`; vazio = `pretty` com `APP_ENV=local` e `json` nos demais |
 | `LOG_REQUEST_BODY` | corpo das requisições no log: `off`, `errors` (padrão, só nas que falharam) ou `all` |
 | `SLOW_REQUEST_MS`, `SLOW_QUERY_MS` | a partir de quantos ms a requisição (padrão 1000) / consulta (padrão 500) é lenta |
 | `GIT_COMMIT_SHA` | commit publicado (o deploy preenche; na Vercel também vem em `VERCEL_GIT_COMMIT_SHA`) |
+
+> **Deploy e cookie:** com front e API em domínios `*.vercel.app` diferentes, o navegador trata o cookie como de
+> outro site e o Safari o bloqueia. Em produção, use domínio próprio (API num subdomínio, ex.: `api.golduck.com.br`)
+> ou sirva a API em `/api` no domínio do front.
 
 ## CI/CD e versões
 

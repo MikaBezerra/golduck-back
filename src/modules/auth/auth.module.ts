@@ -7,6 +7,7 @@ import { AuthRepository } from './repository/auth.repository';
 import { AccessTokenService } from './security/access-token.service';
 import { JwtAuthGuard } from './security/jwt-auth.guard';
 import { PasswordService } from './security/password.service';
+import { RefreshCookieService } from './security/refresh-cookie.service';
 import { RefreshTokenService } from './security/refresh-token.service';
 import { RolesGuard } from './security/roles.guard';
 import { AuthService } from './service/auth.service';
@@ -18,6 +19,7 @@ import { AuthService } from './service/auth.service';
         AuthRepository,
         PasswordService,
         RefreshTokenService,
+        RefreshCookieService,
         AccessTokenService,
         AuthService,
         {

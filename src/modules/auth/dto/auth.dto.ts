@@ -11,17 +11,10 @@ export class LoginDto {
     public password!: string;
 }
 
-export class RefreshDto {
-    @ApiProperty({ type: String })
-    public refreshToken!: string;
-}
-
+/** O refresh token não vem no corpo: fica no cookie httpOnly gravado pela própria resposta. */
 export class AuthTokensDto {
-    @ApiProperty({ type: String, description: 'JWT de curta duração, enviado como Authorization: Bearer' })
+    @ApiProperty({ type: String, description: 'JWT de curta duração (15 min), enviado como Authorization: Bearer' })
     public accessToken!: string;
-
-    @ApiProperty({ type: String, description: 'Usado uma única vez em /auth/refresh; cada uso gera um novo' })
-    public refreshToken!: string;
 }
 
 export class AuthUserResponse {

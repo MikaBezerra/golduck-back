@@ -5,9 +5,7 @@ import { AUTH_ERRORS } from '../errors/auth.errors';
 import { AuthRepository } from '../repository/auth.repository';
 import { AccessTokenService } from '../security/access-token.service';
 import { PasswordService } from '../security/password.service';
-import { RefreshTokenService } from '../security/refresh-token.service';
-
-const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+import { REFRESH_TOKEN_TTL_MS, RefreshTokenService } from '../security/refresh-token.service';
 
 export interface AuthTokens {
     readonly accessToken: string;
@@ -95,8 +93,34 @@ export class AuthService {
         };
     }
 
-    public async logout(userId: string, sessionId: string): Promise<void> {
-        await this.repository.revokeSession(sessionId, userId);
+    /**
+     * Encerra a sessão do refresh token (cookie) e a do access token (Bearer), se vierem.
+     * O access token pode estar vencido: a assinatura é conferida, a validade não.
+     * Não falha se não houver sessão a encerrar, para "sair" sempre funcionar no front.
+     */
+    public async logout(credentials: { refreshToken?: string; accessToken?: string }): Promise<void> {
+        const sessions = new Map<string, string>();
+        const parsed = credentials.refreshToken ? this.refreshTokenService.parse(credentials.refreshToken) : null;
+
+        if (parsed) {
+            const session = await this.repository.findSessionById(parsed.sessionId);
+
+            if (session) {
+                sessions.set(session.id, session.userId);
+            }
+        }
+
+        const identity = credentials.accessToken
+            ? this.accessTokenService.verify(credentials.accessToken, { ignoreExpiration: true })
+            : null;
+
+        if (identity) {
+            sessions.set(identity.sessionId, identity.userId);
+        }
+
+        await Promise.all(
+            [...sessions].map(async ([sessionId, userId]) => this.repository.revokeSession(sessionId, userId))
+        );
     }
 
     /** Dados públicos do usuário autenticado; nunca inclui o hash da senha. */

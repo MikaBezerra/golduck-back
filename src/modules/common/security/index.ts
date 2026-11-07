@@ -1,1 +1,2 @@
-export { RateLimit } from './rate-limit.decorator';
+export { RateLimit, RateLimitGuard, RateLimitStore } from './rate-limit.decorator';
+export { isTrustedOrigin, TrustedOrigin, TrustedOriginGuard } from './trusted-origin.guard';

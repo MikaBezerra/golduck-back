@@ -1,11 +1,17 @@
 import type { LogFormat, LogLevel, LogRequestBodyMode } from '../logging/log-settings';
 
+export const AUTH_COOKIE_SAMESITE_VALUES = ['strict', 'lax', 'none'] as const;
+export type AuthCookieSameSite = typeof AUTH_COOKIE_SAMESITE_VALUES[number];
+
 export interface Config {
     /** Nome do ambiente (local, develop, production...): vai nos logs e em GET /version. */
     readonly APP_ENV: string;
     readonly API_PORT: number;
     readonly API_PREFIX: string;
-    /** Origens liberadas no CORS, já separadas. Vazio (ou ausente) mantém o CORS desligado. */
+    /**
+     * Origens do front, já separadas: liberadas no CORS (com cookies) e aceitas nas rotas que mexem
+     * no cookie de sessão. Vazio (ou ausente) mantém o CORS desligado.
+     */
     readonly API_CORS_ORIGINS?: string[];
     /** "1" publica a documentação OpenAPI em /docs e /docs-json. */
     readonly SWAGGER_ENABLE?: '0' | '1';
@@ -17,6 +23,12 @@ export interface Config {
     readonly DATABASE_URL: string;
     readonly JWT_SECRET: string;
     readonly JWT_ISSUER: string;
+    /** Nome do cookie httpOnly que guarda o refresh token. */
+    readonly AUTH_COOKIE_NAME: string;
+    /** strict, lax ou none: quando o navegador envia o cookie em chamadas vindas de outro site. */
+    readonly AUTH_COOKIE_SAMESITE: AuthCookieSameSite;
+    /** Domínio do cookie; vazio = só o endereço exato da API (o mais seguro). */
+    readonly AUTH_COOKIE_DOMAIN?: string;
     /** Nível mínimo do log (padrão info). */
     readonly LOG_LEVEL?: LogLevel;
     /** pretty ou json (padrão: pretty no local, json nos demais ambientes). */

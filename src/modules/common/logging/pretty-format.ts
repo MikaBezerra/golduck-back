@@ -29,7 +29,7 @@ type LogInfo = winston.Logform.TransformableInfo;
  * detalhes da validação, corpo (só em falhas) e pilha.
  *
  * [API] 1234 - 07/11 13:15:05  WARN   POST   /api/auth/login  429 +1ms  [3f2a9c1e]
- *     ↳ TOO_MANY_REQUESTS · ThrottlerException: Too Many Requests
+ *     ↳ TOO_MANY_REQUESTS · rate_limit: 5/60s
  */
 export function formatPretty(info: LogInfo): string {
     const time = TIME_FORMAT.format(new Date(String(info.timestamp))).replace(',', '');
