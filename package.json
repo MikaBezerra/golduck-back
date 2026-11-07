@@ -19,10 +19,13 @@
     "typecheck": "prisma generate && tsc --noEmit",
     "test": "prisma generate && node --experimental-vm-modules --disable-warning=ExperimentalWarning node_modules/jest/bin/jest.js --config=jest.json",
     "test:cov": "prisma generate && node --experimental-vm-modules --disable-warning=ExperimentalWarning node_modules/jest/bin/jest.js --config=jest.json --coverage",
+    "db:check": "prisma migrate status && prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code",
+    "verify": "npm run lint:check && npm run typecheck && npm run test:cov && npm run build && npm run db:check",
     "lint": "eslint -c .eslintrc.js --fix --ext .ts src",
     "lint:check": "eslint -c .eslintrc.js --ext .ts src --max-warnings=0",
     "db:migrate:develop": "dotenvx run -f .env.develop -- prisma migrate deploy",
-    "db:migrate:production": "dotenvx run -f .env.production -- prisma migrate deploy"
+    "db:migrate:production": "dotenvx run -f .env.production -- prisma migrate deploy",
+    "prepare": "husky"
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^2.38.2",
@@ -50,6 +53,8 @@
     "winston": "^3.19.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
     "@inquirer/prompts": "^8.7.4",
     "@nestjs/testing": "^12.2.0",
     "@types/jest": "^30.0.0",
@@ -62,6 +67,7 @@
     "eslint": "^8.56.0",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-prefer-arrow": "^1.2.3",
+    "husky": "^9.1.7",
     "jest": "^30.5.2",
     "prisma": "^7.10.1",
     "rimraf": "^6.1.3",
