@@ -64,7 +64,7 @@ export class SummaryNetByPersonDto {
     @ApiProperty({ type: String })
     public name!: string;
 
-    @ApiProperty({ ...MONEY_PROPERTY, description: '(entrada − compartilhadas) dividido entre as pessoas ativas' })
+    @ApiProperty({ ...MONEY_PROPERTY, description: '(entrada − compartilhadas − reserva) dividido entre as pessoas ativas' })
     public share!: string;
 
     @ApiProperty({ ...MONEY_PROPERTY, description: 'Despesas individuais da pessoa no mês' })
@@ -79,13 +79,20 @@ export class SummaryTotalsDto {
     @ApiProperty({ ...MONEY_PROPERTY, nullable: true, description: 'null quando não há entrada cadastrada no período' })
     public income!: string | null;
 
-    @ApiProperty({ ...MONEY_PROPERTY, description: 'Despesas fora do cartão + do cartão (sem as excluídas)' })
+    @ApiProperty({
+        ...MONEY_PROPERTY,
+        nullable: true,
+        description: 'Quanto foi guardado; null quando não há reserva no período. Fora de expensesTotal, mas entra no saldo e na divisão'
+    })
+    public reserve!: string | null;
+
+    @ApiProperty({ ...MONEY_PROPERTY, description: 'Despesas fora do cartão + do cartão (sem as excluídas e sem a reserva)' })
     public expensesTotal!: string;
 
     @ApiProperty({ type: Number })
     public expensesCount!: number;
 
-    @ApiProperty({ ...MONEY_PROPERTY, description: 'entrada (ou 0) − despesas; pode ser negativo' })
+    @ApiProperty({ ...MONEY_PROPERTY, description: 'entrada (ou 0) − despesas − reserva; pode ser negativo' })
     public balance!: string;
 
     @ApiProperty({ type: () => SummaryBySourceDto })
@@ -121,13 +128,16 @@ export class SummaryMonthDto {
     @ApiProperty({ ...MONEY_PROPERTY, nullable: true, description: 'null quando não há entrada cadastrada no mês' })
     public income!: string | null;
 
+    @ApiProperty({ ...MONEY_PROPERTY, nullable: true, description: 'null quando não há reserva cadastrada no mês' })
+    public reserve!: string | null;
+
     @ApiProperty(MONEY_PROPERTY)
     public expensesTotal!: string;
 
     @ApiProperty({ type: Number })
     public expensesCount!: number;
 
-    @ApiProperty({ ...MONEY_PROPERTY, description: 'entrada (ou 0) − despesas; pode ser negativo' })
+    @ApiProperty({ ...MONEY_PROPERTY, description: 'entrada (ou 0) − despesas − reserva; pode ser negativo' })
     public balance!: string;
 }
 

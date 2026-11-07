@@ -16,16 +16,17 @@ export class SummaryRepository {
     public constructor(private readonly prisma: PrismaService) { }
 
     /**
-     * Entrada e despesas agrupadas de cada mês, a partir de start, na ordem dos meses.
-     * Despesas do cartão excluídas não entram.
+     * Entrada, reserva e despesas agrupadas de cada mês, a partir de start, na ordem dos
+     * meses. Despesas do cartão excluídas não entram.
      */
     public async loadMonths(start: Date, count: number): Promise<MonthGroups[]> {
         const range = { gte: start, lt: addMonths(start, count) };
         const manualWhere = { month: range };
         const cardWhere = { month: range, excludedAt: null };
         const aggregates = { _sum: { amountCents: true }, _count: { _all: true } } as const;
-        const [incomes, manualByCategory, manualByPerson, cardByCategory, cardByPerson] = await Promise.all([
+        const [incomes, reserves, manualByCategory, manualByPerson, cardByCategory, cardByPerson] = await Promise.all([
             this.prisma.monthlyIncome.findMany({ where: { month: range }, select: { month: true, amountCents: true } }),
+            this.prisma.monthlyReserve.findMany({ where: { month: range }, select: { month: true, amountCents: true } }),
             this.prisma.manualExpense.groupBy({ by: ['month', 'categoryId'], where: manualWhere, ...aggregates }),
             this.prisma.manualExpense.groupBy({ by: ['month', 'personId'], where: manualWhere, ...aggregates }),
             this.prisma.cardExpense.groupBy({ by: ['month', 'categoryId'], where: cardWhere, ...aggregates }),
@@ -34,6 +35,7 @@ export class SummaryRepository {
         const months = Array.from({ length: count }, (_, index) => formatMonth(addMonths(start, index)));
         const byMonth = new Map<string, MonthGroups>(months.map(month => [month, {
             incomeCents: null,
+            reserveCents: null,
             manualByCategory: [],
             manualByPerson: [],
             cardByCategory: [],
@@ -43,6 +45,10 @@ export class SummaryRepository {
 
         for (const income of incomes) {
             bucket(income).incomeCents = income.amountCents;
+        }
+
+        for (const reserve of reserves) {
+            bucket(reserve).reserveCents = reserve.amountCents;
         }
 
         manualByCategory.forEach(row => bucket(row).manualByCategory.push(toGroup(row.categoryId, row)));

@@ -1,11 +1,14 @@
 /*
  * Contas do resumo mensal, todas em centavos (bigint) e sem banco de dados.
  *
- * Líquido individual: (E − C) / k − Dₚ, em que E é a entrada do mês, C o total das
- * despesas compartilhadas, k o número de pessoas ativas e Dₚ as despesas individuais
- * da pessoa. Quando E − C não divide exatamente por k, os centavos que sobram vão,
- * um a um, para as primeiras pessoas em ordem alfabética: a soma das partes é sempre
- * igual a E − C.
+ * A reserva do mês (R, quanto foi guardado) é tratada como um gasto compartilhado,
+ * mas fica separada das despesas: saldo = E − despesas − R.
+ *
+ * Líquido individual: (E − C − R) / k − Dₚ, em que E é a entrada do mês, C o total
+ * das despesas compartilhadas, k o número de pessoas ativas e Dₚ as despesas
+ * individuais da pessoa. Quando E − C − R não divide exatamente por k, os centavos
+ * que sobram vão, um a um, para as primeiras pessoas em ordem alfabética: a soma das
+ * partes é sempre igual a E − C − R.
  */
 
 export type AmountGroup = {
@@ -27,9 +30,10 @@ export type ParticipantNet = {
     netCents: bigint;
 };
 
-/** Entrada e despesas de um mês, agrupadas por categoria e por pessoa. */
+/** Entrada, reserva e despesas de um mês, com as despesas agrupadas por categoria e por pessoa. */
 export type MonthGroups = {
     incomeCents: bigint | null;
+    reserveCents: bigint | null;
     manualByCategory: AmountGroup[];
     manualByPerson: AmountGroup[];
     cardByCategory: AmountGroup[];
@@ -45,6 +49,8 @@ export type Total = {
 export type PeriodTotals = {
     /** null quando nenhum mês do período tem entrada cadastrada. */
     incomeCents: bigint | null;
+    /** null quando nenhum mês do período tem reserva cadastrada. */
+    reserveCents: bigint | null;
     manual: Total;
     card: Total;
     expensesCents: bigint;
@@ -62,6 +68,7 @@ export function computeMonth(groups: MonthGroups, participants: Participant[]): 
     const byPerson = mergeGroups(groups.manualByPerson, groups.cardByPerson);
     const expensesCents = manual.amountCents + card.amountCents;
     const incomeCents = groups.incomeCents ?? 0n;
+    const reserveCents = groups.reserveCents ?? 0n;
     const sharedCents = byPerson.find(group => group.key === null)?.amountCents ?? 0n;
     const individualByPerson = new Map(
         byPerson.filter(group => group.key !== null).map(group => [group.key as string, group.amountCents])
@@ -69,14 +76,16 @@ export function computeMonth(groups: MonthGroups, participants: Participant[]): 
 
     return {
         incomeCents: groups.incomeCents,
+        reserveCents: groups.reserveCents,
         manual,
         card,
         expensesCents,
         expensesCount: manual.count + card.count,
-        balanceCents: incomeCents - expensesCents,
+        balanceCents: incomeCents - expensesCents - reserveCents,
         byCategory: mergeGroups(groups.manualByCategory, groups.cardByCategory),
         byPerson,
-        nets: netByParticipant(incomeCents, sharedCents, participants, individualByPerson)
+        // A reserva entra na divisão como mais um gasto compartilhado.
+        nets: netByParticipant(incomeCents, sharedCents + reserveCents, participants, individualByPerson)
     };
 }
 
@@ -85,7 +94,11 @@ export function computeMonth(groups: MonthGroups, participants: Participant[]): 
  * período sempre bater com os meses (inclusive nos centavos distribuídos).
  */
 export function combinePeriods(periods: PeriodTotals[], participants: Participant[]): PeriodTotals {
-    const incomes = periods.map(period => period.incomeCents).filter((income): income is bigint => income !== null);
+    const sumOptional = (pick: (period: PeriodTotals) => bigint | null): bigint | null => {
+        const values = periods.map(pick).filter((value): value is bigint => value !== null);
+
+        return values.length === 0 ? null : values.reduce((total, value) => total + value, 0n);
+    };
     const sum = (pick: (period: PeriodTotals) => bigint): bigint => periods.reduce((total, period) => total + pick(period), 0n);
     const sumTotals = (pick: (period: PeriodTotals) => Total): Total => ({
         amountCents: sum(period => pick(period).amountCents),
@@ -94,7 +107,8 @@ export function combinePeriods(periods: PeriodTotals[], participants: Participan
     const ordered = [...participants].sort(compareParticipants);
 
     return {
-        incomeCents: incomes.length === 0 ? null : incomes.reduce((total, income) => total + income, 0n),
+        incomeCents: sumOptional(period => period.incomeCents),
+        reserveCents: sumOptional(period => period.reserveCents),
         manual: sumTotals(period => period.manual),
         card: sumTotals(period => period.card),
         expensesCents: sum(period => period.expensesCents),

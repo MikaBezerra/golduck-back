@@ -64,6 +64,7 @@ export class SummaryService {
             months: months.map((month, index) => ({
                 month: formatMonth(addMonths(start, index)),
                 income: month.incomeCents === null ? null : formatAmountCents(month.incomeCents),
+                reserve: month.reserveCents === null ? null : formatAmountCents(month.reserveCents),
                 expensesTotal: formatAmountCents(month.expensesCents),
                 expensesCount: month.expensesCount,
                 balance: formatAmountCents(month.balanceCents)
@@ -100,6 +101,7 @@ export class SummaryService {
     private toTotalsResponse(totals: PeriodTotals, lookups: Lookups): SummaryTotalsDto {
         return {
             income: totals.incomeCents === null ? null : formatAmountCents(totals.incomeCents),
+            reserve: totals.reserveCents === null ? null : formatAmountCents(totals.reserveCents),
             expensesTotal: formatAmountCents(totals.expensesCents),
             expensesCount: totals.expensesCount,
             balance: formatAmountCents(totals.balanceCents),

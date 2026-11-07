@@ -9,7 +9,8 @@ import { AnnualSummaryQueryPipe, SummaryQueryPipe } from '../flow/summary.pipe';
 import { SummaryService } from '../service/summary.service';
 
 const RULES = 'Despesas do cartão entram pelo mês da fatura, sem as excluídas. '
-    + 'Líquido individual = (entrada − compartilhadas) / pessoas ativas − despesas individuais.';
+    + 'A reserva do mês fica fora de expensesTotal, mas entra no saldo e na divisão como gasto compartilhado. '
+    + 'Líquido individual = (entrada − compartilhadas − reserva) / pessoas ativas − despesas individuais.';
 
 @ApiTags('summary')
 @ApiBearerAuth()

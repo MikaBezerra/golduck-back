@@ -12,6 +12,7 @@ describe('computeMonth e combinePeriods', () => {
     const people = [{ id: 'b', name: 'Mikaell' }, { id: 'a', name: 'Ayanne' }];
     const month = (overrides: Partial<MonthGroups>): MonthGroups => ({
         incomeCents: null,
+        reserveCents: null,
         manualByCategory: [],
         manualByPerson: [],
         cardByCategory: [],
@@ -57,6 +58,44 @@ describe('computeMonth e combinePeriods', () => {
 
     it('sem entrada em nenhum mês, a entrada do período é null', () => {
         expect(combinePeriods([march, march], people).incomeCents).toBeNull();
+    });
+
+    describe('reserva', () => {
+        // entrada 1000, compartilhadas 300, reserva 101, Mikaell com 100 de individual
+        const withReserve = computeMonth(month({
+            incomeCents: 1000n,
+            reserveCents: 101n,
+            manualByCategory: [{ key: 'casa', amountCents: 400n, count: 2 }],
+            manualByPerson: [{ key: null, amountCents: 300n, count: 1 }, { key: 'b', amountCents: 100n, count: 1 }]
+        }), people);
+
+        it('fica fora das despesas, mas sai do saldo', () => {
+            expect(withReserve).toMatchObject({ reserveCents: 101n, expensesCents: 400n, expensesCount: 2, balanceCents: 499n });
+        });
+
+        it('entra na divisão como gasto compartilhado: (1000 − 300 − 101) / 2, centavo extra para Ayanne', () => {
+            expect(withReserve.nets.map(net => [net.participant.name, net.shareCents, net.individualCents, net.netCents])).toEqual([
+                ['Ayanne', 300n, 0n, 300n],
+                ['Mikaell', 299n, 100n, 199n]
+            ]);
+            expect(withReserve.nets.reduce((sum, net) => sum + net.netCents, 0n)).toBe(withReserve.balanceCents);
+        });
+
+        it('reserva sem entrada deixa saldo e partes negativos', () => {
+            const onlyReserve = computeMonth(month({ reserveCents: 500n }), people);
+
+            expect(onlyReserve.balanceCents).toBe(-500n);
+            expect(onlyReserve.nets.map(net => net.shareCents)).toEqual([-250n, -250n]);
+        });
+
+        it('no período, soma as reservas e é null se nenhum mês tiver reserva', () => {
+            const year = combinePeriods([withReserve, march, computeMonth(month({ reserveCents: 50n }), people)], people);
+
+            expect(year.reserveCents).toBe(151n);
+            expect(year.balanceCents).toBe(499n - 50n);
+            expect(year.nets.map(net => net.netCents)).toEqual([300n - 25n, 199n - 25n]);
+            expect(combinePeriods([march, march], people).reserveCents).toBeNull();
+        });
     });
 });
 
