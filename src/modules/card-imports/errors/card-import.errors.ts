@@ -13,7 +13,9 @@ export const CARD_IMPORT_ERRORS = {
         new AppError('IMPORT_INVALID_FILE_TYPE', HttpStatus.BAD_REQUEST, 'O tipo de arquivo não é aceito para o banco deste cartão', reason),
     invalidManualAmount: (reason?: string): AppError =>
         new AppError('IMPORT_INVALID_AMOUNT', HttpStatus.BAD_REQUEST, 'O valor de cada lançamento deve ser maior que zero e caber em centavos', reason),
-    unsupportedFormat:(reason?: string): AppError =>
+    passwordInvalid: (reason?: string): AppError =>
+        new AppError('IMPORT_FILE_PASSWORD_INVALID', HttpStatus.UNPROCESSABLE_ENTITY, 'O arquivo é protegido: informe a senha correta no campo password', reason),
+    unsupportedFormat: (reason?: string): AppError =>
         new AppError(
             'IMPORT_UNSUPPORTED_FORMAT',
             HttpStatus.UNPROCESSABLE_ENTITY,

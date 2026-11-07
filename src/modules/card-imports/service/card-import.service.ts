@@ -21,6 +21,7 @@ import {
     CardStatementParseResult,
     CardStatementParser,
     CardStatementParseInput,
+    CardStatementPasswordError,
     normalizeDescription,
     ParsedCardTransaction
 } from '../parsers/card-statement.parser';
@@ -168,6 +169,10 @@ export class CardImportService {
         } catch (error: unknown) {
             if (error instanceof CardStatementFormatError) {
                 throw CARD_IMPORT_ERRORS.unsupportedFormat(`${parser.version}:${error.reason}`);
+            }
+
+            if (error instanceof CardStatementPasswordError) {
+                throw CARD_IMPORT_ERRORS.passwordInvalid(error.reason);
             }
 
             throw error;

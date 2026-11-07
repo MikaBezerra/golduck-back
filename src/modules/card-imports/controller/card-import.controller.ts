@@ -39,10 +39,10 @@ export class CardImportController {
 
     /**
      * multipart/form-data com os campos:
-     * - file: arquivo da fatura (.csv para Nubank e C6);
+     * - file: arquivo da fatura (.csv para Nubank e C6, .pdf para Neon);
      * - cardId: UUID do cartão;
      * - month: mês da fatura, AAAA-MM;
-     * - password: opcional, para arquivos protegidos.
+     * - password: senha do PDF protegido (Neon); não é gravada.
      */
     @Post()
     public async create(@Req() request: FastifyRequest): Promise<CardImportResultResponse> {

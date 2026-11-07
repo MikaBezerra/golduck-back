@@ -157,6 +157,7 @@ model CardExpense {
 enum CardBank {
   NUBANK
   C6
+  NEON
 }
 
 enum Role {
