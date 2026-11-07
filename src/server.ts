@@ -4,9 +4,10 @@ import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify
 
 import { ApplicationModule } from './modules/app.module';
 import { MAX_STATEMENT_FILE_BYTES } from './modules/card-imports/flow/multipart-upload';
-import { CommonModule, LoggerService } from './modules/common';
+import { CommonModule, Config, LoggerService } from './modules/common';
 import { RequestLogContext } from './modules/common/logging/request-log.context';
 import { registerRequestLogging } from './modules/common/logging/request-logging';
+import { Service } from './modules/tokens';
 
 /**
  * These are API defaults that can be changed using environment variables,
@@ -34,6 +35,18 @@ async function bootstrap(): Promise<void> {
     await app.register(fastifyMultipart, {
         limits: { files: 1, fileSize: MAX_STATEMENT_FILE_BYTES }
     });
+
+    // CORS só é ligado quando API_CORS_ORIGINS tem origens (em desenvolvimento o front usa proxy).
+    const corsOrigins = app.get<Config>(Service.CONFIG).API_CORS_ORIGINS ?? [];
+
+    if (corsOrigins.length > 0) {
+        app.enableCors({
+            origin: corsOrigins,
+            // O padrão do @fastify/cors libera só GET, HEAD e POST.
+            methods: ['GET', 'HEAD', 'POST', 'PATCH', 'DELETE'],
+            exposedHeaders: ['x-request-id']
+        });
+    }
 
     app.setGlobalPrefix(process.env.API_PREFIX || API_DEFAULT_PREFIX);
 

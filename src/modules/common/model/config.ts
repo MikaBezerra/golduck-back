@@ -4,6 +4,8 @@ export interface Config {
 
     readonly API_PREFIX: string;
 
+    /** Origens liberadas no CORS, já separadas. Vazio (ou ausente) mantém o CORS desligado. */
+    readonly API_CORS_ORIGINS?: string[];
 
     readonly JWT_SECRET: string;
 
