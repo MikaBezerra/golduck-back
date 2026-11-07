@@ -1,3 +1,5 @@
+import { Injectable } from '@nestjs/common';
+
 import { CardBank } from '../../../generated/prisma/client';
 import {
     CardStatementFormatError,
@@ -23,6 +25,7 @@ const INSTALLMENT_SUFFIX = /^(.*\S)\s+-\s+Parcela\s+(\d{1,2}\/\d{1,2})$/;
  *
  * Nas parcelas, a data é a do lançamento na fatura, não a da compra.
  */
+@Injectable()
 export class NubankCsvParser implements CardStatementParser {
     public readonly bank = CardBank.NUBANK;
     public readonly version = 'nubank-csv@1';

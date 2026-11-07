@@ -1,24 +1,31 @@
 {
   "moduleFileExtensions": [
     "ts",
-    "tsx",
     "js",
+    "mjs",
     "json"
   ],
+  "extensionsToTreatAsEsm": [
+    ".ts"
+  ],
   "transform": {
-    "^.+\\.tsx?$": "ts-jest"
+    "^.+\\.ts$": [
+      "ts-jest",
+      {
+        "useESM": true,
+        "tsconfig": "tsconfig.spec.json"
+      }
+    ]
   },
-  "testRegex": "/src/.*\\.(test|spec).(ts|tsx|js)$",
+  "testEnvironment": "node",
+  "testRegex": "/src/.*\\.(test|spec)\\.ts$",
   "collectCoverageFrom": [
-    "src/**/*.{js,jsx,tsx,ts}",
-    "!**/node_modules/**",
-    "!**/vendor/**"
+    "src/**/*.ts",
+    "!src/generated/**",
+    "!**/node_modules/**"
   ],
   "coverageReporters": [
     "json",
     "lcov"
-  ],
-  "testEnvironmentOptions": {
-    "url": "http://localhost"
-  }
+  ]
 }

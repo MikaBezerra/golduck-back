@@ -22,6 +22,12 @@ module.exports = {
     "ignorePatterns": ["src/generated/**"],
     "overrides": [
         {
+            "files": ["**/*.spec.ts"],
+            "rules": {
+                "import/no-extraneous-dependencies": ["error", { "devDependencies": true }]
+            }
+        },
+        {
             "files": ["scripts/**/*.ts"],
             "rules": {
                 "import/no-extraneous-dependencies": ["error", { "devDependencies": true }],

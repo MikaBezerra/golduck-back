@@ -14,7 +14,7 @@
     "dev": "prisma generate && env-cmd -f .env -- node --watch -r ts-node/register/transpile-only src/server.ts",
     "admin:create": "prisma generate && env-cmd -f .env tsx scripts/create-admin.ts",
     "build": "prisma generate && npm run clean && tsc",
-    "test": "prisma generate && env-cmd -f .env jest --config=jest.json",
+    "test": "prisma generate && env-cmd -f .env -- node --experimental-vm-modules --disable-warning=ExperimentalWarning node_modules/jest/bin/jest.js --config=jest.json",
     "lint": "eslint -c .eslintrc.js --fix --ext .ts src"
   },
   "dependencies": {

@@ -1,3 +1,5 @@
+import { Injectable } from '@nestjs/common';
+
 import { CardBank } from '../../../generated/prisma/client';
 import {
     CardStatementFormatError,
@@ -34,6 +36,7 @@ const SINGLE_INSTALLMENT = 'Única';
  * A mesma fatura reúne todos os cartões físicos e virtuais da conta. Compras em
  * dólar já chegam convertidas em "Valor (em R$)". A categoria do banco é ignorada.
  */
+@Injectable()
 export class C6CsvParser implements CardStatementParser {
     public readonly bank = CardBank.C6;
     public readonly version = 'c6-csv@1';

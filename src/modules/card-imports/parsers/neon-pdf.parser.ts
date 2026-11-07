@@ -1,3 +1,5 @@
+import { Injectable } from '@nestjs/common';
+
 import { CardBank } from '../../../generated/prisma/client';
 import {
     CardStatementFormatError,
@@ -33,6 +35,7 @@ const PASSWORD_REQUIRED = 1;
  *
  * A data não traz o ano; ele é deduzido a partir do mês da fatura.
  */
+@Injectable()
 export class NeonPdfParser implements CardStatementParser {
     public readonly bank = CardBank.NEON;
     public readonly version = 'neon-pdf@1';
