@@ -3,7 +3,8 @@ import { ApiBearerAuth, ApiOperation, ApiProperty, ApiPropertyOptional, ApiTags 
 import { HealthCheckService, PrismaHealthIndicator } from '@nestjs/terminus';
 
 import { Role } from '../../../generated/prisma/enums';
-import { Roles } from '../../auth/security/auth.decorators';
+import { Public, Roles } from '../../auth/security/auth.decorators';
+import { QuietRequestLog } from '../logging/quiet-request-log.decorator';
 import { PrismaService } from '../provider';
 import { ApiDataResponse, ApiErrorResponses } from '../swagger/api-docs';
 
@@ -27,11 +28,14 @@ export class HealthResponse {
     public details!: Record<string, unknown>;
 }
 
+export class LiveResponse {
+    @ApiProperty({ type: String, enum: ['ok'] })
+    public status!: 'ok';
+}
+
 @ApiTags('health')
-@ApiBearerAuth()
 @ApiErrorResponses()
 @Controller('health')
-@Roles(Role.ADMIN)
 export class HealthController {
 
     public constructor(
@@ -41,6 +45,8 @@ export class HealthController {
     ) { }
 
     @Get()
+    @Roles(Role.ADMIN)
+    @ApiBearerAuth()
     @ApiOperation({ summary: 'Estado da API e do banco (somente ADMIN)' })
     @ApiDataResponse(HealthResponse)
     public async healthCheck() {
@@ -54,6 +60,16 @@ export class HealthController {
                 }
             })
         ]);
+    }
+
+    /** Para monitores de disponibilidade: não consulta o banco e não exige login. */
+    @Get('live')
+    @Public()
+    @QuietRequestLog()
+    @ApiOperation({ summary: 'A API está no ar? (público; não consulta o banco)' })
+    @ApiDataResponse(LiveResponse)
+    public live(): LiveResponse {
+        return { status: 'ok' };
     }
 
 }

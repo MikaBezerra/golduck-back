@@ -58,5 +58,6 @@ jobs:
       - name: Build para a Vercel
         run: npx --yes ${{ env.VERCEL_CLI }} build ${{ env.VERCEL_PROD_FLAG }} --token=${{ secrets.VERCEL_TOKEN }}
 
+      # GIT_COMMIT_SHA identifica o commit publicado nos logs e em GET /api/version.
       - name: Publica na Vercel
-        run: npx --yes ${{ env.VERCEL_CLI }} deploy --prebuilt ${{ env.VERCEL_PROD_FLAG }} --token=${{ secrets.VERCEL_TOKEN }}
+        run: npx --yes ${{ env.VERCEL_CLI }} deploy --prebuilt ${{ env.VERCEL_PROD_FLAG }} --env GIT_COMMIT_SHA=${{ github.sha }} --token=${{ secrets.VERCEL_TOKEN }}

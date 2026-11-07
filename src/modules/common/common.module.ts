@@ -3,7 +3,7 @@ import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { TerminusModule } from '@nestjs/terminus';
 import { ThrottlerModule } from '@nestjs/throttler';
 
-import { HealthController } from './controller';
+import { HealthController, VersionController } from './controller';
 import { ApiExceptionFilter } from './http/api-exception.filter';
 import { ApiResponseInterceptor } from './http/api-response.interceptor';
 import { RequestLogContext } from './logging/request-log.context';
@@ -30,7 +30,8 @@ import { configProvider, LoggerService, PrismaService } from './provider';
         PrismaService
     ],
     controllers: [
-        HealthController
+        HealthController,
+        VersionController
     ],
 })
 export class CommonModule {}

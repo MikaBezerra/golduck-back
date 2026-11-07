@@ -31,7 +31,7 @@ com o líquido de cada pessoa. O front-end fica em [golduck-front](https://githu
 | `card-imports` | `/card-imports`, `/card-imports/preview`, `/card-imports/manual` | importação da fatura (CSV/PDF ou digitada), pré-visualização, escolhas do usuário e histórico de uploads |
 | `card-expenses` | `/card-expenses` | despesas do cartão: apelido, categoria, pessoa, exclusão e restauração |
 | `summary` | `/summary`, `/summary/annual` | resumo do mês e do ano: entrada, reserva, despesas, saldo, totais e líquido por pessoa |
-| `common` | `/health` | estado da API e do banco (somente ADMIN) |
+| `common` | `/health`, `/health/live`, `/version` | estado da API e do banco (somente ADMIN); "está no ar?" e versão publicada (públicos) |
 
 Regras principais:
 
@@ -63,6 +63,37 @@ Com `SWAGGER_ENABLE=1` no `.env`, a documentação fica em `http://localhost:300
 (o front gera os tipos da API a partir dele).
 
 O Postgres do Docker usa a porta **5433** para não conflitar com um PostgreSQL instalado direto na máquina.
+
+## Logs
+
+Cada requisição gera **uma linha de log** ao final da resposta; também são registrados a subida da API,
+consultas lentas ao banco e erros fora de requisição.
+
+- **Formato:** `pretty` no local (legível, colorido) e `json` nos ambientes publicados (uma linha por evento),
+  com `service`, `version`, `commit` e `env` em toda linha.
+- **Em cada requisição:** `requestId`, método, rota e caminho, query, status, duração, IP, user agent, usuário
+  (id, e-mail e papel), código e motivo do erro, detalhes da validação, pilha (5xx) e, conforme
+  `LOG_REQUEST_BODY`, o corpo.
+- **Níveis:** 5xx = `error`; 4xx (exceto 401) e requisições lentas (`SLOW_REQUEST_MS`) = `warn`; o resto = `info`.
+  Rotas marcadas com `@QuietRequestLog()` (ex.: `/health/live`) ficam em `debug`.
+- **Privacidade:** senha, tokens, segredos, cookies e `authorization` aparecem como `[oculto]`; textos e listas
+  longos são encurtados (até ~4 KB por valor); uploads nunca são registrados; os parâmetros do SQL ficam de fora.
+- **Correlação:** toda resposta traz `x-request-id` (reaproveita o que o cliente enviar, se for válido) e
+  `x-app-version`; o mesmo id vem no corpo dos erros.
+- **Banco:** consultas acima de `SLOW_QUERY_MS` viram `warn` com o SQL; com `LOG_LEVEL=debug` aparecem todas as
+  consultas e o log interno do Nest.
+- **Processo:** falha na subida, promise rejeitada sem tratamento e exceção não tratada também vão para o log.
+
+```text
+[API] 1234 - 07/11 13:24:06  INFO  API no ar  port=3000  prefix=/api  env=local  version=0.1.0  swagger=/docs
+[API] 1234 - 07/11 13:24:09  WARN   POST   /api/auth/login  400 +4ms  [ca9d9885]
+    ↳ VALIDATION_ERROR
+    ↳ detalhes: [{"field":"email","code":"string.email","message":"email deve conter um e-mail válido"}]
+    ↳ corpo: {"email":"nao-e-email","password":"[oculto]"}
+```
+
+Rotas públicas de status: `GET /api/health/live` (para monitor de disponibilidade; não consulta o banco) e
+`GET /api/version` (nome, versão, commit e ambiente). `GET /api/health`, que consulta o banco, é só para ADMIN.
 
 ## Scripts
 
@@ -116,12 +147,18 @@ prisma/
 
 | Variável | Para quê |
 | --- | --- |
+| `APP_ENV` | nome do ambiente (`local`, `develop`, `production`...), nos logs e em `/api/version` |
 | `API_PORT`, `API_PREFIX` | porta e prefixo das rotas (`/api`) |
 | `API_CORS_ORIGINS` | origens liberadas no CORS, separadas por vírgula; vazio desliga |
 | `SWAGGER_ENABLE` | `1` publica `/docs` e `/docs-json` (e desliga a CSP do Helmet, que bloquearia a interface) |
 | `TRUST_PROXY` | em quais proxies confiar para obter o IP real: vazio/`false` = nenhum, `true` = todos (Vercel), número de saltos ou IPs/CIDRs |
 | `DATABASE_URL` | conexão com o PostgreSQL (obrigatória) |
 | `JWT_SECRET`, `JWT_ISSUER` | assinatura (mínimo de 32 caracteres) e emissor dos tokens |
+| `LOG_LEVEL` | nível mínimo do log: `error`, `warn`, `info` (padrão) ou `debug` |
+| `LOG_FORMAT` | `pretty` ou `json`; vazio = `pretty` com `APP_ENV=local` e `json` nos demais |
+| `LOG_REQUEST_BODY` | corpo das requisições no log: `off`, `errors` (padrão, só nas que falharam) ou `all` |
+| `SLOW_REQUEST_MS`, `SLOW_QUERY_MS` | a partir de quantos ms a requisição (padrão 1000) / consulta (padrão 500) é lenta |
+| `GIT_COMMIT_SHA` | commit publicado (o deploy preenche; na Vercel também vem em `VERCEL_GIT_COMMIT_SHA`) |
 
 ## CI/CD e versões
 

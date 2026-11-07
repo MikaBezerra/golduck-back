@@ -61,7 +61,7 @@ export class ApiErrorDto {
     @ApiProperty({ type: String, example: 'Os dados enviados são inválidos' })
     public message!: string;
 
-    @ApiProperty({ type: String, example: 'req-1', description: 'Também enviado no header x-request-id' })
+    @ApiProperty({ type: String, example: '3f2a9c1e-8b7d-4c2a-9e1f-5a6b7c8d9e0f', description: 'Também enviado no header x-request-id' })
     public requestId!: string;
 
     @ApiPropertyOptional({ type: () => [ApiErrorDetailDto], description: 'Presente em erros de validação' })

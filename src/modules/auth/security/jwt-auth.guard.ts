@@ -14,6 +14,8 @@ import { IS_PUBLIC_KEY } from './auth.decorators';
 
 export interface AuthenticatedIdentity {
     readonly userId: string;
+    /** Vai para o log de cada requisição, para saber quem fez o quê. */
+    readonly email: string;
     readonly sessionId: string;
     readonly role: Role;
 }
@@ -75,6 +77,7 @@ export class JwtAuthGuard implements CanActivate {
 
         request.auth = {
             userId: user.id,
+            email: user.email,
             sessionId: session.id,
             role: user.role
         };

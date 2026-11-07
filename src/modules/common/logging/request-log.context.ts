@@ -4,6 +4,8 @@ import type { FastifyRequest } from 'fastify';
 export interface RequestFailure {
     readonly code: string;
     readonly reason?: string;
+    /** Detalhes da validação (campos rejeitados e por quê). */
+    readonly details?: unknown;
     readonly errorName?: string;
     readonly errorMessage?: string;
     readonly stack?: string;
