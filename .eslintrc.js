@@ -22,7 +22,7 @@ module.exports = {
     "ignorePatterns": ["src/generated/**"],
     "overrides": [
         {
-            "files": ["**/*.spec.ts"],
+            "files": ["**/*.spec.ts", "src/**/spec/**/*.ts", "src/testing/**/*.ts"],
             "rules": {
                 "import/no-extraneous-dependencies": ["error", { "devDependencies": true }]
             }

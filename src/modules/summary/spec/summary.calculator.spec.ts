@@ -167,3 +167,67 @@ describe('compareByAmountThenName', () => {
         expect([...items].sort(compareByAmountThenName).map(item => item.name)).toEqual(['Zeca', 'Ana', 'Bruno', null]);
     });
 });
+
+describe('compareByAmountThenName (comparações diretas)', () => {
+    const item = (amountCents: bigint, name: string | null): { amountCents: bigint; name: string | null } => ({ amountCents, name });
+
+    it('valor maior vem antes, independentemente do nome', () => {
+        expect(compareByAmountThenName(item(200n, 'Zeca'), item(100n, 'Ana'))).toBe(-1);
+        expect(compareByAmountThenName(item(100n, 'Ana'), item(200n, 'Zeca'))).toBe(1);
+        expect(compareByAmountThenName(item(200n, null), item(100n, 'Ana'))).toBe(-1);
+    });
+
+    it('mesmo valor: ordem alfabética nos dois sentidos e zero para o mesmo nome', () => {
+        expect(compareByAmountThenName(item(100n, 'Ana'), item(100n, 'Bruno'))).toBeLessThan(0);
+        expect(compareByAmountThenName(item(100n, 'Zeca'), item(100n, 'Ana'))).toBeGreaterThan(0);
+        expect(compareByAmountThenName(item(100n, 'Ana'), item(100n, 'Ana'))).toBe(0);
+    });
+
+    it('mesmo valor: sem nome (null) fica depois de qualquer nome, e dois null empatam', () => {
+        expect(compareByAmountThenName(item(100n, null), item(100n, 'Ana'))).toBe(1);
+        expect(compareByAmountThenName(item(100n, 'Zeca'), item(100n, null))).toBe(-1);
+        expect(compareByAmountThenName(item(100n, 'Ana'), item(100n, null))).toBe(-1);
+        expect(compareByAmountThenName(item(100n, null), item(100n, null))).toBe(0);
+    });
+
+    it('lista já ordenada continua na mesma ordem', () => {
+        const items = [item(100n, 'Ana'), item(100n, 'Bruno'), item(100n, null)];
+
+        expect([...items].sort(compareByAmountThenName).map(sorted => sorted.name)).toEqual(['Ana', 'Bruno', null]);
+    });
+});
+
+describe('ordem das pessoas na divisão', () => {
+    it('segue o nome (não o id) e, com nomes iguais, desempata pelo id', () => {
+        const people = [
+            { id: 'a', name: 'Zeca' },
+            { id: 'z', name: 'Ana' },
+            { id: 'b', name: 'Ana' }
+        ];
+
+        // 5 centavos para 3 pessoas: os 2 que sobram vão para as duas primeiras.
+        const result = netByParticipant(5n, 0n, people, new Map());
+
+        expect(result.map(net => [net.participant.id, net.shareCents])).toEqual([
+            ['b', 2n],
+            ['z', 2n],
+            ['a', 1n]
+        ]);
+    });
+
+    it('combinePeriods lista as pessoas na mesma ordem', () => {
+        const people = [{ id: 'a', name: 'Zeca' }, { id: 'z', name: 'Ana' }];
+        const empty: MonthGroups = {
+            incomeCents: null,
+            reserveCents: null,
+            manualByCategory: [],
+            manualByPerson: [],
+            cardByCategory: [],
+            cardByPerson: []
+        };
+        const period = combinePeriods([computeMonth(empty, people)], people);
+
+        expect(period.nets.map(net => net.participant.name)).toEqual(['Ana', 'Zeca']);
+        expect(period.manual).toEqual({ amountCents: 0n, count: 0 });
+    });
+});

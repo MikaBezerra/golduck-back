@@ -19,10 +19,19 @@
   },
   "testEnvironment": "node",
   "testRegex": "/src/.*\\.(test|spec)\\.ts$",
+  "testPathIgnorePatterns": [
+    "/node_modules/",
+    "/\\.stryker-tmp/"
+  ],
+  "modulePathIgnorePatterns": [
+    "<rootDir>/\\.stryker-tmp/"
+  ],
   "collectCoverageFrom": [
     "src/**/*.ts",
     "!src/generated/**",
     "!src/**/*.spec.ts",
+    "!src/**/spec/**",
+    "!src/testing/**",
     "!**/node_modules/**"
   ],
   "coverageReporters": [
@@ -32,10 +41,10 @@
   ],
   "coverageThreshold": {
     "global": {
-      "statements": 2,
-      "branches": 1,
-      "functions": 2,
-      "lines": 2
+      "statements": 96,
+      "branches": 86,
+      "functions": 95,
+      "lines": 96
     },
     "./src/modules/card-imports/service/card-import.planner.ts": {
       "lines": 95,
