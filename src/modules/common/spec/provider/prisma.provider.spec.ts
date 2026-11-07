@@ -2,7 +2,7 @@ import type { LoggerService } from '../../provider/logger.service';
 import { jest } from '@jest/globals';
 
 import { PrismaClient } from '../../../../generated/prisma/client';
-import { PrismaService } from '../../provider/prisma.provider';
+import { databaseSchema, PrismaService } from '../../provider/prisma.provider';
 
 type EventName = 'query' | 'warn' | 'error';
 type Listener = (event: Record<string, unknown>) => void;
@@ -11,7 +11,10 @@ type Listener = (event: Record<string, unknown>) => void;
 interface EngineConfig {
     readonly logLevel?: string;
     readonly logQueries?: boolean;
-    readonly adapter: { readonly config: { readonly connectionString?: string } };
+    readonly adapter: {
+        readonly config: { readonly connectionString?: string };
+        readonly options?: { readonly schema?: string };
+    };
 }
 
 const fakeLogger = () => ({
@@ -63,6 +66,20 @@ describe('PrismaService', () => {
         const service = new PrismaService();
 
         expect(engineConfig(service).adapter.config.connectionString).toBe('postgresql://u:p@banco:5432/golduck');
+    });
+
+    it('sem ?schema= na URL: não indica schema ao adapter (o Prisma usa o public)', () => {
+        const service = new PrismaService();
+
+        expect(engineConfig(service).adapter.options?.schema).toBeUndefined();
+    });
+
+    it('com ?schema= na URL: repassa o schema ao adapter e mantém a URL como veio', () => {
+        process.env.DATABASE_URL = 'postgresql://u:p@ep-x-pooler.neon.tech/golduck?sslmode=require&schema=develop';
+        const service = new PrismaService();
+
+        expect(engineConfig(service).adapter.options?.schema).toBe('develop');
+        expect(engineConfig(service).adapter.config.connectionString).toBe('postgresql://u:p@ep-x-pooler.neon.tech/golduck?sslmode=require&schema=develop');
     });
 
     it('sem logger (scripts): não pede eventos de log ao Prisma nem registra listeners', () => {
@@ -159,5 +176,24 @@ describe('PrismaService', () => {
         jest.spyOn(prototype, '$connect').mockRejectedValue(new Error('ECONNREFUSED'));
 
         await expect(new PrismaService().onModuleInit()).rejects.toThrow('ECONNREFUSED');
+    });
+});
+
+describe('databaseSchema', () => {
+    it('lê o parâmetro schema da URL', () => {
+        expect(databaseSchema('postgresql://u:p@host/db?schema=production')).toBe('production');
+        expect(databaseSchema('postgres://u:p@host:5432/db?sslmode=require&schema=develop')).toBe('develop');
+    });
+
+    it('sem URL, sem o parâmetro ou com o parâmetro vazio: undefined', () => {
+        expect(databaseSchema(undefined)).toBeUndefined();
+        expect(databaseSchema('')).toBeUndefined();
+        expect(databaseSchema('postgresql://u:p@host/db')).toBeUndefined();
+        expect(databaseSchema('postgresql://u:p@host/db?sslmode=require')).toBeUndefined();
+        expect(databaseSchema('postgresql://u:p@host/db?schema=')).toBeUndefined();
+    });
+
+    it('URL inválida: undefined, sem lançar erro (a validação da configuração é quem recusa)', () => {
+        expect(databaseSchema('não é url')).toBeUndefined();
     });
 });

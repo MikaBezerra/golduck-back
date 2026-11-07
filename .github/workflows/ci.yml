@@ -75,7 +75,8 @@ jobs:
           --health-timeout 5s
           --health-retries 12
     env:
-      DATABASE_URL: postgresql://ci:ci@localhost:5432/golduck_ci?schema=public
+      # Schema fora do public, como nos ambientes publicados (develop e production no mesmo banco).
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/golduck_ci?schema=develop
     steps:
       - uses: actions/checkout@v7
 

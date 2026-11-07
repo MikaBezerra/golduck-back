@@ -35,6 +35,26 @@ um `CardImport` (`onDelete: Cascade`: apagar o upload apaga as linhas dele).
   para dar um erro claro, e trata a violação do banco (`P2002`) para o caso de duas requisições
   simultâneas.
 
+## Ambientes publicados (Neon)
+
+Develop e produção ficam no mesmo banco do Neon (projeto `Golduck`, região São Paulo, banco
+`golduck`), cada um no seu schema:
+
+| Schema | Usuário (dono do schema) | Usado por |
+| --- | --- | --- |
+| `develop` | `golduck_develop` | API e migrações do ambiente develop |
+| `production` | `golduck_production` | API e migrações de produção |
+
+- Os dois usuários foram criados por SQL (não pela tela *Roles* do Neon), para não entrarem no grupo
+  `neon_superuser`: cada um só enxerga o próprio schema. O `public` fica vazio e nenhum dos dois cria
+  nada nele. O `golduck_owner` é o administrador e não é usado pelas aplicações.
+- O schema vem do `?schema=` da URL. O adapter do Postgres ignora esse parâmetro, então o
+  `PrismaService` o lê e repassa ao adapter (`databaseSchema` em `common/provider/prisma.provider.ts`);
+  o `prisma migrate` já o respeita sozinho.
+- A API usa o endereço com pooler (`DATABASE_URL`, host com `-pooler`); as migrações usam a conexão
+  direta (`DATABASE_DIRECT_URL`), porque a trava do `prisma migrate` não funciona pelo pooler
+  ([ambiente-e-configuracao.md](ambiente-e-configuracao.md)).
+
 ## Migrações
 
 ```sh

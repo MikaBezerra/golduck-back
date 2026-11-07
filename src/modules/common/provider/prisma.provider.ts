@@ -9,6 +9,23 @@ import { LoggerService } from './logger.service';
 /** Tamanho máximo do SQL registrado numa consulta lenta. */
 const MAX_LOGGED_QUERY_LENGTH = 1000;
 
+/**
+ * Schema do Postgres indicado em `?schema=` na URL do banco (ex.: `develop`, `production`).
+ * O adapter do Postgres ignora esse parâmetro da URL; por isso ele é lido aqui e repassado ao adapter.
+ * Sem o parâmetro (ou com URL inválida, que a validação da configuração já recusa), o Prisma usa o `public`.
+ */
+export const databaseSchema = (url: string | undefined): string | undefined => {
+    if (!url) {
+        return undefined;
+    }
+
+    try {
+        return new URL(url).searchParams.get('schema') || undefined;
+    } catch {
+        return undefined;
+    }
+};
+
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
 
@@ -18,9 +35,10 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
      */
     public constructor(@Optional() logger?: LoggerService) {
         super({
-            adapter: new PrismaPg({
-                connectionString: process.env.DATABASE_URL
-            }),
+            adapter: new PrismaPg(
+                { connectionString: process.env.DATABASE_URL },
+                { schema: databaseSchema(process.env.DATABASE_URL) }
+            ),
             log: logger
                 ? [
                     { emit: 'event', level: 'query' },

@@ -46,8 +46,8 @@ npm run dev                     # http://localhost:3000/api
 | --- | --- | --- |
 | `.env` | desenvolvimento local, sem criptografia (copie do `.env.example`) | não |
 | `.env.example` | modelo do `.env`, com valores de exemplo | sim |
-| `.env.develop` | ambiente develop; `DATABASE_URL` e `JWT_SECRET` criptografados | sim |
-| `.env.production` | produção; `DATABASE_URL` e `JWT_SECRET` criptografados | sim |
+| `.env.develop` | ambiente develop; `DATABASE_URL`, `DATABASE_DIRECT_URL` e `JWT_SECRET` criptografados | sim |
+| `.env.production` | produção; `DATABASE_URL`, `DATABASE_DIRECT_URL` e `JWT_SECRET` criptografados | sim |
 | `.env.keys` | chaves privadas (`DOTENV_PRIVATE_KEY_DEVELOP` e `..._PRODUCTION`) | **nunca** |
 
 - Guarde uma cópia segura do `.env.keys`: sem ele não é possível ler os valores criptografados.
@@ -70,7 +70,8 @@ de 32 caracteres, a API nem sobe.
 | `API_CORS_ORIGINS` | origens do front, separadas por vírgula: liberam o CORS com cookies e são aceitas no login/refresh/logout; vazio desliga o CORS (no local, `http://localhost:4200`) |
 | `SWAGGER_ENABLE` | `1` publica `/docs` e `/docs-json` (e desliga a CSP do Helmet, que bloquearia a interface) |
 | `TRUST_PROXY` | em quais proxies confiar para obter o IP real: vazio/`false` = nenhum, `true` = todos (Vercel), número de saltos ou IPs/CIDRs |
-| `DATABASE_URL` | conexão com o PostgreSQL (obrigatória) |
+| `DATABASE_URL` | conexão com o PostgreSQL (obrigatória); `?schema=` escolhe o schema (`public` se ausente). No Neon, é o endereço com pooler |
+| `DATABASE_DIRECT_URL` | conexão direta, usada só pelas migrações (`prisma.config.ts`); a API não lê. No Neon, o mesmo endereço sem o `-pooler`. Vazia: as migrações usam a `DATABASE_URL` |
 | `JWT_SECRET`, `JWT_ISSUER` | assinatura (mínimo de 32 caracteres) e emissor dos tokens |
 | `AUTH_COOKIE_NAME` | nome do cookie do refresh token (padrão `refresh_token`; aqui `golduck_refresh`) |
 | `AUTH_COOKIE_SAMESITE` | `strict` (padrão), `lax` ou `none`: quando o navegador envia o cookie em chamadas de outro site |
