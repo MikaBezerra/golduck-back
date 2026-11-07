@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
+import { AuthUserResponse } from '../dto/auth.dto';
 import { AUTH_ERRORS } from '../errors/auth.errors';
 import { AuthRepository } from '../repository/auth.repository';
 import { AccessTokenService } from '../security/access-token.service';
@@ -96,5 +97,20 @@ export class AuthService {
 
     public async logout(userId: string, sessionId: string): Promise<void> {
         await this.repository.revokeSession(sessionId, userId);
+    }
+
+    /** Dados públicos do usuário autenticado; nunca inclui o hash da senha. */
+    public async me(userId: string): Promise<AuthUserResponse> {
+        const user = await this.repository.findByUserId(userId);
+
+        if (!user || !user.active) {
+            throw AUTH_ERRORS.unauthenticated('user_missing_or_inactive');
+        }
+
+        return {
+            id: user.id,
+            email: user.email,
+            role: user.role
+        };
     }
 }

@@ -2,6 +2,7 @@ import type { AuthenticatedRequest } from '../security/jwt-auth.guard';
 import {
     Body,
     Controller,
+    Get,
     HttpCode,
     HttpStatus,
     Post,
@@ -9,7 +10,7 @@ import {
 } from '@nestjs/common';
 
 import { Role } from '../../../generated/prisma/client';
-import { AuthTokensDto, LoginDto, RefreshDto } from '../dto/auth.dto';
+import { AuthTokensDto, AuthUserResponse, LoginDto, RefreshDto } from '../dto/auth.dto';
 import { AUTH_ERRORS } from '../errors/auth.errors';
 import { LoginPipe, RefreshPipe } from '../flow/auth.pipe';
 import { Public, Roles } from '../security/auth.decorators';
@@ -33,6 +34,18 @@ export class AuthController {
     @HttpCode(HttpStatus.OK)
     public async refresh(@Body(RefreshPipe) body: RefreshDto): Promise<AuthTokensDto> {
         return this.authService.newRefresh(body.refreshToken);
+    }
+
+    @Roles(Role.USER)
+    @Get('me')
+    public async me(@Req() request: AuthenticatedRequest): Promise<AuthUserResponse> {
+        const identity = request.auth;
+
+        if (!identity) {
+            throw AUTH_ERRORS.unauthenticated('identity_missing_after_guard');
+        }
+
+        return this.authService.me(identity.userId);
     }
 
     @Roles(Role.USER)
