@@ -1,6 +1,7 @@
 import type { CardExpense, CardImport, Prisma } from '../../../generated/prisma/client';
 import { Injectable } from '@nestjs/common';
 
+import { CardExpenseScope, purchaseScopeWhere } from '../../card-expenses/service/card-expense-scope';
 import { PrismaService } from '../../common';
 import { CardImportPlan } from '../service/card-import.planner';
 
@@ -29,10 +30,19 @@ export type PlanningContext = {
     nextImportedMonth: Date | null;
 };
 
+/** Decisão do usuário sobre a exclusão de uma compra, a partir do mês da fatura. */
+export type PurchaseExclusionDecision = {
+    purchaseKey: string;
+    action: 'exclude' | 'restore';
+    scope: CardExpenseScope;
+    remember: boolean;
+};
+
 export type ApplyCardImportInput = {
     data: NewCardImport;
     purchaseKeys: string[];
     plan: (context: PlanningContext) => CardImportPlan;
+    exclusions?: PurchaseExclusionDecision[];
 };
 
 const IMPORT_TRANSACTION_TIMEOUT_MS = 30_000;
@@ -67,6 +77,22 @@ export class CardImportRepository {
 
             if (plan.creates.length > 0) {
                 await tx.cardExpense.createMany({ data: plan.creates.map(row => ({ ...row, importId })) });
+            }
+
+            // Depois do plano: as decisões alcançam também meses que este upload não grava.
+            for (const decision of input.exclusions ?? []) {
+                const where = purchaseScopeWhere(
+                    { cardId: input.data.cardId, purchaseKey: decision.purchaseKey },
+                    input.data.month,
+                    decision.scope
+                );
+
+                if (decision.action === 'exclude') {
+                    await tx.cardExpense.updateMany({ where: { ...where, excludedAt: null }, data: { excludedAt: new Date() } });
+                    await tx.cardExpense.updateMany({ where, data: { exclusionRemembered: decision.remember } });
+                } else {
+                    await tx.cardExpense.updateMany({ where, data: { excludedAt: null, exclusionRemembered: false } });
+                }
             }
 
             return { cardImport, plan };

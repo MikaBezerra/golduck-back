@@ -30,6 +30,8 @@ function existing(overrides: Partial<ExistingCardExpense> & { purchaseKey: strin
         nickname: null,
         categoryId: DEFAULT_CATEGORY,
         personId: null,
+        excludedAt: null,
+        exclusionRemembered: false,
         ...overrides
     };
 }
@@ -224,6 +226,31 @@ describe('planCardImport', () => {
             ]);
             const untouchedUpdate = result.updates.find(update => update.id === rows[1].id)?.data;
             expect(untouchedUpdate && 'nickname' in untouchedUpdate).toBe(false);
+        });
+
+        it('compra excluída: a atualização não mexe na exclusão e o preview pede decisão', () => {
+            const items = assignPurchaseKeys([transaction({ installmentNumber: 2, installmentTotal: 3 })], november);
+            const key = items[0].purchaseKey;
+            const excludedAt = new Date('2026-11-01T10:00:00Z');
+            const rows = [existing({ purchaseKey: key, month: november, sourceMonth: october, excludedAt })];
+            const result = plan('2026-11', items, rows);
+
+            expect(result.updates[0].data).not.toHaveProperty('excludedAt');
+            expect(result.creates[0]).toMatchObject({ excludedAt, exclusionRemembered: false });
+            expect(result.transactions[0]).toMatchObject({ excluded: true, askExclusion: true });
+        });
+
+        it('com "não perguntar de novo", continua excluída sem pedir decisão', () => {
+            const items = assignPurchaseKeys([transaction({ installmentNumber: 1, installmentTotal: 2 })], december);
+            const rows = [existing({
+                purchaseKey: items[0].purchaseKey,
+                month: november,
+                excludedAt: new Date('2026-11-01T10:00:00Z'),
+                exclusionRemembered: true
+            })];
+            const [item] = plan('2026-12', items, rows).transactions;
+
+            expect(item).toMatchObject({ status: 'new', excluded: true, askExclusion: false });
         });
 
         it('projectedCount respeita o próximo mês com upload próprio', () => {

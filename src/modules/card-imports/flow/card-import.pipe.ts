@@ -1,8 +1,10 @@
 import * as Joi from 'joi';
 
+import { CARD_EXPENSE_SCOPES } from '../../card-expenses/service/card-expense-scope';
 import { JoiValidationPipePtbr } from '../../common';
 import { ValidationError } from '../../common/validation/validation-error';
 import {
+    CardImportExclusionDto,
     CardImportOverrideDto,
     CreateCardImportDto,
     CreateManualCardImportDto,
@@ -41,8 +43,9 @@ export class CreateCardImportPipe extends JoiValidationPipePtbr {
             cardId: idSchema.required(),
             month: monthSchema.required(),
             password: Joi.string().min(1).max(100).optional(),
-            // Texto JSON; o conteúdo é validado por CardImportOverridesPipe.
-            overrides: Joi.string().optional()
+            // Textos JSON; o conteúdo é validado por CardImportOverridesPipe e CardImportExclusionsPipe.
+            overrides: Joi.string().optional(),
+            exclusions: Joi.string().optional()
         }).unknown(false);
     }
 }
@@ -63,15 +66,35 @@ export class CardImportOverridesPipe extends JoiValidationPipePtbr {
     }
 
     public override transform(value: unknown): CardImportOverrideDto[] {
-        let parsed: unknown;
+        return (super.transform({ overrides: parseJsonField(value, 'overrides') }) as { overrides: CardImportOverrideDto[] }).overrides;
+    }
+}
 
-        try {
-            parsed = JSON.parse(String(value));
-        } catch {
-            throw new ValidationError([{ field: 'overrides', code: 'json.invalid', message: 'overrides deve conter um JSON válido' }]);
-        }
+/** Converte o campo exclusions (texto JSON) nas decisões de excluir/restaurar e valida cada item. */
+export class CardImportExclusionsPipe extends JoiValidationPipePtbr {
+    public buildSchema(): Joi.Schema {
+        return Joi.object({
+            exclusions: Joi.array().items(
+                Joi.object<CardImportExclusionDto>({
+                    key: Joi.string().min(1).max(400).required(),
+                    action: Joi.string().valid('exclude', 'restore').required(),
+                    scope: Joi.string().valid(...CARD_EXPENSE_SCOPES).required(),
+                    remember: Joi.boolean().default(false)
+                }).unknown(false)
+            ).max(MAX_MANUAL_TRANSACTIONS).unique('key').required()
+        });
+    }
 
-        return (super.transform({ overrides: parsed }) as { overrides: CardImportOverrideDto[] }).overrides;
+    public override transform(value: unknown): CardImportExclusionDto[] {
+        return (super.transform({ exclusions: parseJsonField(value, 'exclusions') }) as { exclusions: CardImportExclusionDto[] }).exclusions;
+    }
+}
+
+function parseJsonField(value: unknown, field: string): unknown {
+    try {
+        return JSON.parse(String(value));
+    } catch {
+        throw new ValidationError([{ field, code: 'json.invalid', message: `${field} deve conter um JSON válido` }]);
     }
 }
 

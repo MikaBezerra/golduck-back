@@ -92,12 +92,12 @@ model ManualExpense {
 }
 
 model CreditCard {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String   @db.VarChar(120)
+  id        String        @id @default(uuid()) @db.Uuid
+  name      String        @db.VarChar(120)
   bank      CardBank
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+  active    Boolean       @default(true)
+  createdAt DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime      @updatedAt @db.Timestamptz(3)
   imports   CardImport[]
   expenses  CardExpense[]
 
@@ -122,24 +122,28 @@ model CardImport {
 }
 
 model CardExpense {
-  id                  String   @id @default(uuid()) @db.Uuid
-  cardId              String   @db.Uuid
-  importId            String   @db.Uuid
-  month               DateTime @db.Date
-  sourceMonth         DateTime @db.Date
-  purchaseKey         String   @db.VarChar(320)
-  transactionDate     DateTime @db.Date
-  originalDescription String   @db.VarChar(200)
-  holderName          String?  @db.VarChar(120)
-  cardLastDigits      String?  @db.VarChar(4)
-  amountCents         BigInt   @db.BigInt
+  id                  String    @id @default(uuid()) @db.Uuid
+  cardId              String    @db.Uuid
+  importId            String    @db.Uuid
+  month               DateTime  @db.Date
+  sourceMonth         DateTime  @db.Date
+  purchaseKey         String    @db.VarChar(320)
+  transactionDate     DateTime  @db.Date
+  originalDescription String    @db.VarChar(200)
+  holderName          String?   @db.VarChar(120)
+  cardLastDigits      String?   @db.VarChar(4)
+  amountCents         BigInt    @db.BigInt
   installmentNumber   Int?
   installmentTotal    Int?
-  nickname            String?  @db.VarChar(160)
-  categoryId          String   @db.Uuid
-  personId            String?  @db.Uuid
-  createdAt           DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt           DateTime @updatedAt @db.Timestamptz(3)
+  nickname            String?   @db.VarChar(160)
+  categoryId          String    @db.Uuid
+  personId            String?   @db.Uuid
+  /// Exclusão suave: a linha sai das listas e dos totais, e os uploads a mantêm excluída.
+  excludedAt          DateTime? @db.Timestamptz(3)
+  /// "Não perguntar de novo" quando a compra excluída reaparece num upload.
+  exclusionRemembered Boolean   @default(false)
+  createdAt           DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime  @updatedAt @db.Timestamptz(3)
 
   card     CreditCard @relation(fields: [cardId], references: [id], onDelete: Restrict)
   import   CardImport @relation(fields: [importId], references: [id], onDelete: Cascade)

@@ -26,6 +26,7 @@ import { Role } from '../../../generated/prisma/client';
 import { Roles } from '../../auth/security/auth.decorators';
 import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs';
 import {
+    CardImportExclusionDto,
     CardImportOverrideDto,
     CardImportPreviewResponse,
     CardImportResponse,
@@ -37,6 +38,7 @@ import {
     ListCardImportsDto
 } from '../dto/card-import.dto';
 import {
+    CardImportExclusionsPipe,
     CardImportIdPipe,
     CardImportOverridesPipe,
     CreateCardImportPipe,
@@ -56,6 +58,7 @@ const ABSOLUTE_MONTH_NOTE = 'O resultado é absoluto para o mês da fatura: subs
 export class CardImportController {
     private readonly createPipe = new CreateCardImportPipe();
     private readonly overridesPipe = new CardImportOverridesPipe();
+    private readonly exclusionsPipe = new CardImportExclusionsPipe();
 
     public constructor(private readonly cardImportService: CardImportService) { }
 
@@ -65,27 +68,29 @@ export class CardImportController {
      * - cardId: UUID do cartão;
      * - month: mês da fatura, AAAA-MM;
      * - password: senha do PDF protegido (Neon); não é gravada;
-     * - overrides: opcional, JSON com as escolhas feitas na pré-visualização.
+     * - overrides: opcional, JSON com as escolhas feitas na pré-visualização;
+     * - exclusions: opcional, JSON com as decisões de excluir/restaurar compras.
      */
     @Post()
     @ApiOperation({
         summary: 'Importa a fatura enviada pelo banco do cartão',
-        description: `${ABSOLUTE_MONTH_NOTE  } O campo opcional overrides (JSON) aplica as escolhas feitas na pré-visualização.`
+        description: `${ABSOLUTE_MONTH_NOTE} Os campos opcionais overrides e exclusions (JSON) aplicam as escolhas feitas na pré-visualização.`
     })
     @ApiConsumes('multipart/form-data')
-    @ApiExtraModels(CardImportOverrideDto)
+    @ApiExtraModels(CardImportOverrideDto, CardImportExclusionDto)
     @ApiBody({ type: CardImportSaveUploadDto })
     @ApiDataResponse(CardImportResultResponse, { status: HttpStatus.CREATED })
     public async create(@Req() request: FastifyRequest): Promise<CardImportResultResponse> {
         const upload = await readStatementUpload(request);
         const fields = this.createPipe.transform(upload.fields) as CreateCardImportDto;
         const overrides = fields.overrides === undefined ? [] : this.overridesPipe.transform(fields.overrides);
+        const exclusions = fields.exclusions === undefined ? [] : this.exclusionsPipe.transform(fields.exclusions);
 
-        return this.cardImportService.create(fields, upload.file, overrides);
+        return this.cardImportService.create(fields, upload.file, overrides, exclusions);
     }
 
     /**
-     * Mesmo formulário do upload (o campo overrides, se vier, é ignorado), mas não grava nada: devolve o que o upload faria,
+     * Mesmo formulário do upload (overrides e exclusions, se vierem, são ignorados), mas não grava nada: devolve o que o upload faria,
      * para o usuário revisar e escolher apelido, categoria e pessoa antes de salvar.
      */
     @Post('preview')

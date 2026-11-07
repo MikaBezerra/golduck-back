@@ -8,12 +8,12 @@ import { CARD_IMPORT_ERRORS } from '../errors/card-import.errors';
 export const MAX_STATEMENT_FILE_BYTES = 2 * 1024 * 1024;
 
 const FILE_FIELD = 'file';
-const OVERRIDES_FIELD = 'overrides';
+/** Campos JSON com as escolhas do usuário; só eles podem ser grandes. */
+const LARGE_FIELDS = new Set(['overrides', 'exclusions']);
 const MAX_FIELDS = 6;
 /** Limite dos campos de texto comuns (cardId, month, password...). */
 const MAX_FIELD_BYTES = 200;
-/** Só o campo overrides (JSON com as escolhas do usuário) pode ser maior. */
-const MAX_OVERRIDES_BYTES = 256 * 1024;
+const MAX_LARGE_FIELD_BYTES = 256 * 1024;
 
 export type StatementUpload = {
     fields: Record<string, string>;
@@ -40,7 +40,7 @@ export async function readStatementUpload(request: FastifyRequest): Promise<Stat
                 fields: MAX_FIELDS,
                 // O busboy aplica o mesmo limite a todos os campos; o limite menor dos
                 // campos comuns é conferido abaixo, campo a campo.
-                fieldSize: MAX_OVERRIDES_BYTES,
+                fieldSize: MAX_LARGE_FIELD_BYTES,
                 fileSize: MAX_STATEMENT_FILE_BYTES
             }
         });
@@ -53,7 +53,7 @@ export async function readStatementUpload(request: FastifyRequest): Promise<Stat
                     file = { fileName: part.filename, content };
                 }
             } else if (typeof part.value === 'string') {
-                const limit = part.fieldname === OVERRIDES_FIELD ? MAX_OVERRIDES_BYTES : MAX_FIELD_BYTES;
+                const limit = LARGE_FIELDS.has(part.fieldname) ? MAX_LARGE_FIELD_BYTES : MAX_FIELD_BYTES;
 
                 if (part.valueTruncated || Buffer.byteLength(part.value) > limit) {
                     oversized.push({

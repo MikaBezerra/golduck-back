@@ -2,6 +2,7 @@ import type { CardExpense, Prisma } from '../../../generated/prisma/client';
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../common';
+import { CardExpenseScope, purchaseScopeWhere } from '../service/card-expense-scope';
 
 export type CardExpenseChanges = {
     nickname?: string | null;
@@ -20,9 +21,14 @@ const ORDER_BY = [
 export class CardExpenseRepository {
     public constructor(private readonly prisma: PrismaService) { }
 
-    public async findAll(filter: { month: Date; cardId?: string }): Promise<CardExpense[]> {
+    /** Sem includeExcluded, esconde as despesas excluídas. */
+    public async findAll(filter: { month: Date; cardId?: string; includeExcluded: boolean }): Promise<CardExpense[]> {
         return this.prisma.cardExpense.findMany({
-            where: filter,
+            where: {
+                month: filter.month,
+                cardId: filter.cardId,
+                ...(filter.includeExcluded ? {} : { excludedAt: null })
+            },
             orderBy: ORDER_BY
         });
     }
@@ -58,5 +64,44 @@ export class CardExpenseRepository {
 
             return tx.cardExpense.findMany({ where, orderBy: ORDER_BY });
         });
+    }
+
+    /**
+     * Exclui (exclusão suave) as despesas escolhidas e, em compras parceladas, as
+     * parcelas dentro do escopo. A pergunta "manter excluída?" volta a valer.
+     */
+    public async exclude(expenses: CardExpense[], scope: CardExpenseScope): Promise<void> {
+        const where = this.scopeWhere(expenses, scope);
+
+        await this.prisma.$transaction([
+            this.prisma.cardExpense.updateMany({ where: { ...where, excludedAt: null }, data: { excludedAt: new Date() } }),
+            this.prisma.cardExpense.updateMany({ where, data: { exclusionRemembered: false } })
+        ]);
+    }
+
+    /** Desfaz a exclusão no escopo. Devolve as linhas restauradas. */
+    public async restore(expenses: CardExpense[], scope: CardExpenseScope): Promise<CardExpense[]> {
+        const where = this.scopeWhere(expenses, scope);
+
+        return this.prisma.$transaction(async tx => {
+            const restored = await tx.cardExpense.findMany({ where: { ...where, excludedAt: { not: null } }, select: { id: true } });
+            const ids = restored.map(row => row.id);
+
+            await tx.cardExpense.updateMany({
+                where: { id: { in: ids } },
+                data: { excludedAt: null, exclusionRemembered: false }
+            });
+
+            return tx.cardExpense.findMany({ where: { id: { in: ids } }, orderBy: ORDER_BY });
+        });
+    }
+
+    /** Compra à vista afeta só a própria linha; parcelada, as parcelas no escopo. */
+    private scopeWhere(expenses: CardExpense[], scope: CardExpenseScope): Prisma.CardExpenseWhereInput {
+        return {
+            OR: expenses.map(expense => expense.installmentTotal === null
+                ? { id: expense.id }
+                : purchaseScopeWhere(expense, expense.month, scope))
+        };
     }
 }

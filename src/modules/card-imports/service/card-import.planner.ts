@@ -16,6 +16,9 @@ import { addMonths, formatMonth } from '../../common/date/month';
  * 4. Linhas novas herdam apelido, categoria e pessoa de outra parcela da mesma compra.
  * 5. Uma escolha do usuário (override) para uma compra vale para todas as linhas que
  *    o upload grava dela: a do mês e as parcelas projetadas, criadas ou atualizadas.
+ * 6. A exclusão (suave) é mantida nas atualizações e herdada pelas linhas novas, como
+ *    a personalização. Decisões de excluir/restaurar no salvamento são aplicadas pelo
+ *    repositório depois do plano, porque podem alcançar meses que o upload não grava.
  *
  * O plano não conhece o upload (CardImport): o repositório acrescenta o importId ao
  * gravar. Assim o mesmo plano serve para a pré-visualização, que não grava nada.
@@ -30,7 +33,11 @@ export type KeyedTransaction = ParsedCardTransaction & {
 export type ExistingCardExpense = Pick<
     CardExpense,
     'id' | 'month' | 'sourceMonth' | 'purchaseKey' | 'nickname' | 'categoryId' | 'personId'
+    | 'excludedAt' | 'exclusionRemembered'
 >;
+
+/** Estado de exclusão de uma linha. */
+export type CardExpenseExclusionState = Pick<CardExpense, 'excludedAt' | 'exclusionRemembered'>;
 
 /** O que o usuário escolhe para uma despesa: apelido, categoria e pessoa. */
 export type CardExpensePersonalization = {
@@ -56,7 +63,7 @@ export type CardExpenseUpdate = {
     data: CardExpenseBankData & Partial<CardExpensePersonalization>;
 };
 
-export type NewCardExpense = CardExpenseBankData & CardExpensePersonalization & {
+export type NewCardExpense = CardExpenseBankData & CardExpensePersonalization & CardExpenseExclusionState & {
     cardId: string;
     month: Date;
     purchaseKey: string;
@@ -70,6 +77,10 @@ export type PlannedTransaction = {
     suggestion: CardExpensePersonalization;
     /** Parcelas futuras que esta linha lança (criadas ou atualizadas). */
     projectedCount: number;
+    /** A linha do mês fica excluída se o upload for salvo sem decisão. */
+    excluded: boolean;
+    /** Excluída e sem "não perguntar de novo": o front deve perguntar o que fazer. */
+    askExclusion: boolean;
 };
 
 export type CardImportPlan = {
@@ -178,8 +189,13 @@ export function planCardImport(input: PlanCardImportInput): CardImportPlan {
             categoryId: source?.categoryId ?? input.defaultCategoryId,
             personId: source ? source.personId : null
         };
+        const inheritedExclusion: CardExpenseExclusionState = {
+            excludedAt: source?.excludedAt ?? null,
+            exclusionRemembered: source?.exclusionRemembered ?? false
+        };
         const override = input.overrides?.get(transaction.purchaseKey);
         const monthRow = byKeyAndMonth.get(slot(transaction.purchaseKey, month));
+        const monthExclusion = monthRow ?? inheritedExclusion;
         let projectedCount = 0;
 
         for (let offset = 0; offset <= remaining; offset++) {
@@ -212,6 +228,7 @@ export function planCardImport(input: PlanCardImportInput): CardImportPlan {
                 plan.creates.push({
                     ...data,
                     ...(override ?? inherited),
+                    ...inheritedExclusion,
                     cardId: input.cardId,
                     month: targetMonth,
                     purchaseKey: transaction.purchaseKey
@@ -234,7 +251,9 @@ export function planCardImport(input: PlanCardImportInput): CardImportPlan {
             suggestion: monthRow
                 ? { nickname: monthRow.nickname, categoryId: monthRow.categoryId, personId: monthRow.personId }
                 : inherited,
-            projectedCount
+            projectedCount,
+            excluded: monthExclusion.excludedAt !== null,
+            askExclusion: monthExclusion.excludedAt !== null && !monthExclusion.exclusionRemembered
         });
     }
 

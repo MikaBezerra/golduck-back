@@ -10,6 +10,7 @@ import { formatAmountCents, parsePositiveAmountCents } from '../../common/money/
 import { CreditCardService } from '../../credit-cards/service/credit-card.service';
 import { PersonService } from '../../people/service/person.service';
 import {
+    CardImportExclusionDto,
     CardImportOverrideDto,
     CardImportPreviewResponse,
     CardImportResponse,
@@ -29,7 +30,7 @@ import {
     normalizeDescription,
     ParsedCardTransaction
 } from '../parsers/card-statement.parser';
-import { CardImportRepository, CardImportWithCount } from '../repository/card-import.repository';
+import { CardImportRepository, CardImportWithCount, PurchaseExclusionDecision } from '../repository/card-import.repository';
 import { assignPurchaseKeys, CardExpensePersonalization, KeyedTransaction, planCardImport } from './card-import.planner';
 
 export type UploadedStatementFile = {
@@ -73,13 +74,15 @@ export class CardImportService {
     public async create(
         data: CreateCardImportDto,
         file: UploadedStatementFile,
-        overrides: CardImportOverrideDto[] = []
+        overrides: CardImportOverrideDto[] = [],
+        exclusions: CardImportExclusionDto[] = []
     ): Promise<CardImportResultResponse> {
         const { card, month, parsed, source } = await this.prepareUpload(data, file);
         const transactions = assignPurchaseKeys(parsed.transactions, month);
         const choices = await this.resolveOverrides(overrides, transactions);
+        const decisions = this.resolveExclusions(exclusions, transactions);
 
-        return this.applyImport(card, month, transactions, parsed.ignoredCount, source, choices);
+        return this.applyImport(card, month, transactions, parsed.ignoredCount, source, choices, decisions);
     }
 
     /**
@@ -116,7 +119,7 @@ export class CardImportService {
             cardId: card.id,
             month: formatMonth(month),
             fileName: source.fileName,
-            transactions: plan.transactions.map(({ transaction, status, suggestion, projectedCount }) => ({
+            transactions: plan.transactions.map(({ transaction, status, suggestion, projectedCount, excluded, askExclusion }) => ({
                 key: transaction.purchaseKey,
                 status,
                 transactionDate: transaction.transactionDate,
@@ -130,7 +133,9 @@ export class CardImportService {
                 nickname: suggestion.nickname,
                 categoryId: suggestion.categoryId,
                 personId: suggestion.personId,
-                projectedCount
+                projectedCount,
+                excluded,
+                askExclusion
             })),
             removed: removed.map(row => toCardExpenseResponse(row)),
             summary: {
@@ -197,7 +202,8 @@ export class CardImportService {
         transactions: KeyedTransaction[],
         ignoredCount: number,
         source: ImportSource,
-        overrides?: ReadonlyMap<string, CardExpensePersonalization>
+        overrides?: ReadonlyMap<string, CardExpensePersonalization>,
+        exclusions?: PurchaseExclusionDecision[]
     ): Promise<CardImportResultResponse> {
         const defaultCategory = await this.categoryService.findDefault();
         const { cardImport, plan } = await this.cardImportRepository.apply({
@@ -217,7 +223,8 @@ export class CardImportService {
                 nextImportedMonth,
                 defaultCategoryId: defaultCategory.id,
                 overrides
-            })
+            }),
+            exclusions
         });
 
         return {
@@ -268,6 +275,32 @@ export class CardImportService {
             categoryId: override.categoryId,
             personId: override.personId
         }]));
+    }
+
+    /**
+     * Decisões de excluir, manter excluída ou restaurar compras do arquivo. Cada key
+     * precisa estar no arquivo; em compra à vista o escopo é sempre o próprio mês.
+     */
+    private resolveExclusions(
+        exclusions: CardImportExclusionDto[],
+        transactions: KeyedTransaction[]
+    ): PurchaseExclusionDecision[] {
+        const byKey = new Map(transactions.map(transaction => [transaction.purchaseKey, transaction]));
+
+        return exclusions.map(exclusion => {
+            const transaction = byKey.get(exclusion.key);
+
+            if (!transaction) {
+                throw CARD_IMPORT_ERRORS.overrideUnknownKey('exclusion_key_not_in_file');
+            }
+
+            return {
+                purchaseKey: exclusion.key,
+                action: exclusion.action,
+                scope: transaction.installmentTotal === null ? 'month' : exclusion.scope,
+                remember: exclusion.action === 'exclude' && exclusion.remember
+            };
+        });
     }
 
     /** Validações comuns ao upload e à pré-visualização: cartão ativo, tipo do arquivo e leitura. */

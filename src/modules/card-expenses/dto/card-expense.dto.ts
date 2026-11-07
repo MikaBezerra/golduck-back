@@ -7,6 +7,15 @@ import {
     MONTH_PROPERTY,
     UUID_PROPERTY
 } from '../../common/swagger/api-docs';
+import { CARD_EXPENSE_SCOPES, CardExpenseScope } from '../service/card-expense-scope';
+
+export const SCOPE_PROPERTY = {
+    type: String,
+    enum: CARD_EXPENSE_SCOPES,
+    enumName: 'CardExpenseScope',
+    description: 'Parcelas afetadas a partir do mês da linha: month (só ele), forward (ele e os seguintes), '
+        + 'backward (ele e os anteriores), all (todas). Em compra à vista, só a própria linha.'
+};
 
 export class CardInstallmentDto {
     @ApiProperty({ type: Number, minimum: 1, maximum: 99, example: 3 })
@@ -22,6 +31,9 @@ export class ListCardExpensesDto {
 
     @ApiPropertyOptional(UUID_PROPERTY)
     public cardId?: string;
+
+    @ApiPropertyOptional({ type: Boolean, default: false, description: 'Inclui as despesas excluídas' })
+    public includeExcluded!: boolean;
 }
 
 export class CardExpenseChangesDto {
@@ -41,6 +53,14 @@ export class UpdateCardExpensesDto {
 
     @ApiProperty({ type: () => CardExpenseChangesDto, description: 'Pelo menos um campo' })
     public changes!: CardExpenseChangesDto;
+}
+
+export class CardExpenseScopeDto {
+    @ApiProperty({ type: [String], format: 'uuid', minItems: 1, uniqueItems: true })
+    public ids!: string[];
+
+    @ApiProperty(SCOPE_PROPERTY)
+    public scope!: CardExpenseScope;
 }
 
 export class CardExpenseResponse {
@@ -86,6 +106,9 @@ export class CardExpenseResponse {
 
     @ApiProperty({ ...UUID_PROPERTY, nullable: true, description: 'null = compartilhada' })
     public personId!: string | null;
+
+    @ApiProperty({ type: Boolean, description: 'Excluída: fora das listas (salvo includeExcluded) e dos totais' })
+    public excluded!: boolean;
 
     @ApiProperty(DATE_TIME_PROPERTY)
     public createdAt!: Date;

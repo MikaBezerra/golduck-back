@@ -22,6 +22,7 @@ export function toCardExpenseResponse(expense: CardExpense): CardExpenseResponse
             : null,
         categoryId: expense.categoryId,
         personId: expense.personId,
+        excluded: expense.excludedAt !== null,
         createdAt: expense.createdAt,
         updatedAt: expense.updatedAt
     };

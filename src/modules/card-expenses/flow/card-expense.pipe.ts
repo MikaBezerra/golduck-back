@@ -1,7 +1,8 @@
 import * as Joi from 'joi';
 
 import { JoiValidationPipePtbr } from '../../common';
-import { CardExpenseChangesDto, ListCardExpensesDto, UpdateCardExpensesDto } from '../dto/card-expense.dto';
+import { CardExpenseChangesDto, CardExpenseScopeDto, ListCardExpensesDto, UpdateCardExpensesDto } from '../dto/card-expense.dto';
+import { CARD_EXPENSE_SCOPES } from '../service/card-expense-scope';
 
 const monthSchema = Joi.string().pattern(/^[1-9]\d{3}-(0[1-9]|1[0-2])$/).messages({
     'string.pattern.base': 'O mês deve estar no formato AAAA-MM'
@@ -12,7 +13,8 @@ export class ListCardExpensesPipe extends JoiValidationPipePtbr {
     public buildSchema(): Joi.Schema {
         return Joi.object<ListCardExpensesDto>({
             month: monthSchema.required(),
-            cardId: idSchema.optional()
+            cardId: idSchema.optional(),
+            includeExcluded: Joi.boolean().default(false)
         }).unknown(false);
     }
 }
@@ -26,6 +28,15 @@ export class UpdateCardExpensesPipe extends JoiValidationPipePtbr {
                 categoryId: idSchema.optional(),
                 personId: idSchema.allow(null).optional()
             }).min(1).unknown(false).required()
+        }).unknown(false);
+    }
+}
+
+export class CardExpenseScopePipe extends JoiValidationPipePtbr {
+    public buildSchema(): Joi.Schema {
+        return Joi.object<CardExpenseScopeDto>({
+            ids: Joi.array().items(idSchema.required()).min(1).unique().required(),
+            scope: Joi.string().valid(...CARD_EXPENSE_SCOPES).required()
         }).unknown(false);
     }
 }

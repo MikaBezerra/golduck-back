@@ -1,6 +1,7 @@
+import type { CardExpenseScope } from '../../card-expenses/service/card-expense-scope';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { CardExpenseResponse, CardInstallmentDto } from '../../card-expenses/dto/card-expense.dto';
+import { CardExpenseResponse, CardInstallmentDto, SCOPE_PROPERTY } from '../../card-expenses/dto/card-expense.dto';
 import {
     DATE_PATTERN,
     DATE_TIME_PROPERTY,
@@ -21,6 +22,24 @@ export class CreateCardImportDto {
 
     /** Texto JSON com a lista de CardImportOverrideDto; só o salvamento usa. */
     public overrides?: string;
+
+    /** Texto JSON com a lista de CardImportExclusionDto; só o salvamento usa. */
+    public exclusions?: string;
+}
+
+/** Decisão sobre excluir ou restaurar uma compra do arquivo, a partir do mês da fatura. */
+export class CardImportExclusionDto {
+    @ApiProperty({ type: String, description: 'key devolvida pela pré-visualização' })
+    public key!: string;
+
+    @ApiProperty({ type: String, enum: ['exclude', 'restore'], description: 'exclude também serve para manter excluída' })
+    public action!: 'exclude' | 'restore';
+
+    @ApiProperty(SCOPE_PROPERTY)
+    public scope!: CardExpenseScope;
+
+    @ApiPropertyOptional({ type: Boolean, default: false, description: 'Com exclude: não perguntar de novo quando a compra reaparecer' })
+    public remember!: boolean;
 }
 
 /** Escolha do usuário para uma compra do arquivo, feita a partir da pré-visualização. */
@@ -62,6 +81,14 @@ export class CardImportSaveUploadDto extends CardImportUploadDto {
         description: 'JSON com até 500 itens no formato CardImportOverrideDto. Cada escolha vale para a linha do mês e as parcelas futuras lançadas por ela.'
     })
     public overrides?: string;
+
+    @ApiPropertyOptional({
+        type: String,
+        maxLength: 256 * 1024,
+        example: '[{"key":"P|2026-09|8|FERREIRA COSTA","action":"exclude","scope":"all","remember":true}]',
+        description: 'JSON com até 500 itens no formato CardImportExclusionDto: excluir, manter excluída ou restaurar compras do arquivo.'
+    })
+    public exclusions?: string;
 }
 
 export class ManualCardTransactionDto {
@@ -191,6 +218,12 @@ export class CardImportPreviewTransactionDto {
 
     @ApiProperty({ type: Number, description: 'Parcelas futuras que esta linha vai lançar' })
     public projectedCount!: number;
+
+    @ApiProperty({ type: Boolean, description: 'A compra fica excluída se for salva sem decisão' })
+    public excluded!: boolean;
+
+    @ApiProperty({ type: Boolean, description: 'Excluída e sem "não perguntar de novo": perguntar ao usuário se restaura ou mantém' })
+    public askExclusion!: boolean;
 }
 
 export class CardImportPreviewResponse {
