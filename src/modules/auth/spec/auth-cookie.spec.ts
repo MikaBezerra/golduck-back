@@ -288,6 +288,17 @@ describe('sessão com refresh token em cookie httpOnly', () => {
         expectClearedCookie(response);
     });
 
+    it('logout com cookie forjado (id de sessão certo, segredo inventado) responde 204, mas não encerra a sessão', async () => {
+        const session = await login();
+        const forged = `${session.refreshToken.split('.')[0]}.${'A'.repeat(43)}`;
+
+        const response = await post('logout', { cookie: forged });
+        expect(response.status).toBe(204);
+        expectClearedCookie(response);
+
+        expect((await post('refresh', { cookie: session.refreshToken })).status).toBe(200);
+    });
+
     it('login, refresh e logout recusam origem estranha com 403 FORBIDDEN', async () => {
         const session = await login();
 

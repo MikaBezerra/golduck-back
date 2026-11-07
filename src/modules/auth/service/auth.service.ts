@@ -135,7 +135,9 @@ export class AuthService {
         if (parsed) {
             const session = await this.repository.findSessionById(parsed.sessionId);
 
-            if (session) {
+            // Só o cookie verdadeiro encerra a sessão: um id de sessão com um segredo inventado não derruba
+            // a sessão de outra pessoa. Mesmo assim o logout não falha (o cookie é apagado de qualquer jeito).
+            if (session && session.tokenHash === parsed.tokenHash) {
                 sessions.set(session.id, session.userId);
             }
         }

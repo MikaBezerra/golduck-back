@@ -336,6 +336,16 @@ describe('AuthService', () => {
             expect(session.revokedAt).toBeNull();
         });
 
+        it('cookie com o id de uma sessão e um segredo que não é o dela: não encerra a sessão e não falha', async () => {
+            const { session } = openSession();
+            const revoke = jest.spyOn(repository, 'revokeSession');
+
+            await service.logout({ refreshToken: refreshTokens.generate(session.id).token });
+
+            expect(revoke).not.toHaveBeenCalled();
+            expect(session.revokedAt).toBeNull();
+        });
+
         it('sem cookie nem Bearer (ou vazios): não consulta nada', async () => {
             const parse = jest.spyOn(refreshTokens, 'parse');
             const verify = jest.spyOn(accessTokens, 'verify');
