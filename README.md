@@ -1,190 +1,147 @@
+# Golduck — back-end
 
-# NestJS 12 API project template
+API do **Golduck**, um app de finanças pessoais para organizar as contas de uma casa: entradas,
+reserva do mês, despesas fora do cartão, faturas de cartão importadas do banco e o resumo do mês e do ano,
+com o líquido de cada pessoa. O front-end fica em [golduck-front](https://github.com/MikaBezerra/golduck-front).
 
-[![License](https://img.shields.io/github/license/saluki/nestjs-template.svg)](https://github.com/saluki/nestjs-template/blob/master/LICENSE)
+## Stack
 
-Scaffold quickly your next [NestJS 12](https://nestjs.com/) API project with
-❤️ using this template
+| Peça | Escolha |
+| --- | --- |
+| Framework | [NestJS 12](https://nestjs.com) sobre [Fastify 5](https://fastify.dev) |
+| Banco | PostgreSQL 18 + [Prisma 7](https://www.prisma.io) (migrações versionadas) |
+| Validação | [Joi](https://joi.dev), com mensagens em português |
+| Autenticação | JWT de curta duração + refresh token rotativo; senhas com Argon2id |
+| Faturas | `csv-parse` (Nubank e C6) e `pdfjs-dist` (Neon, PDF com senha) |
+| Documentação | OpenAPI/Swagger em `/docs` e `/docs-json` |
+| Testes | Jest em modo ESM (ts-jest) |
+| Ambientes | [dotenvx](https://dotenvx.com) com arquivos criptografados por ambiente |
 
-- Crafted for Docker environments (Dockerfile support and environment variables)
-- REST API with [Prisma](https://www.prisma.io/) support 
-- Swagger documentation, [Joi](https://github.com/hapijs/joi) validation, Winston logger, ...
-- Folder structure, code samples and best practices
-- Fast HTTP server with [Fastify](https://fastify.dev/)
+## O que a API faz
 
-## 1. Getting started
+| Módulo | Rotas | Para quê |
+| --- | --- | --- |
+| `auth` | `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/me` | login, renovação e encerramento da sessão; usuário logado |
+| `people` | `/people` | pessoas que dividem as contas (ativas e inativas) |
+| `categories` | `/categories` | categorias de despesa; "Outros" é a padrão |
+| `incomes` | `/incomes` | entrada de cada mês (o mesmo valor pode ser lançado em vários meses) |
+| `reserves` | `/reserves`, `/reserves/totals` | reserva do mês (quanto foi guardado) e somas anual e histórica |
+| `manual-expenses` | `/manual-expenses` | despesas fora do cartão, compartilhadas ou de uma pessoa, com réplica até dezembro |
+| `credit-cards` | `/credit-cards` | cartões (Nubank, C6, Neon) |
+| `card-imports` | `/card-imports`, `/card-imports/preview`, `/card-imports/manual` | importação da fatura (CSV/PDF ou digitada), pré-visualização, escolhas do usuário e histórico de uploads |
+| `card-expenses` | `/card-expenses` | despesas do cartão: apelido, categoria, pessoa, exclusão e restauração |
+| `summary` | `/summary`, `/summary/annual` | resumo do mês e do ano: entrada, reserva, despesas, saldo, totais e líquido por pessoa |
+| `common` | `/health` | estado da API e do banco (somente ADMIN) |
 
-### 1.1 Requirements
+Regras principais:
 
-Before starting, make sure you have at least those components on your workstation:
+- **Dinheiro** é guardado em centavos (`BIGINT`) e trafega como texto (`"1234.56"`); nenhuma conta usa ponto flutuante.
+- **Mês** trafega como `"AAAA-MM"` e datas como `"AAAA-MM-DD"`; horários são gravados em UTC.
+- **Respostas** vêm em `{ "data": ... }`; erros em `{ "error": { "code", "message", "requestId", "details"? } }`.
+- **Fatura do cartão:** cada upload é absoluto para o mês da fatura; parcelas futuras são projetadas e
+  confirmadas pelos uploads seguintes; apelido, categoria e pessoa sobrevivem aos reenvios.
+- **Líquido por pessoa:** (entrada − compartilhadas − reserva) dividido entre as pessoas ativas, menos as
+  despesas individuais de cada uma.
 
-- A supported release of [NodeJS](https://nodejs.org/) (20.19+, 22.12+, or 24+) and NPM
-- A database such as PostgreSQL. You may use the provided `docker-compose.yml` file.
+## Como rodar
 
-[Docker](https://www.docker.com/) may also be useful for advanced testing and image building, although it is not required for development.
-
-### 1.2 Project configuration
-
-Start by cloning this project on your workstation or click on ["Use this template"](https://github.com/new?template_name=nestjs-template&template_owner=Saluki) in Github.
-
-``` sh
-git clone https://github.com/saluki/nestjs-template my-project
-```
-
-The next thing will be to install all the dependencies of the project.
+Pré-requisitos: Node **22.13 ou mais novo** (veja o `.nvmrc`) e Docker.
 
 ```sh
-cd ./my-project
 npm ci
+cp .env.example .env            # ajuste se precisar
+docker compose up -d            # PostgreSQL 18 na porta 5433
+npx prisma migrate deploy       # aplica as migrações
+npm run admin:create            # cria o primeiro usuário ADMIN (interativo)
+npm run dev                     # http://localhost:3000/api
 ```
 
-Once the dependencies are installed, you can now configure your project by creating a new `.env` file containing the environment variables used for development.
+Com `SWAGGER_ENABLE=1` no `.env`, a documentação fica em `http://localhost:3000/docs` e o JSON em `/docs-json`
+(o front gera os tipos da API a partir dele).
 
+O Postgres do Docker usa a porta **5433** para não conflitar com um PostgreSQL instalado direto na máquina.
+
+## Scripts
+
+| Comando | O que faz |
+| --- | --- |
+| `npm run dev` | sobe a API em modo watch, com o `.env` |
+| `npm run build` / `npm start` | compila para `dist/` e roda o build |
+| `npm run start:develop` / `start:production` | roda o build com o `.env.develop` / `.env.production` |
+| `npm run lint` / `lint:check` | ESLint com correção automática / só verificação |
+| `npm run typecheck` | checagem de tipos sem gerar arquivos |
+| `npm test` / `test:cov` | testes / testes com cobertura e metas mínimas |
+| `npm run admin:create` | cria um usuário ADMIN |
+| `npm run db:migrate:develop` / `db:migrate:production` | aplica as migrações no banco do ambiente |
+| `npx prisma migrate dev --name <nome>` | cria uma migração a partir do `schema.prisma` (desenvolvimento) |
+
+## Estrutura
+
+```text
+src/
+  server.ts                 bootstrap (Fastify, CORS, multipart, Swagger, logs)
+  modules/
+    app.module.ts
+    common/                 configuração, Prisma, logs, erros, respostas, validação, Swagger, datas e dinheiro
+    <módulo>/
+      controller/           rotas HTTP e documentação OpenAPI
+      dto/                  formatos de entrada e de resposta
+      flow/                 pipes de validação (Joi)
+      errors/               erros do módulo (AppError com código próprio)
+      repository/           acesso ao banco (Prisma)
+      service/              regras de negócio
+      spec/                 testes
+prisma/
+  schema.prisma
+  migrations/
 ```
-cp .env.example .env
-vi .env
-```
 
-For a standard development configuration, you can leave the default values for `API_PORT`, `API_PREFIX` and `API_CORS` under the `Api configuration` section. The `SWAGGER_ENABLE` rule allows you to control the Swagger documentation module for NestJS. Leave it to `1` when starting this example.
-
-Next comes to the Prisma configuration: change the DATABASE_URL according to your own database setup. The development container from `docker-compose.yml` publishes PostgreSQL on host port `5433` (not `5432`), so it does not clash with a PostgreSQL installed directly on the machine.
-
-Store date-time values as UTC instants. In the Prisma schema, use `DateTime @db.Timestamptz(3)` for fields that represent a point in time. The development PostgreSQL container uses UTC as its session timezone; configure the same setting for other database environments. Convert user-facing local times to UTC before saving them, and include a timezone offset when accepting date-time input.
-
-Last but not least, define a `JWT_SECRET` to sign the JWT tokens or leave the default value in a development environment. Update the `JWT_ISSUER` to the correct value as set in the JWT. 
-
-### 1.2.1 Ambientes e variáveis (dotenvx)
-
-As variáveis são carregadas com o [dotenvx](https://dotenvx.com) (`npx dotenvx`, já instalado no projeto).
+## Ambientes e variáveis (dotenvx)
 
 | Arquivo | Para quê | Versionado? |
 | --- | --- | --- |
 | `.env` | desenvolvimento local, sem criptografia (copie do `.env.example`) | não |
 | `.env.example` | modelo do `.env`, com valores de exemplo | sim |
 | `.env.develop` | ambiente develop; `DATABASE_URL` e `JWT_SECRET` criptografados | sim |
-| `.env.production` | ambiente de produção; `DATABASE_URL` e `JWT_SECRET` criptografados | sim |
+| `.env.production` | produção; `DATABASE_URL` e `JWT_SECRET` criptografados | sim |
 | `.env.keys` | chaves privadas (`DOTENV_PRIVATE_KEY_DEVELOP` e `..._PRODUCTION`) | **nunca** |
 
 - Guarde uma cópia segura do `.env.keys`: sem ele não é possível ler os valores criptografados.
-- Para trocar um valor: `npx dotenvx set DATABASE_URL "postgresql://..." -f .env.production` (criptografa
+- Trocar um valor: `npx dotenvx set DATABASE_URL "postgresql://..." -f .env.production` (criptografa
   automaticamente; use `--plain` para valores não sensíveis, como `API_PORT`).
-- Para ler um valor: `npx dotenvx get DATABASE_URL -f .env.develop`.
-- Scripts: `npm run dev` usa o `.env`; `npm run start:develop`/`start:production` e
-  `npm run db:migrate:develop`/`db:migrate:production` usam os arquivos criptografados (precisam da chave
-  privada no `.env.keys` ou na variável de ambiente correspondente).
+- Ler um valor: `npx dotenvx get DATABASE_URL -f .env.develop`.
 
-### 1.3 Launch and discover
+| Variável | Para quê |
+| --- | --- |
+| `API_PORT`, `API_PREFIX` | porta e prefixo das rotas (`/api`) |
+| `API_CORS_ORIGINS` | origens liberadas no CORS, separadas por vírgula; vazio desliga |
+| `SWAGGER_ENABLE` | `1` publica `/docs` e `/docs-json` |
+| `DATABASE_URL` | conexão com o PostgreSQL |
+| `JWT_SECRET`, `JWT_ISSUER` | assinatura e emissor dos tokens |
 
-You are now ready to launch the NestJS application using the command below.
-
-```sh
-# For use in development environments only, performs a Prisma migration
-npx prisma migrate dev
-
-# Generate the Prisma Client after migrations or schema changes
-npx prisma generate
-
-# Launch the development server with tsx
-npm run dev
-```
-
-You can now head to `http://localhost:3000/docs` and see your API Swagger docs. The example passenger API is located at the `http://localhost:3000/api/v1/passengers` endpoint.
-
-### CSV imports
-
-The template includes `@fastify/multipart` for receiving files and `csv-parse` for reading CSV rows. With the Fastify adapter, NestJS can register the multipart plugin when an upload interceptor is used. For large CSV files, use `FileStreamInterceptor` from `@nestjs/platform-fastify/multipart` and the streaming API from `csv-parse`; set a file size limit for the route. The upload endpoint and row validation should be defined alongside the project's financial data model.
-
-For restricted routes, for testing you can use the below JWT
-
-```
-eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJERUZBVUxUX0lTU1VFUiIsImlhdCI6MTYzMTEwNDMzNCwicm9sZSI6InJlc3RyaWN0ZWQifQ.o2HcQBBpx-EJMcUFiqmAiD_jZ5J92gRDOyhybT9FakE
-```
-
-> The sample JWT above does not have an expiry, remember to use a valid JWT and enforce the required claims in production
-
-## 2. Project structure
-
-This template was made with a well-defined directory structure.
-
-```sh
-src/
-├── modules
-│   ├── app.module.ts
-│   ├── common/  # The common module contains pipes, guards, service and provider used in the whole application
-│   ├── passenger/  # A module example that manages "passenger" resources
-│   │   ├── controller/
-│   │   │   └── passenger.controller.ts
-│   │   ├── flow/  # The "flow" directory contains the pipes, interceptors and everything that may change the request or response flow
-│   │   │   └── passenger.pipe.ts
-│   │   ├── model/
-│   │   │   ├── passenger.data.ts  # The model that will be returned in the response
-│   │   │   └── passenger.input.ts  # The model that is used in the request
-│   │   ├── passenger.module.ts
-│   │   ├── service/
-│   │   │   └── passenger.service.ts
-│   │   └── spec/
-│   └── tokens.ts
-└── server.ts
-```
-
-## 3. Default NPM commands
-
-The NPM commands below are already included with this template and can be used to quickly run, build and test your project.
-
-```sh
-# Start the application using the transpiled NodeJS
-npm run start
-
-# Run the application using "ts-node"
-npm run dev
-
-# Transpile the TypeScript files
-npm run build
-
-# Run the project' functional tests
-npm run test
-
-# Lint the project files using ESLint
-npm run lint
-```
-
-## 4. CI/CD e versões
-
-Workflows em `.github/workflows`:
+## CI/CD e versões
 
 | Workflow | Quando roda | O que faz |
 | --- | --- | --- |
-| `ci.yml` | PR para `develop`/`main` e push nessas branches | lint, tipos, testes com cobertura mínima, build; migrações aplicadas do zero num Postgres 18 e checagem de que o `schema.prisma` não mudou sem migração |
-| `pr-title.yml` | abertura/edição de PR | exige título no padrão Conventional Commits (`feat: ...`, `fix: ...`), usado no squash merge |
-| `release.yml` | push na `main` | [release-please](https://github.com/googleapis/release-please): mantém um PR de release com `CHANGELOG.md` e versão; ao fazer merge, cria a tag `vX.Y.Z` e a release |
-| `deploy.yml` | push na `develop` (ambiente develop) e na `main` (produção) | aplica as migrações no banco do ambiente e depois publica na Vercel. **Desligado** até a variável `DEPLOY_ENABLED` ser `true` |
+| `ci.yml` | PR para `develop`/`main` e push nessas branches | lint, tipos, testes com cobertura mínima e build; migrações aplicadas do zero num Postgres 18 e checagem de que o `schema.prisma` não mudou sem migração |
+| `pr-title.yml` | abertura e edição de PR | exige título no padrão Conventional Commits (`feat: ...`, `fix: ...`), usado no squash merge |
+| `release.yml` | push na `main` | [release-please](https://github.com/googleapis/release-please): PR de release com `CHANGELOG.md` e versão; ao fazer merge, cria a tag `vX.Y.Z` |
+| `deploy.yml` | push na `develop` (develop) e na `main` (produção) | aplica as migrações no banco do ambiente e publica na Vercel. **Desligado** até a variável `DEPLOY_ENABLED` ser `true` |
 
-Fluxo: `feature` → PR (squash) para `develop` → PR de `develop` para `main` → release-please.
-`feat` sobe a versão minor; `fix` sobe a patch; `feat!`/`BREAKING CHANGE` sobe a major.
+Fluxo: branch da feature → PR (squash) para `develop` → PR de `develop` para `main` → release-please.
+`feat` sobe a versão minor, `fix` sobe a patch e `feat!`/`BREAKING CHANGE` sobe a major.
 
-Configuração no GitHub (Settings):
+Configuração no GitHub:
 
-- **Environments** `develop` e `production`, cada um com o secret `DOTENV_PRIVATE_KEY_DEVELOP` ou
-  `DOTENV_PRIVATE_KEY_PRODUCTION` (copiado do `.env.keys`).
-- **Secrets** do repositório: `VERCEL_TOKEN`. **Variables**: `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` e
-  `DEPLOY_ENABLED=true` quando o deploy estiver pronto.
-- **Branch protection** em `develop` e `main`: PR obrigatório, checks `CI` e `PR title` verdes, squash merge.
-- Na Vercel, desligue o deploy automático por Git: quem publica é o `deploy.yml`, depois das migrações.
+- **Environments** `develop` e `production`, com os secrets `DOTENV_PRIVATE_KEY_DEVELOP` e
+  `DOTENV_PRIVATE_KEY_PRODUCTION`; cada um aceita deploy só da sua branch.
+- **Secret** `VERCEL_TOKEN` e **variables** `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` e `DEPLOY_ENABLED=true`
+  quando o deploy estiver pronto.
+- **Ruleset** na `develop`: PR obrigatório, só squash e os checks de lint/testes/build, migrações e título
+  do PR. O administrador do repositório pode passar por cima (por exemplo, para um force push).
+- Na Vercel, o deploy automático por Git fica desligado: quem publica é o `deploy.yml`, depois das migrações.
 
-## 5. Healtcheck support
+## Créditos
 
-A healthcheck API is a REST endpoint that can be used to validate the status of the service along with its dependencies. The healthcheck API endpoint internally triggers an overall health check of the service. This can include database connection checks, system properties, disk availability and memory availability.
-
-The healthcheck endpoint requires an admin access token.
-
-```sh
-curl -H 'Authorization: Bearer <admin-access-token>' http://localhost:3000/api/health
-```
-
-## 6. Project goals
-
-The goal of this project is to provide a clean and up-to-date "starter pack" for REST API projects that are built with NestJS.
-
-## 7. Contributing
-
-Feel free to suggest an improvement, report a bug, or ask something: [https://github.com/saluki/nestjs-template/issues](https://github.com/saluki/nestjs-template/issues)
+A estrutura inicial veio do [nestjs-template](https://github.com/Saluki/nestjs-template), sob licença MIT
+(veja o `LICENSE`).
