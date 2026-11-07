@@ -141,12 +141,13 @@ export class CardImportService {
                 ignoredCount: parsed.ignoredCount
             },
             purchaseKeys: transactions.map(transaction => transaction.purchaseKey),
-            plan: ({ importId, existing }) => planCardImport({
+            plan: ({ importId, existing, nextImportedMonth }) => planCardImport({
                 cardId: card.id,
                 importId,
                 month,
                 transactions,
                 existing,
+                nextImportedMonth,
                 defaultCategoryId: defaultCategory.id
             })
         });

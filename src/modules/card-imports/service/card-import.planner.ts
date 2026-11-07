@@ -9,9 +9,10 @@ import { addMonths, formatMonth } from '../../common/date/month';
  *    removidas, junto das parcelas futuras que elas projetaram (sourceMonth <= M).
  * 2. Compras do arquivo são atualizadas em M (mantendo apelido, categoria e pessoa)
  *    ou criadas.
- * 3. Uma parcela n/N projeta as parcelas seguintes nos meses M+1 até M+(N-n). Uma
- *    projeção só sobrescreve linhas gravadas por uploads de meses <= M; o que um
- *    upload de mês posterior já confirmou é preservado.
+ * 3. Uma parcela n/N projeta as parcelas seguintes nos meses M+1 até M+(N-n), mas
+ *    para antes do primeiro mês posterior que tenha upload próprio: daquele mês em
+ *    diante, quem decide é o upload dele (inclusive compras que ele removeu). Uma
+ *    projeção também nunca sobrescreve linhas gravadas por uploads de meses > M.
  * 4. Linhas novas herdam apelido, categoria e pessoa de outra parcela da mesma compra.
  */
 
@@ -66,6 +67,8 @@ export type PlanCardImportInput = {
     transactions: KeyedTransaction[];
     /** Todas as linhas do cartão cujas chaves aparecem no arquivo ou no mês M. */
     existing: ExistingCardExpense[];
+    /** Primeiro mês posterior a M com upload próprio no cartão; as projeções param antes dele. */
+    nextImportedMonth: Date | null;
     defaultCategoryId: string;
 };
 
@@ -145,6 +148,11 @@ export function planCardImport(input: PlanCardImportInput): CardImportPlan {
 
         for (let offset = 0; offset <= remaining; offset++) {
             const targetMonth = addMonths(month, offset);
+
+            if (input.nextImportedMonth && targetMonth.getTime() >= input.nextImportedMonth.getTime()) {
+                break;
+            }
+
             const current = byKeyAndMonth.get(slot(transaction.purchaseKey, targetMonth));
 
             if (offset > 0 && current && current.sourceMonth.getTime() > monthTime) {

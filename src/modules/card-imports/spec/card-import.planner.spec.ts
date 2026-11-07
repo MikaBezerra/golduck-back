@@ -34,13 +34,19 @@ function existing(overrides: Partial<ExistingCardExpense> & { purchaseKey: strin
     };
 }
 
-function plan(month: string, transactions: KeyedTransaction[], rows: ExistingCardExpense[] = []) {
+function plan(
+    month: string,
+    transactions: KeyedTransaction[],
+    rows: ExistingCardExpense[] = [],
+    nextImportedMonth: string | null = null
+) {
     return planCardImport({
         cardId: CARD,
         importId: 'import-1',
         month: parseMonth(month),
         transactions,
         existing: rows,
+        nextImportedMonth: nextImportedMonth === null ? null : parseMonth(nextImportedMonth),
         defaultCategoryId: DEFAULT_CATEGORY
     });
 }
@@ -120,6 +126,15 @@ describe('planCardImport', () => {
 
         expect(result.updates.map(update => update.id)).toEqual([rows[0].id]);
         expect(result.creates).toHaveLength(0);
+    });
+
+    it('não projeta em meses que já têm upload próprio, nem depois deles', () => {
+        // Novembro já foi enviado e não trouxe esta compra (foi cancelada). Reenviar outubro não pode trazê-la de volta.
+        const items = assignPurchaseKeys([transaction({ installmentNumber: 1, installmentTotal: 4 })], october);
+        const result = plan('2026-10', items, [], '2026-11');
+
+        expect(result.creates.map(row => row.month.toISOString().slice(0, 7))).toEqual(['2026-10']);
+        expect(result.summary.projected).toBe(0);
     });
 
     it('remove compras que sumiram do mês e as parcelas futuras projetadas por elas', () => {

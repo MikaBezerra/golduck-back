@@ -24,7 +24,7 @@ export type NewCardImport = {
 export type ApplyCardImportInput = {
     data: NewCardImport;
     purchaseKeys: string[];
-    plan: (input: Pick<PlanCardImportInput, 'importId' | 'existing'>) => CardImportPlan;
+    plan: (input: Pick<PlanCardImportInput, 'importId' | 'existing' | 'nextImportedMonth'>) => CardImportPlan;
 };
 
 const IMPORT_TRANSACTION_TIMEOUT_MS = 30_000;
@@ -58,7 +58,16 @@ export class CardImportRepository {
                 where: { cardId: input.data.cardId, purchaseKey: { in: keys } },
                 select: EXISTING_EXPENSE_SELECT
             });
-            const plan = input.plan({ importId: cardImport.id, existing });
+            const nextImport = await tx.cardImport.findFirst({
+                where: { cardId: input.data.cardId, month: { gt: input.data.month } },
+                orderBy: { month: 'asc' },
+                select: { month: true }
+            });
+            const plan = input.plan({
+                importId: cardImport.id,
+                existing,
+                nextImportedMonth: nextImport?.month ?? null
+            });
 
             if (plan.deleteIds.length > 0) {
                 await tx.cardExpense.deleteMany({ where: { id: { in: plan.deleteIds } } });
