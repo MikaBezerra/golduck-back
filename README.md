@@ -118,7 +118,7 @@ Rotas públicas de status: `GET /api/health/live` (para monitor de disponibilida
 | `npm run typecheck` | checagem de tipos sem gerar arquivos |
 | `npm test` / `test:cov` | testes / testes com cobertura e metas mínimas |
 | `npm run db:check` | confere se o banco local tem todas as migrações e se o `schema.prisma` não mudou sem migração |
-| **`npm run verify`** | **roda localmente o que o CI roda:** `lint:check`, `typecheck`, `test:cov`, `build` e `db:check` (precisa do Postgres no ar) |
+| **`npm run verify`** | **roda localmente o que o CI roda:** client do Prisma, `lint:check`, `typecheck`, `test:cov`, `build` e `db:check` (precisa do Postgres no ar) |
 | `npm run admin:create` | cria um usuário ADMIN |
 | `npm run db:migrate:develop` / `db:migrate:production` | aplica as migrações no banco do ambiente |
 | `npx prisma migrate dev --name <nome>` | cria uma migração a partir do `schema.prisma` (desenvolvimento) |

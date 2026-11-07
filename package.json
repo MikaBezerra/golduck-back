@@ -20,7 +20,7 @@
     "test": "prisma generate && node --experimental-vm-modules --disable-warning=ExperimentalWarning node_modules/jest/bin/jest.js --config=jest.json",
     "test:cov": "prisma generate && node --experimental-vm-modules --disable-warning=ExperimentalWarning node_modules/jest/bin/jest.js --config=jest.json --coverage",
     "db:check": "prisma migrate status && prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code",
-    "verify": "npm run lint:check && npm run typecheck && npm run test:cov && npm run build && npm run db:check",
+    "verify": "prisma generate && npm run lint:check && npm run typecheck && npm run test:cov && npm run build && npm run db:check",
     "lint": "eslint -c .eslintrc.js --fix --ext .ts src",
     "lint:check": "eslint -c .eslintrc.js --ext .ts src --max-warnings=0",
     "db:migrate:develop": "dotenvx run -f .env.develop -- prisma migrate deploy",
