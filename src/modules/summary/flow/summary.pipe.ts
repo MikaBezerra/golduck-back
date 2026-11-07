@@ -1,0 +1,14 @@
+import * as Joi from 'joi';
+
+import { JoiValidationPipePtbr } from '../../common';
+import { SummaryQueryDto } from '../dto/summary.dto';
+
+export class SummaryQueryPipe extends JoiValidationPipePtbr {
+    public buildSchema(): Joi.Schema {
+        return Joi.object<SummaryQueryDto>({
+            month: Joi.string().pattern(/^[1-9]\d{3}-(0[1-9]|1[0-2])$/).required().messages({
+                'string.pattern.base': 'O mês deve estar no formato AAAA-MM'
+            })
+        }).unknown(false);
+    }
+}
