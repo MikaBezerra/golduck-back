@@ -1,11 +1,11 @@
-# Entrega contínua: push na develop publica o ambiente develop; push na main, a produção.
+# Entrega contínua: push na develop atualiza o ambiente develop; push na main, a produção.
 # As migrações rodam ANTES do deploy, para o código novo nunca subir antes do banco.
 #
-# Desligado até a variável DEPLOY_ENABLED ser "true" (Settings > Variables). Requer:
-# - Environments "develop" e "production" com os secrets DOTENV_PRIVATE_KEY_DEVELOP e
-#   DOTENV_PRIVATE_KEY_PRODUCTION (do .env.keys local);
-# - secret VERCEL_TOKEN e variables VERCEL_ORG_ID e VERCEL_PROJECT_ID;
-# - deploy automático por Git desligado na Vercel (quem publica é este workflow).
+# - Migrações: rodam sempre. Requerem os environments "develop" e "production" com os secrets
+#   DOTENV_PRIVATE_KEY_DEVELOP e DOTENV_PRIVATE_KEY_PRODUCTION (do .env.keys local).
+# - Deploy na Vercel: desligado até a variável DEPLOY_ENABLED ser "true" (Settings > Variables).
+#   Requer o secret VERCEL_TOKEN, as variables VERCEL_ORG_ID e VERCEL_PROJECT_ID e o deploy
+#   automático por Git desligado na Vercel (quem publica é este workflow).
 name: Deploy
 
 on:
@@ -21,21 +21,16 @@ permissions:
   contents: read
 
 env:
+  APP_ENV: ${{ github.ref_name == 'main' && 'production' || 'develop' }}
   VERCEL_CLI: vercel@65.12.1
 
 jobs:
-  deploy:
-    name: Migrações e deploy
-    if: vars.DEPLOY_ENABLED == 'true'
+  migrate:
+    name: Migrações
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     environment: ${{ github.ref_name == 'main' && 'production' || 'develop' }}
     env:
-      APP_ENV: ${{ github.ref_name == 'main' && 'production' || 'develop' }}
-      VERCEL_ENVIRONMENT: ${{ github.ref_name == 'main' && 'production' || 'preview' }}
-      VERCEL_PROD_FLAG: ${{ github.ref_name == 'main' && '--prod' || '' }}
-      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
       DOTENV_PRIVATE_KEY_DEVELOP: ${{ secrets.DOTENV_PRIVATE_KEY_DEVELOP }}
       DOTENV_PRIVATE_KEY_PRODUCTION: ${{ secrets.DOTENV_PRIVATE_KEY_PRODUCTION }}
     steps:
@@ -51,6 +46,29 @@ jobs:
 
       - name: Aplica as migrações no banco do ambiente
         run: npm run db:migrate:${{ env.APP_ENV }}
+
+  deploy:
+    name: Deploy na Vercel
+    needs: migrate
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ github.ref_name == 'main' && 'production' || 'develop' }}
+    env:
+      VERCEL_ENVIRONMENT: ${{ github.ref_name == 'main' && 'production' || 'preview' }}
+      VERCEL_PROD_FLAG: ${{ github.ref_name == 'main' && '--prod' || '' }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Instala dependências
+        run: npm ci
 
       - name: Baixa a configuração do projeto na Vercel
         run: npx --yes ${{ env.VERCEL_CLI }} pull --yes --environment=${{ env.VERCEL_ENVIRONMENT }} --token=${{ secrets.VERCEL_TOKEN }}
