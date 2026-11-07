@@ -42,6 +42,9 @@ Regras principais:
   confirmadas pelos uploads seguintes; apelido, categoria e pessoa sobrevivem aos reenvios.
 - **Líquido por pessoa:** (entrada − compartilhadas − reserva) dividido entre as pessoas ativas, menos as
   despesas individuais de cada uma.
+- **Segurança:** headers do Helmet; limite de tentativas por IP no login (5/min) e no refresh (20/min), com
+  `429 TOO_MANY_REQUESTS` e o header `Retry-After`; a configuração é validada na subida (sem `DATABASE_URL`
+  válida ou com `JWT_SECRET` abaixo de 32 caracteres, a API nem sobe).
 
 ## Como rodar
 
@@ -79,7 +82,7 @@ O Postgres do Docker usa a porta **5433** para não conflitar com um PostgreSQL 
 
 ```text
 src/
-  server.ts                 bootstrap (Fastify, CORS, multipart, Swagger, logs)
+  server.ts                 bootstrap (Fastify, Helmet, CORS, multipart, Swagger, logs)
   modules/
     app.module.ts
     common/                 configuração, Prisma, logs, erros, respostas, validação, Swagger, datas e dinheiro
@@ -115,9 +118,10 @@ prisma/
 | --- | --- |
 | `API_PORT`, `API_PREFIX` | porta e prefixo das rotas (`/api`) |
 | `API_CORS_ORIGINS` | origens liberadas no CORS, separadas por vírgula; vazio desliga |
-| `SWAGGER_ENABLE` | `1` publica `/docs` e `/docs-json` |
-| `DATABASE_URL` | conexão com o PostgreSQL |
-| `JWT_SECRET`, `JWT_ISSUER` | assinatura e emissor dos tokens |
+| `SWAGGER_ENABLE` | `1` publica `/docs` e `/docs-json` (e desliga a CSP do Helmet, que bloquearia a interface) |
+| `TRUST_PROXY` | em quais proxies confiar para obter o IP real: vazio/`false` = nenhum, `true` = todos (Vercel), número de saltos ou IPs/CIDRs |
+| `DATABASE_URL` | conexão com o PostgreSQL (obrigatória) |
+| `JWT_SECRET`, `JWT_ISSUER` | assinatura (mínimo de 32 caracteres) e emissor dos tokens |
 
 ## CI/CD e versões
 

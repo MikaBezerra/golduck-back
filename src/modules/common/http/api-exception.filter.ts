@@ -6,15 +6,29 @@ import { AppError } from '../errors/app-error';
 import { RequestLogContext } from '../logging/request-log.context';
 import { ValidationError } from '../validation/validation-error';
 
-const HTTP_MESSAGES: Partial<Record<number, string>> = {
-    [HttpStatus.BAD_REQUEST]: 'Requisição inválida',
-    [HttpStatus.UNAUTHORIZED]: 'Autenticação necessária',
-    [HttpStatus.FORBIDDEN]: 'Acesso negado',
-    [HttpStatus.NOT_FOUND]: 'Recurso não encontrado',
-    [HttpStatus.CONFLICT]: 'Conflito ao processar a requisição',
-    [HttpStatus.TOO_MANY_REQUESTS]: 'Muitas requisições',
-    [HttpStatus.SERVICE_UNAVAILABLE]: 'Serviço indisponível'
+/**
+ * Código e mensagem para exceções HTTP que não nasceram de um AppError
+ * (rota inexistente, corpo grande demais, limite de tentativas etc.).
+ */
+const HTTP_ERRORS: Partial<Record<number, { code: string; message: string }>> = {
+    [HttpStatus.BAD_REQUEST]: { code: 'BAD_REQUEST', message: 'Requisição inválida' },
+    [HttpStatus.UNAUTHORIZED]: { code: 'UNAUTHENTICATED', message: 'Autenticação necessária' },
+    [HttpStatus.FORBIDDEN]: { code: 'FORBIDDEN', message: 'Acesso negado' },
+    [HttpStatus.NOT_FOUND]: { code: 'NOT_FOUND', message: 'Recurso não encontrado' },
+    [HttpStatus.CONFLICT]: { code: 'CONFLICT', message: 'Conflito ao processar a requisição' },
+    [HttpStatus.PAYLOAD_TOO_LARGE]: { code: 'PAYLOAD_TOO_LARGE', message: 'Conteúdo maior que o permitido' },
+    [HttpStatus.TOO_MANY_REQUESTS]: { code: 'TOO_MANY_REQUESTS', message: 'Muitas tentativas. Aguarde um pouco e tente novamente.' },
+    [HttpStatus.SERVICE_UNAVAILABLE]: { code: 'SERVICE_UNAVAILABLE', message: 'Serviço indisponível' }
 };
+
+const INTERNAL_ERROR = { code: 'INTERNAL_ERROR', message: 'Erro interno do servidor' };
+
+function describeHttpError(statusCode: number): { code: string; message: string } {
+    return HTTP_ERRORS[statusCode]
+        ?? (statusCode >= 500
+            ? INTERNAL_ERROR
+            : { code: `HTTP_${statusCode}`, message: 'Não foi possível processar a requisição' });
+}
 
 @Catch()
 @Injectable()
@@ -30,10 +44,9 @@ export class ApiExceptionFilter implements ExceptionFilter {
             : exception instanceof HttpException
                 ? exception.getStatus()
                 : HttpStatus.INTERNAL_SERVER_ERROR;
-        const code = exception instanceof AppError ? exception.code : `HTTP_${statusCode}`;
-        const message = exception instanceof AppError
-            ? exception.publicMessage
-            : HTTP_MESSAGES[statusCode] ?? (statusCode >= 500 ? 'Erro interno do servidor' : 'Não foi possível processar a requisição');
+        const { code, message } = exception instanceof AppError
+            ? { code: exception.code, message: exception.publicMessage }
+            : describeHttpError(statusCode);
         const response: ApiErrorResponse = {
             error: {
                 code,

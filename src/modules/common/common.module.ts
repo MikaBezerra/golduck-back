@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { TerminusModule } from '@nestjs/terminus';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 import { HealthController } from './controller';
 import { ApiExceptionFilter } from './http/api-exception.filter';
@@ -10,7 +11,9 @@ import { configProvider, LoggerService, PrismaService } from './provider';
 
 @Module({
     imports: [
-        TerminusModule
+        TerminusModule,
+        // Só registra o contador; o limite vale nas rotas marcadas com @RateLimit().
+        ThrottlerModule.forRoot({ throttlers: [{ name: 'default', ttl: 60_000, limit: 60 }] })
     ],
     providers: [
         configProvider,

@@ -11,6 +11,7 @@ import {
 import { ApiBearerAuth, ApiNoContentResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 
 import { Role } from '../../../generated/prisma/client';
+import { RateLimit } from '../../common/security';
 import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs';
 import { AuthTokensDto, AuthUserResponse, LoginDto, RefreshDto } from '../dto/auth.dto';
 import { AUTH_ERRORS } from '../errors/auth.errors';
@@ -27,6 +28,7 @@ export class AuthController {
     ) { }
 
     @Public()
+    @RateLimit(5)
     @Post('login')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Entra com e-mail e senha' })
@@ -36,6 +38,7 @@ export class AuthController {
     }
 
     @Public()
+    @RateLimit(20)
     @Post('refresh')
     @HttpCode(HttpStatus.OK)
     @ApiOperation({ summary: 'Troca o refresh token por um novo par de tokens' })

@@ -2,6 +2,10 @@ import * as Joi from 'joi';
 
 import { Service } from '../../tokens';
 import { Config } from '../model';
+import { parseTrustProxy } from './trust-proxy';
+
+/** Tamanho mínimo do segredo do JWT (HS256 pede pelo menos 256 bits). */
+const JWT_SECRET_MIN_LENGTH = 32;
 
 /**
  * Converte "https://app.exemplo.com, http://localhost:4200" em uma lista de origens.
@@ -38,7 +42,9 @@ export const configProvider = {
             API_PREFIX: Joi.string().required(),
             API_CORS_ORIGINS: Joi.string().empty('').optional().custom(parseCorsOrigins),
             SWAGGER_ENABLE: Joi.string().valid('0', '1').empty('').optional(),
-            JWT_SECRET: Joi.string().required(),
+            TRUST_PROXY: Joi.string().empty('').default('false').custom((value: string) => parseTrustProxy(value)),
+            DATABASE_URL: Joi.string().uri({ scheme: ['postgresql', 'postgres'] }).required(),
+            JWT_SECRET: Joi.string().min(JWT_SECRET_MIN_LENGTH).required(),
             JWT_ISSUER: Joi.string().required()
         });
 

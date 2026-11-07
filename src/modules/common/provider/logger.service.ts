@@ -53,7 +53,14 @@ export class LoggerService {
         const prefix = `[API] ${process.pid} - ${time}  ${this.color(level, levelColor)}`;
 
         if (typeof info.method !== 'string' || typeof info.path !== 'string') {
-            return `${prefix} ${String(info.message)}`;
+            const errorDetails = typeof info.errorMessage === 'string'
+                ? `\n    ↳ ${typeof info.errorName === 'string' ? info.errorName : 'Erro'}: ${info.errorMessage}`
+                : '';
+            const errorStack = typeof info.stack === 'string'
+                ? `\n${info.stack.split('\n').slice(1).map(line => `      ${line.trim()}`).join('\n')}`
+                : '';
+
+            return `${prefix} ${String(info.message)}${errorDetails}${errorStack}`;
         }
 
         const statusCode = typeof info.statusCode === 'number' ? info.statusCode : 0;

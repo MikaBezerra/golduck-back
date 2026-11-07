@@ -1,3 +1,4 @@
+import fastifyHelmet from '@fastify/helmet';
 import fastifyMultipart from '@fastify/multipart';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
@@ -7,37 +8,36 @@ import { MAX_STATEMENT_FILE_BYTES } from './modules/card-imports/flow/multipart-
 import { CommonModule, Config, LoggerService } from './modules/common';
 import { RequestLogContext } from './modules/common/logging/request-log.context';
 import { registerRequestLogging } from './modules/common/logging/request-logging';
+import { fastifyTrustProxy } from './modules/common/provider/trust-proxy';
 import { setupSwagger } from './modules/common/swagger/swagger.setup';
 import { Service } from './modules/tokens';
 
-/**
- * These are API defaults that can be changed using environment variables,
- * it is not required to change them (see the `.env.example` file)
- */
+/** Valores usados quando API_PORT e API_PREFIX não vêm do ambiente (veja o .env.example). */
 const API_DEFAULT_PORT = 3000;
 const API_DEFAULT_PREFIX = '/api';
 
 /**
- * Build & bootstrap the NestJS API.
- * This method is the starting point of the API; it registers the application
- * module and registers essential components such as the logger and request
- * parsing middleware.
+ * Monta e sobe a API: plugins do Fastify, CORS, prefixo, documentação e logs de requisição.
+ * A configuração é validada pelo provider de Config ao criar o módulo; se faltar algo, a API nem sobe.
  */
 async function bootstrap(): Promise<void> {
 
     const app = await NestFactory.create<NestFastifyApplication>(
         ApplicationModule,
-        new FastifyAdapter()
+        new FastifyAdapter({ trustProxy: fastifyTrustProxy(process.env.TRUST_PROXY) })
     );
 
-    // @todo Enable Helmet for better API security headers
+    const config = app.get<Config>(Service.CONFIG);
+
+    // Headers de segurança. A CSP só fica desligada com o Swagger ligado, porque a interface do /docs usa scripts inline.
+    await app.register(fastifyHelmet, {
+        contentSecurityPolicy: config.SWAGGER_ENABLE === '1' ? false : undefined
+    });
 
     // Uploads de faturas; os limites de cada rota são definidos ao ler o formulário.
     await app.register(fastifyMultipart, {
         limits: { files: 1, fileSize: MAX_STATEMENT_FILE_BYTES }
     });
-
-    const config = app.get<Config>(Service.CONFIG);
 
     // CORS só é ligado quando API_CORS_ORIGINS tem origens (em desenvolvimento o front usa proxy).
     const corsOrigins = config.API_CORS_ORIGINS ?? [];
@@ -47,7 +47,7 @@ async function bootstrap(): Promise<void> {
             origin: corsOrigins,
             // O padrão do @fastify/cors libera só GET, HEAD e POST.
             methods: ['GET', 'HEAD', 'POST', 'PATCH', 'DELETE'],
-            exposedHeaders: ['x-request-id']
+            exposedHeaders: ['x-request-id', 'retry-after']
         });
     }
 
@@ -65,22 +65,22 @@ async function bootstrap(): Promise<void> {
         common.get(RequestLogContext)
     );
 
+    // Em SIGTERM/SIGINT o Nest encerra os módulos (ex.: fecha as conexões do Prisma) antes de sair.
+    app.enableShutdownHooks();
+
     await app.listen(process.env.API_PORT || API_DEFAULT_PORT);
 }
 
 /**
- * It is now time to turn the lights on!
- * Any major error that can not be handled by NestJS will be caught in the code
- * below. The default behavior is to display the error on stdout and quit.
- *
- * @todo It is often advised to enhance the code below with an exception-catching
- *       service for better error handling in production environments.
+ * Qualquer erro na subida (configuração inválida, banco fora do ar, porta ocupada...)
+ * é registrado no log e encerra o processo com código 1.
  */
-bootstrap().catch(err => {
+bootstrap().catch((error: unknown) => {
+    new LoggerService().error('Falha ao iniciar a API', {
+        errorName: error instanceof Error ? error.name : 'Erro',
+        errorMessage: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+    });
 
-    // eslint-disable-next-line no-console
-    console.error(err);
-
-    const defaultExitCode = 1;
-    process.exit(defaultExitCode);
+    process.exit(1);
 });
