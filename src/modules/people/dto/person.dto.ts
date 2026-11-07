@@ -6,6 +6,10 @@ export class CreatePersonDto {
     public phone?: string | null;
 }
 
+export class ListPeopleDto {
+    public includeInactive!: boolean;
+}
+
 export class UpdatePersonDto {
     public name?: string;
 

@@ -4,6 +4,10 @@ export class CreateCategoryDto {
     public name!: string;
 }
 
+export class ListCategoriesDto {
+    public includeInactive!: boolean;
+}
+
 export class UpdateCategoryDto {
     public name?: string;
 

@@ -1,7 +1,7 @@
 import * as Joi from 'joi';
 
 import { JoiValidationPipePtbr } from '../../common';
-import { CreateCategoryDto, UpdateCategoryDto } from '../dto/category.dto';
+import { CreateCategoryDto, ListCategoriesDto, UpdateCategoryDto } from '../dto/category.dto';
 
 const nameSchema = Joi.string().trim().min(1).max(120);
 
@@ -19,6 +19,14 @@ export class UpdateCategoryPipe extends JoiValidationPipePtbr {
             name: nameSchema.optional(),
             active: Joi.boolean().optional()
         }).min(1).unknown(false);
+    }
+}
+
+export class ListCategoriesPipe extends JoiValidationPipePtbr {
+    public buildSchema(): Joi.Schema {
+        return Joi.object<ListCategoriesDto>({
+            includeInactive: Joi.boolean().default(false)
+        }).unknown(false);
     }
 }
 

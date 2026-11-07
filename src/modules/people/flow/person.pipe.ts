@@ -1,7 +1,7 @@
 import * as Joi from 'joi';
 
 import { JoiValidationPipePtbr } from '../../common';
-import { CreatePersonDto, UpdatePersonDto } from '../dto/person.dto';
+import { CreatePersonDto, ListPeopleDto, UpdatePersonDto } from '../dto/person.dto';
 
 const nameSchema = Joi.string().trim().min(1).max(120);
 const emailSchema = Joi.string().trim().lowercase().email().max(254).allow(null);
@@ -27,6 +27,14 @@ export class UpdatePersonPipe extends JoiValidationPipePtbr {
             phone: phoneSchema.optional(),
             active: Joi.boolean().optional()
         }).min(1).unknown(false);
+    }
+}
+
+export class ListPeoplePipe extends JoiValidationPipePtbr {
+    public buildSchema(): Joi.Schema {
+        return Joi.object<ListPeopleDto>({
+            includeInactive: Joi.boolean().default(false)
+        }).unknown(false);
     }
 }
 

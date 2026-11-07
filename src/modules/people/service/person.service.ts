@@ -14,8 +14,8 @@ export class PersonService {
         return this.personRepository.create(data);
     }
 
-    public async findAll(): Promise<Person[]> {
-        return this.personRepository.findAll();
+    public async findAll(includeInactive = false): Promise<Person[]> {
+        return this.personRepository.findAll(includeInactive);
     }
 
     public async findById(id: string): Promise<Person> {

@@ -11,10 +11,13 @@ export class CategoryRepository {
         return this.prisma.category.create({ data: { name, nameKey } });
     }
 
-    public async findAll(): Promise<Category[]> {
+    /** Sem includeInactive, só as ativas; com ele, todas (ativas primeiro). */
+    public async findAll(includeInactive: boolean): Promise<Category[]> {
         return this.prisma.category.findMany({
-            where: { active: true },
-            orderBy: { name: 'asc' }
+            where: includeInactive ? undefined : { active: true },
+            orderBy: includeInactive
+                ? [{ active: 'desc' }, { name: 'asc' }]
+                : { name: 'asc' }
         });
     }
 

@@ -24,8 +24,8 @@ export class CategoryService {
         }
     }
 
-    public async findAll(): Promise<CategoryResponse[]> {
-        const categories = await this.categoryRepository.findAll();
+    public async findAll(includeInactive = false): Promise<CategoryResponse[]> {
+        const categories = await this.categoryRepository.findAll(includeInactive);
 
         return categories.map(category => this.toResponse(category));
     }

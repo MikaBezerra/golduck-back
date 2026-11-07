@@ -1,9 +1,9 @@
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 
 import { Role } from '../../../generated/prisma/client';
 import { Roles } from '../../auth/security/auth.decorators';
-import { CategoryResponse, CreateCategoryDto, UpdateCategoryDto } from '../dto/category.dto';
-import { CategoryIdPipe, CreateCategoryPipe, UpdateCategoryPipe } from '../flow/category.pipe';
+import { CategoryResponse, CreateCategoryDto, ListCategoriesDto, UpdateCategoryDto } from '../dto/category.dto';
+import { CategoryIdPipe, CreateCategoryPipe, ListCategoriesPipe, UpdateCategoryPipe } from '../flow/category.pipe';
 import { CategoryService } from '../service/category.service';
 
 @Controller('categories')
@@ -17,8 +17,10 @@ export class CategoryController {
     }
 
     @Get()
-    public async findAll(): Promise<CategoryResponse[]> {
-        return this.categoryService.findAll();
+    public async findAll(
+        @Query(ListCategoriesPipe) query: ListCategoriesDto
+    ): Promise<CategoryResponse[]> {
+        return this.categoryService.findAll(query.includeInactive);
     }
 
     @Get(':id')

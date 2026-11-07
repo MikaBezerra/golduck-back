@@ -1,9 +1,9 @@
 import type { Person } from '../../../generated/prisma/client';
-import { Body, Controller, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query } from '@nestjs/common';
 import { Role } from '../../../generated/prisma/client';
 import { Roles } from '../../auth/security/auth.decorators';
-import { CreatePersonDto, UpdatePersonDto } from '../dto/person.dto';
-import { CreatePersonPipe, PersonIdPipe, UpdatePersonPipe } from '../flow/person.pipe';
+import { CreatePersonDto, ListPeopleDto, UpdatePersonDto } from '../dto/person.dto';
+import { CreatePersonPipe, ListPeoplePipe, PersonIdPipe, UpdatePersonPipe } from '../flow/person.pipe';
 import { PersonService } from '../service/person.service';
 
 @Controller('people')
@@ -21,8 +21,10 @@ export class PersonController {
     }
 
     @Get()
-    public async findAll(): Promise<Person[]> {
-        return this.personService.findAll();
+    public async findAll(
+        @Query(ListPeoplePipe) query: ListPeopleDto
+    ): Promise<Person[]> {
+        return this.personService.findAll(query.includeInactive);
     }
 
     @Get(':id')

@@ -19,14 +19,13 @@ export class PersonRepository {
         });
     }
 
-    public async findAll(): Promise<Person[]> {
+    /** Sem includeInactive, só as ativas; com ele, todas (ativas primeiro). */
+    public async findAll(includeInactive: boolean): Promise<Person[]> {
         return this.prisma.person.findMany({
-            where: {
-                active: true
-            },
-            orderBy: [
-                { name: 'asc' },
-            ]
+            where: includeInactive ? undefined : { active: true },
+            orderBy: includeInactive
+                ? [{ active: 'desc' }, { name: 'asc' }]
+                : [{ name: 'asc' }]
         });
     }
 
