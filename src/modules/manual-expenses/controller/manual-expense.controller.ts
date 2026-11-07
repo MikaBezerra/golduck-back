@@ -10,9 +10,11 @@ import {
     Post,
     Query
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiNoContentResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 
 import { Role } from '../../../generated/prisma/client';
 import { Roles } from '../../auth/security/auth.decorators';
+import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs';
 import {
     CreateManualExpenseDto,
     DeleteManualExpensesDto,
@@ -29,12 +31,17 @@ import {
 } from '../flow/manual-expense.pipe';
 import { ManualExpenseService } from '../service/manual-expense.service';
 
+@ApiTags('manual-expenses')
+@ApiBearerAuth()
+@ApiErrorResponses()
 @Controller('manual-expenses')
 @Roles(Role.USER)
 export class ManualExpenseController {
     public constructor(private readonly manualExpenseService: ManualExpenseService) { }
 
     @Post()
+    @ApiOperation({ summary: 'Cria uma despesa fora do cartão (ou uma por mês até dezembro)' })
+    @ApiDataResponse(ManualExpenseResponse, { status: HttpStatus.CREATED, isArray: true })
     public async create(
         @Body(CreateManualExpensePipe) body: CreateManualExpenseDto
     ): Promise<ManualExpenseResponse[]> {
@@ -42,6 +49,8 @@ export class ManualExpenseController {
     }
 
     @Get()
+    @ApiOperation({ summary: 'Lista as despesas do mês' })
+    @ApiDataResponse(ManualExpenseResponse, { isArray: true })
     public async findAll(
         @Query(ListManualExpensesPipe) query: ListManualExpensesDto
     ): Promise<ManualExpenseResponse[]> {
@@ -49,6 +58,9 @@ export class ManualExpenseController {
     }
 
     @Get(':id')
+    @ApiOperation({ summary: 'Consulta uma despesa' })
+    @ApiParam({ name: 'id', format: 'uuid' })
+    @ApiDataResponse(ManualExpenseResponse)
     public async findById(
         @Param('id', ManualExpenseIdPipe) id: string
     ): Promise<ManualExpenseResponse> {
@@ -56,6 +68,8 @@ export class ManualExpenseController {
     }
 
     @Patch()
+    @ApiOperation({ summary: 'Altera as despesas dos IDs enviados, em uma transação' })
+    @ApiDataResponse(ManualExpenseResponse, { isArray: true })
     public async updateMany(
         @Body(UpdateManualExpensesPipe) body: UpdateManualExpensesDto
     ): Promise<ManualExpenseResponse[]> {
@@ -64,6 +78,8 @@ export class ManualExpenseController {
 
     @Delete()
     @HttpCode(HttpStatus.NO_CONTENT)
+    @ApiOperation({ summary: 'Exclui as despesas dos IDs enviados, em uma transação' })
+    @ApiNoContentResponse({ description: 'Despesas excluídas' })
     public async deleteMany(
         @Body(DeleteManualExpensesPipe) body: DeleteManualExpensesDto
     ): Promise<void> {

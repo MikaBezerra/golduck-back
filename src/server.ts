@@ -7,6 +7,7 @@ import { MAX_STATEMENT_FILE_BYTES } from './modules/card-imports/flow/multipart-
 import { CommonModule, Config, LoggerService } from './modules/common';
 import { RequestLogContext } from './modules/common/logging/request-log.context';
 import { registerRequestLogging } from './modules/common/logging/request-logging';
+import { setupSwagger } from './modules/common/swagger/swagger.setup';
 import { Service } from './modules/tokens';
 
 /**
@@ -36,8 +37,10 @@ async function bootstrap(): Promise<void> {
         limits: { files: 1, fileSize: MAX_STATEMENT_FILE_BYTES }
     });
 
+    const config = app.get<Config>(Service.CONFIG);
+
     // CORS só é ligado quando API_CORS_ORIGINS tem origens (em desenvolvimento o front usa proxy).
-    const corsOrigins = app.get<Config>(Service.CONFIG).API_CORS_ORIGINS ?? [];
+    const corsOrigins = config.API_CORS_ORIGINS ?? [];
 
     if (corsOrigins.length > 0) {
         app.enableCors({
@@ -49,6 +52,11 @@ async function bootstrap(): Promise<void> {
     }
 
     app.setGlobalPrefix(process.env.API_PREFIX || API_DEFAULT_PREFIX);
+
+    // Documentação OpenAPI em /docs e /docs-json, fora do prefixo da API.
+    if (config.SWAGGER_ENABLE === '1') {
+        setupSwagger(app);
+    }
 
     const common = app.select(CommonModule);
     registerRequestLogging(

@@ -37,6 +37,7 @@ export const configProvider = {
             API_PORT: Joi.number().required(),
             API_PREFIX: Joi.string().required(),
             API_CORS_ORIGINS: Joi.string().empty('').optional().custom(parseCorsOrigins),
+            SWAGGER_ENABLE: Joi.string().valid('0', '1').empty('').optional(),
             JWT_SECRET: Joi.string().required(),
             JWT_ISSUER: Joi.string().required(),
             PASSENGERS_ALLOWED: Joi.string().valid('yes', 'no').required()

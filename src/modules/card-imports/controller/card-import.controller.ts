@@ -10,13 +10,24 @@ import {
     Query,
     Req
 } from '@nestjs/common';
+import {
+    ApiBearerAuth,
+    ApiBody,
+    ApiConsumes,
+    ApiNoContentResponse,
+    ApiOperation,
+    ApiParam,
+    ApiTags
+} from '@nestjs/swagger';
 import type { FastifyRequest } from 'fastify';
 
 import { Role } from '../../../generated/prisma/client';
 import { Roles } from '../../auth/security/auth.decorators';
+import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs';
 import {
     CardImportResponse,
     CardImportResultResponse,
+    CardImportUploadDto,
     CreateCardImportDto,
     CreateManualCardImportDto,
     ListCardImportsDto
@@ -30,6 +41,11 @@ import {
 import { readStatementUpload } from '../flow/multipart-upload';
 import { CardImportService } from '../service/card-import.service';
 
+const ABSOLUTE_MONTH_NOTE = 'O resultado é absoluto para o mês da fatura: substitui o que havia no cartão naquele mês.';
+
+@ApiTags('card-imports')
+@ApiBearerAuth()
+@ApiErrorResponses()
 @Controller('card-imports')
 @Roles(Role.USER)
 export class CardImportController {
@@ -45,6 +61,10 @@ export class CardImportController {
      * - password: senha do PDF protegido (Neon); não é gravada.
      */
     @Post()
+    @ApiOperation({ summary: 'Importa a fatura enviada pelo banco do cartão', description: ABSOLUTE_MONTH_NOTE })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({ type: CardImportUploadDto })
+    @ApiDataResponse(CardImportResultResponse, { status: HttpStatus.CREATED })
     public async create(@Req() request: FastifyRequest): Promise<CardImportResultResponse> {
         const upload = await readStatementUpload(request);
         const fields = this.createPipe.transform(upload.fields) as CreateCardImportDto;
@@ -57,6 +77,8 @@ export class CardImportController {
      * substitui tudo o que existe no cartão para o mês informado.
      */
     @Post('manual')
+    @ApiOperation({ summary: 'Registra uma fatura digitada, sem arquivo', description: ABSOLUTE_MONTH_NOTE })
+    @ApiDataResponse(CardImportResultResponse, { status: HttpStatus.CREATED })
     public async createManual(
         @Body(CreateManualCardImportPipe) body: CreateManualCardImportDto
     ): Promise<CardImportResultResponse> {
@@ -64,6 +86,8 @@ export class CardImportController {
     }
 
     @Get()
+    @ApiOperation({ summary: 'Histórico de uploads, mais recentes primeiro' })
+    @ApiDataResponse(CardImportResponse, { isArray: true })
     public async findAll(
         @Query(ListCardImportsPipe) query: ListCardImportsDto
     ): Promise<CardImportResponse[]> {
@@ -71,6 +95,9 @@ export class CardImportController {
     }
 
     @Get(':id')
+    @ApiOperation({ summary: 'Consulta um upload' })
+    @ApiParam({ name: 'id', format: 'uuid' })
+    @ApiDataResponse(CardImportResponse)
     public async findById(@Param('id', CardImportIdPipe) id: string): Promise<CardImportResponse> {
         return this.cardImportService.findById(id);
     }
@@ -78,6 +105,9 @@ export class CardImportController {
     /** Apaga o upload e as despesas que ele gravou. Não restaura o estado anterior. */
     @Delete(':id')
     @HttpCode(HttpStatus.NO_CONTENT)
+    @ApiOperation({ summary: 'Apaga o upload e as despesas que ele gravou (não restaura o estado anterior)' })
+    @ApiParam({ name: 'id', format: 'uuid' })
+    @ApiNoContentResponse({ description: 'Upload apagado' })
     public async delete(@Param('id', CardImportIdPipe) id: string): Promise<void> {
         await this.cardImportService.delete(id);
     }
