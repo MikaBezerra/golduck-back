@@ -18,12 +18,50 @@ export class CreateCardImportDto {
 
     @ApiPropertyOptional({ type: String, format: 'password', description: 'Senha do PDF protegido (Neon). Não é gravada.' })
     public password?: string;
+
+    /** Texto JSON com a lista de CardImportOverrideDto; só o salvamento usa. */
+    public overrides?: string;
 }
 
-/** Só para a documentação: o formulário multipart completo do upload. */
-export class CardImportUploadDto extends CreateCardImportDto {
+/** Escolha do usuário para uma compra do arquivo, feita a partir da pré-visualização. */
+export class CardImportOverrideDto {
+    @ApiProperty({ type: String, example: 'P|2026-09|8|FERREIRA COSTA', description: 'key devolvida pela pré-visualização' })
+    public key!: string;
+
+    @ApiProperty({ type: String, minLength: 1, maxLength: 160, nullable: true, example: 'Geladeira' })
+    public nickname!: string | null;
+
+    @ApiProperty(UUID_PROPERTY)
+    public categoryId!: string;
+
+    @ApiProperty({ ...UUID_PROPERTY, nullable: true, description: 'null = compartilhada' })
+    public personId!: string | null;
+}
+
+/** Só para a documentação: o formulário multipart da pré-visualização. */
+export class CardImportUploadDto {
     @ApiProperty({ type: String, format: 'binary', description: 'Fatura: .csv para NUBANK e C6, .pdf para NEON (máx. 2 MB)' })
     public file!: unknown;
+
+    @ApiProperty(UUID_PROPERTY)
+    public cardId!: string;
+
+    @ApiProperty({ ...MONTH_PROPERTY, description: 'Mês da fatura, AAAA-MM' })
+    public month!: string;
+
+    @ApiPropertyOptional({ type: String, format: 'password', description: 'Senha do PDF protegido (Neon). Não é gravada.' })
+    public password?: string;
+}
+
+/** Só para a documentação: o formulário multipart do salvamento, com as escolhas do usuário. */
+export class CardImportSaveUploadDto extends CardImportUploadDto {
+    @ApiPropertyOptional({
+        type: String,
+        maxLength: 256 * 1024,
+        example: '[{"key":"P|2026-09|8|FERREIRA COSTA","nickname":"Geladeira","categoryId":"<uuid>","personId":null}]',
+        description: 'JSON com até 500 itens no formato CardImportOverrideDto. Cada escolha vale para a linha do mês e as parcelas futuras lançadas por ela.'
+    })
+    public overrides?: string;
 }
 
 export class ManualCardTransactionDto {

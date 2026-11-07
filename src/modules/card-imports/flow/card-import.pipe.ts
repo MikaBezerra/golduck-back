@@ -1,7 +1,9 @@
 import * as Joi from 'joi';
 
 import { JoiValidationPipePtbr } from '../../common';
+import { ValidationError } from '../../common/validation/validation-error';
 import {
+    CardImportOverrideDto,
     CreateCardImportDto,
     CreateManualCardImportDto,
     ListCardImportsDto,
@@ -38,8 +40,38 @@ export class CreateCardImportPipe extends JoiValidationPipePtbr {
         return Joi.object<CreateCardImportDto>({
             cardId: idSchema.required(),
             month: monthSchema.required(),
-            password: Joi.string().min(1).max(100).optional()
+            password: Joi.string().min(1).max(100).optional(),
+            // Texto JSON; o conteúdo é validado por CardImportOverridesPipe.
+            overrides: Joi.string().optional()
         }).unknown(false);
+    }
+}
+
+/** Converte o campo overrides (texto JSON) na lista de escolhas e valida cada item. */
+export class CardImportOverridesPipe extends JoiValidationPipePtbr {
+    public buildSchema(): Joi.Schema {
+        return Joi.object({
+            overrides: Joi.array().items(
+                Joi.object<CardImportOverrideDto>({
+                    key: Joi.string().min(1).max(400).required(),
+                    nickname: Joi.string().trim().min(1).max(160).allow(null).required(),
+                    categoryId: idSchema.required(),
+                    personId: idSchema.allow(null).required()
+                }).unknown(false)
+            ).max(MAX_MANUAL_TRANSACTIONS).unique('key').required()
+        });
+    }
+
+    public override transform(value: unknown): CardImportOverrideDto[] {
+        let parsed: unknown;
+
+        try {
+            parsed = JSON.parse(String(value));
+        } catch {
+            throw new ValidationError([{ field: 'overrides', code: 'json.invalid', message: 'overrides deve conter um JSON válido' }]);
+        }
+
+        return (super.transform({ overrides: parsed }) as { overrides: CardImportOverrideDto[] }).overrides;
     }
 }
 

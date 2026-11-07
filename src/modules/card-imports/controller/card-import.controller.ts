@@ -14,6 +14,7 @@ import {
     ApiBearerAuth,
     ApiBody,
     ApiConsumes,
+    ApiExtraModels,
     ApiNoContentResponse,
     ApiOperation,
     ApiParam,
@@ -25,9 +26,11 @@ import { Role } from '../../../generated/prisma/client';
 import { Roles } from '../../auth/security/auth.decorators';
 import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs';
 import {
+    CardImportOverrideDto,
     CardImportPreviewResponse,
     CardImportResponse,
     CardImportResultResponse,
+    CardImportSaveUploadDto,
     CardImportUploadDto,
     CreateCardImportDto,
     CreateManualCardImportDto,
@@ -35,6 +38,7 @@ import {
 } from '../dto/card-import.dto';
 import {
     CardImportIdPipe,
+    CardImportOverridesPipe,
     CreateCardImportPipe,
     CreateManualCardImportPipe,
     ListCardImportsPipe
@@ -51,6 +55,7 @@ const ABSOLUTE_MONTH_NOTE = 'O resultado é absoluto para o mês da fatura: subs
 @Roles(Role.USER)
 export class CardImportController {
     private readonly createPipe = new CreateCardImportPipe();
+    private readonly overridesPipe = new CardImportOverridesPipe();
 
     public constructor(private readonly cardImportService: CardImportService) { }
 
@@ -59,22 +64,28 @@ export class CardImportController {
      * - file: arquivo da fatura (.csv para Nubank e C6, .pdf para Neon);
      * - cardId: UUID do cartão;
      * - month: mês da fatura, AAAA-MM;
-     * - password: senha do PDF protegido (Neon); não é gravada.
+     * - password: senha do PDF protegido (Neon); não é gravada;
+     * - overrides: opcional, JSON com as escolhas feitas na pré-visualização.
      */
     @Post()
-    @ApiOperation({ summary: 'Importa a fatura enviada pelo banco do cartão', description: ABSOLUTE_MONTH_NOTE })
+    @ApiOperation({
+        summary: 'Importa a fatura enviada pelo banco do cartão',
+        description: `${ABSOLUTE_MONTH_NOTE  } O campo opcional overrides (JSON) aplica as escolhas feitas na pré-visualização.`
+    })
     @ApiConsumes('multipart/form-data')
-    @ApiBody({ type: CardImportUploadDto })
+    @ApiExtraModels(CardImportOverrideDto)
+    @ApiBody({ type: CardImportSaveUploadDto })
     @ApiDataResponse(CardImportResultResponse, { status: HttpStatus.CREATED })
     public async create(@Req() request: FastifyRequest): Promise<CardImportResultResponse> {
         const upload = await readStatementUpload(request);
         const fields = this.createPipe.transform(upload.fields) as CreateCardImportDto;
+        const overrides = fields.overrides === undefined ? [] : this.overridesPipe.transform(fields.overrides);
 
-        return this.cardImportService.create(fields, upload.file);
+        return this.cardImportService.create(fields, upload.file, overrides);
     }
 
     /**
-     * Mesmo formulário do upload, mas não grava nada: devolve o que o upload faria,
+     * Mesmo formulário do upload (o campo overrides, se vier, é ignorado), mas não grava nada: devolve o que o upload faria,
      * para o usuário revisar e escolher apelido, categoria e pessoa antes de salvar.
      */
     @Post('preview')

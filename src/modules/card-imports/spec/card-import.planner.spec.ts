@@ -196,6 +196,36 @@ describe('planCardImport', () => {
             });
         });
 
+        it('override vale para a linha do mês e as parcelas projetadas, criadas ou atualizadas', () => {
+            const items = assignPurchaseKeys([
+                transaction({ description: 'Com escolha', installmentNumber: 2, installmentTotal: 4 }),
+                transaction({ description: 'Sem escolha', installmentNumber: 2, installmentTotal: 3 })
+            ], november);
+            const [chosen, untouched] = items.map(item => item.purchaseKey);
+            const rows = [
+                existing({ purchaseKey: chosen, month: november, sourceMonth: october, nickname: 'Antigo' }),
+                existing({ purchaseKey: untouched, month: november, sourceMonth: october, nickname: 'Fica' })
+            ];
+            const choice = { nickname: 'Geladeira', categoryId: 'cat-casa', personId: 'p1' };
+            const result = planCardImport({
+                cardId: CARD,
+                month: november,
+                transactions: items,
+                existing: rows,
+                nextImportedMonth: null,
+                defaultCategoryId: DEFAULT_CATEGORY,
+                overrides: new Map([[chosen, choice]])
+            });
+
+            expect(result.updates.find(update => update.id === rows[0].id)?.data).toMatchObject(choice);
+            expect(result.creates.filter(row => row.purchaseKey === chosen)).toEqual([
+                expect.objectContaining({ ...choice, installmentNumber: 3 }),
+                expect.objectContaining({ ...choice, installmentNumber: 4 })
+            ]);
+            const untouchedUpdate = result.updates.find(update => update.id === rows[1].id)?.data;
+            expect(untouchedUpdate && 'nickname' in untouchedUpdate).toBe(false);
+        });
+
         it('projectedCount respeita o próximo mês com upload próprio', () => {
             const items = assignPurchaseKeys([transaction({ installmentNumber: 1, installmentTotal: 6 })], october);
             const [item] = plan('2026-10', items, [], '2026-12').transactions;

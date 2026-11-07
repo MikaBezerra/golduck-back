@@ -1,13 +1,19 @@
+import type { ApiErrorDetail } from '../../common/http/response.types';
 import type { UploadedStatementFile } from '../service/card-import.service';
 import type { FastifyRequest } from 'fastify';
 
+import { ValidationError } from '../../common/validation/validation-error';
 import { CARD_IMPORT_ERRORS } from '../errors/card-import.errors';
 
 export const MAX_STATEMENT_FILE_BYTES = 2 * 1024 * 1024;
 
 const FILE_FIELD = 'file';
-const MAX_FIELDS = 5;
+const OVERRIDES_FIELD = 'overrides';
+const MAX_FIELDS = 6;
+/** Limite dos campos de texto comuns (cardId, month, password...). */
 const MAX_FIELD_BYTES = 200;
+/** Só o campo overrides (JSON com as escolhas do usuário) pode ser maior. */
+const MAX_OVERRIDES_BYTES = 256 * 1024;
 
 export type StatementUpload = {
     fields: Record<string, string>;
@@ -24,6 +30,7 @@ export async function readStatementUpload(request: FastifyRequest): Promise<Stat
     }
 
     const fields: Record<string, string> = {};
+    const oversized: ApiErrorDetail[] = [];
     let file: UploadedStatementFile | undefined;
 
     try {
@@ -31,7 +38,9 @@ export async function readStatementUpload(request: FastifyRequest): Promise<Stat
             limits: {
                 files: 1,
                 fields: MAX_FIELDS,
-                fieldSize: MAX_FIELD_BYTES,
+                // O busboy aplica o mesmo limite a todos os campos; o limite menor dos
+                // campos comuns é conferido abaixo, campo a campo.
+                fieldSize: MAX_OVERRIDES_BYTES,
                 fileSize: MAX_STATEMENT_FILE_BYTES
             }
         });
@@ -44,11 +53,25 @@ export async function readStatementUpload(request: FastifyRequest): Promise<Stat
                     file = { fileName: part.filename, content };
                 }
             } else if (typeof part.value === 'string') {
-                fields[part.fieldname] = part.value;
+                const limit = part.fieldname === OVERRIDES_FIELD ? MAX_OVERRIDES_BYTES : MAX_FIELD_BYTES;
+
+                if (part.valueTruncated || Buffer.byteLength(part.value) > limit) {
+                    oversized.push({
+                        field: part.fieldname,
+                        code: 'string.max',
+                        message: `${part.fieldname} deve ter no máximo ${limit} bytes`
+                    });
+                } else {
+                    fields[part.fieldname] = part.value;
+                }
             }
         }
     } catch (error: unknown) {
         throw toUploadError(error);
+    }
+
+    if (oversized.length > 0) {
+        throw new ValidationError(oversized);
     }
 
     if (!file || file.content.length === 0) {

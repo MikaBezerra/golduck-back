@@ -8,7 +8,9 @@ import { CategoryService } from '../../categories/service/category.service';
 import { formatMonth, parseMonth } from '../../common/date/month';
 import { formatAmountCents, parsePositiveAmountCents } from '../../common/money/money';
 import { CreditCardService } from '../../credit-cards/service/credit-card.service';
+import { PersonService } from '../../people/service/person.service';
 import {
+    CardImportOverrideDto,
     CardImportPreviewResponse,
     CardImportResponse,
     CardImportResultResponse,
@@ -28,7 +30,7 @@ import {
     ParsedCardTransaction
 } from '../parsers/card-statement.parser';
 import { CardImportRepository, CardImportWithCount } from '../repository/card-import.repository';
-import { assignPurchaseKeys, planCardImport } from './card-import.planner';
+import { assignPurchaseKeys, CardExpensePersonalization, KeyedTransaction, planCardImport } from './card-import.planner';
 
 export type UploadedStatementFile = {
     fileName: string;
@@ -58,14 +60,26 @@ export class CardImportService {
         private readonly cardImportRepository: CardImportRepository,
         private readonly creditCardService: CreditCardService,
         private readonly categoryService: CategoryService,
+        private readonly personService: PersonService,
         private readonly parsers: CardStatementParserRegistry
     ) { }
 
-    /** Upload do arquivo exportado pelo banco do cartão. */
-    public async create(data: CreateCardImportDto, file: UploadedStatementFile): Promise<CardImportResultResponse> {
-        const upload = await this.prepareUpload(data, file);
+    /**
+     * Upload do arquivo exportado pelo banco do cartão. As escolhas do usuário
+     * (overrides), feitas na pré-visualização, valem para a linha do mês e para as
+     * parcelas futuras lançadas por ela. O arquivo é lido de novo: ele continua
+     * sendo a fonte da verdade.
+     */
+    public async create(
+        data: CreateCardImportDto,
+        file: UploadedStatementFile,
+        overrides: CardImportOverrideDto[] = []
+    ): Promise<CardImportResultResponse> {
+        const { card, month, parsed, source } = await this.prepareUpload(data, file);
+        const transactions = assignPurchaseKeys(parsed.transactions, month);
+        const choices = await this.resolveOverrides(overrides, transactions);
 
-        return this.applyImport(upload.card, upload.month, upload.parsed, upload.source);
+        return this.applyImport(card, month, transactions, parsed.ignoredCount, source, choices);
     }
 
     /**
@@ -150,7 +164,9 @@ export class CardImportService {
             };
         });
 
-        return this.applyImport(card, parseMonth(data.month), { transactions, ignoredCount: 0 }, {
+        const month = parseMonth(data.month);
+
+        return this.applyImport(card, month, assignPurchaseKeys(transactions, month), 0, {
             fileName: MANUAL_FILE_NAME,
             fileHash: this.hash(Buffer.from(JSON.stringify(data.transactions))),
             parserVersion: MANUAL_VERSION
@@ -178,10 +194,11 @@ export class CardImportService {
     private async applyImport(
         card: CreditCard,
         month: Date,
-        parsed: CardStatementParseResult,
-        source: ImportSource
+        transactions: KeyedTransaction[],
+        ignoredCount: number,
+        source: ImportSource,
+        overrides?: ReadonlyMap<string, CardExpensePersonalization>
     ): Promise<CardImportResultResponse> {
-        const transactions = assignPurchaseKeys(parsed.transactions, month);
         const defaultCategory = await this.categoryService.findDefault();
         const { cardImport, plan } = await this.cardImportRepository.apply({
             data: {
@@ -189,7 +206,7 @@ export class CardImportService {
                 cardId: card.id,
                 month,
                 rowCount: transactions.length,
-                ignoredCount: parsed.ignoredCount
+                ignoredCount
             },
             purchaseKeys: transactions.map(transaction => transaction.purchaseKey),
             plan: ({ existing, nextImportedMonth }) => planCardImport({
@@ -198,7 +215,8 @@ export class CardImportService {
                 transactions,
                 existing,
                 nextImportedMonth,
-                defaultCategoryId: defaultCategory.id
+                defaultCategoryId: defaultCategory.id,
+                overrides
             })
         });
 
@@ -209,9 +227,47 @@ export class CardImportService {
             }),
             summary: {
                 ...plan.summary,
-                ignored: parsed.ignoredCount
+                ignored: ignoredCount
             }
         };
+    }
+
+    /**
+     * Confere as escolhas do usuário antes de gravar: cada key precisa estar no
+     * arquivo (senão a fatura mudou desde a pré-visualização) e categoria e pessoa
+     * precisam existir e estar ativas.
+     */
+    private async resolveOverrides(
+        overrides: CardImportOverrideDto[],
+        transactions: KeyedTransaction[]
+    ): Promise<ReadonlyMap<string, CardExpensePersonalization>> {
+        const fileKeys = new Set(transactions.map(transaction => transaction.purchaseKey));
+
+        if (overrides.some(override => !fileKeys.has(override.key))) {
+            throw CARD_IMPORT_ERRORS.overrideUnknownKey('override_key_not_in_file');
+        }
+
+        for (const categoryId of new Set(overrides.map(override => override.categoryId))) {
+            if (!(await this.categoryService.findById(categoryId)).active) {
+                throw CARD_IMPORT_ERRORS.inactiveCategory('category_inactive');
+            }
+        }
+
+        const personIds = overrides
+            .map(override => override.personId)
+            .filter((personId): personId is string => personId !== null);
+
+        for (const personId of new Set(personIds)) {
+            if (!(await this.personService.findById(personId)).active) {
+                throw CARD_IMPORT_ERRORS.inactivePerson('person_inactive');
+            }
+        }
+
+        return new Map(overrides.map(override => [override.key, {
+            nickname: override.nickname,
+            categoryId: override.categoryId,
+            personId: override.personId
+        }]));
     }
 
     /** Validações comuns ao upload e à pré-visualização: cartão ativo, tipo do arquivo e leitura. */
