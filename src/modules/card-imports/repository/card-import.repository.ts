@@ -1,8 +1,8 @@
-import type { CardImport, Prisma } from '../../../generated/prisma/client';
+import type { CardExpense, CardImport, Prisma } from '../../../generated/prisma/client';
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../common';
-import { CardImportPlan, ExistingCardExpense, PlanCardImportInput } from '../service/card-import.planner';
+import { CardImportPlan } from '../service/card-import.planner';
 
 export type CardImportWithCount = CardImport & {
     /** Despesas cuja última gravação veio deste upload. */
@@ -21,64 +21,52 @@ export type NewCardImport = {
     ignoredCount: number;
 };
 
+/** O que o banco precisa informar para montar o plano de um upload (só leituras). */
+export type PlanningContext = {
+    /** Linhas do cartão cujas chaves aparecem no arquivo ou no mês do upload. */
+    existing: CardExpense[];
+    /** Primeiro mês posterior com upload próprio no cartão. */
+    nextImportedMonth: Date | null;
+};
+
 export type ApplyCardImportInput = {
     data: NewCardImport;
     purchaseKeys: string[];
-    plan: (input: Pick<PlanCardImportInput, 'importId' | 'existing' | 'nextImportedMonth'>) => CardImportPlan;
+    plan: (context: PlanningContext) => CardImportPlan;
 };
 
 const IMPORT_TRANSACTION_TIMEOUT_MS = 30_000;
-const EXISTING_EXPENSE_SELECT = {
-    id: true,
-    month: true,
-    sourceMonth: true,
-    purchaseKey: true,
-    nickname: true,
-    categoryId: true,
-    personId: true
-} satisfies Prisma.CardExpenseSelect;
 
 @Injectable()
 export class CardImportRepository {
     public constructor(private readonly prisma: PrismaService) { }
 
+    /** Lê o contexto do plano sem gravar nada (usado pela pré-visualização). */
+    public async loadPlanningContext(cardId: string, month: Date, purchaseKeys: string[]): Promise<PlanningContext> {
+        return this.readPlanningContext(this.prisma, cardId, month, purchaseKeys);
+    }
+
     /**
-     * Registra o upload e aplica a conciliação em uma única transação: se qualquer
-     * etapa falhar, nenhuma despesa do upload é gravada.
+     * Registra o upload e aplica a conciliação em uma única transação: o contexto é
+     * lido dentro dela e, se qualquer etapa falhar, nada do upload é gravado.
      */
     public async apply(input: ApplyCardImportInput): Promise<{ cardImport: CardImport; plan: CardImportPlan }> {
         return this.prisma.$transaction(async tx => {
             const cardImport = await tx.cardImport.create({ data: input.data });
-            const monthRows = await tx.cardExpense.findMany({
-                where: { cardId: input.data.cardId, month: input.data.month },
-                select: { purchaseKey: true }
-            });
-            const keys = [...new Set([...input.purchaseKeys, ...monthRows.map(row => row.purchaseKey)])];
-            const existing: ExistingCardExpense[] = keys.length === 0 ? [] : await tx.cardExpense.findMany({
-                where: { cardId: input.data.cardId, purchaseKey: { in: keys } },
-                select: EXISTING_EXPENSE_SELECT
-            });
-            const nextImport = await tx.cardImport.findFirst({
-                where: { cardId: input.data.cardId, month: { gt: input.data.month } },
-                orderBy: { month: 'asc' },
-                select: { month: true }
-            });
-            const plan = input.plan({
-                importId: cardImport.id,
-                existing,
-                nextImportedMonth: nextImport?.month ?? null
-            });
+            const context = await this.readPlanningContext(tx, input.data.cardId, input.data.month, input.purchaseKeys);
+            const plan = input.plan(context);
+            const importId = cardImport.id;
 
             if (plan.deleteIds.length > 0) {
                 await tx.cardExpense.deleteMany({ where: { id: { in: plan.deleteIds } } });
             }
 
             for (const update of plan.updates) {
-                await tx.cardExpense.update({ where: { id: update.id }, data: update.data });
+                await tx.cardExpense.update({ where: { id: update.id }, data: { ...update.data, importId } });
             }
 
             if (plan.creates.length > 0) {
-                await tx.cardExpense.createMany({ data: plan.creates });
+                await tx.cardExpense.createMany({ data: plan.creates.map(row => ({ ...row, importId })) });
             }
 
             return { cardImport, plan };
@@ -116,5 +104,28 @@ export class CardImportRepository {
     /** Remove o upload; as despesas gravadas por ele saem junto (onDelete: Cascade). */
     public async delete(id: string): Promise<void> {
         await this.prisma.cardImport.delete({ where: { id } });
+    }
+
+    private async readPlanningContext(
+        client: Prisma.TransactionClient,
+        cardId: string,
+        month: Date,
+        purchaseKeys: string[]
+    ): Promise<PlanningContext> {
+        const monthRows = await client.cardExpense.findMany({
+            where: { cardId, month },
+            select: { purchaseKey: true }
+        });
+        const keys = [...new Set([...purchaseKeys, ...monthRows.map(row => row.purchaseKey)])];
+        const existing = keys.length === 0 ? [] : await client.cardExpense.findMany({
+            where: { cardId, purchaseKey: { in: keys } }
+        });
+        const nextImport = await client.cardImport.findFirst({
+            where: { cardId, month: { gt: month } },
+            orderBy: { month: 'asc' },
+            select: { month: true }
+        });
+
+        return { existing, nextImportedMonth: nextImport?.month ?? null };
     }
 }

@@ -3,11 +3,13 @@ import { Injectable } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { extname } from 'path';
 
+import { toCardExpenseResponse } from '../../card-expenses/service/card-expense.mapper';
 import { CategoryService } from '../../categories/service/category.service';
 import { formatMonth, parseMonth } from '../../common/date/month';
-import { parsePositiveAmountCents } from '../../common/money/money';
+import { formatAmountCents, parsePositiveAmountCents } from '../../common/money/money';
 import { CreditCardService } from '../../credit-cards/service/credit-card.service';
 import {
+    CardImportPreviewResponse,
     CardImportResponse,
     CardImportResultResponse,
     CreateCardImportDto,
@@ -39,6 +41,13 @@ type ImportSource = {
     parserVersion: string;
 };
 
+type PreparedUpload = {
+    card: CreditCard;
+    month: Date;
+    parsed: CardStatementParseResult;
+    source: ImportSource;
+};
+
 const MAX_FILE_NAME_LENGTH = 255;
 const MANUAL_FILE_NAME = 'Lançamento manual';
 const MANUAL_VERSION = 'manual@1';
@@ -54,25 +63,67 @@ export class CardImportService {
 
     /** Upload do arquivo exportado pelo banco do cartão. */
     public async create(data: CreateCardImportDto, file: UploadedStatementFile): Promise<CardImportResultResponse> {
-        const card = await this.creditCardService.getActiveById(data.cardId);
-        const parser = this.parsers.get(card.bank);
+        const upload = await this.prepareUpload(data, file);
 
-        if (extname(file.fileName).toLowerCase() !== parser.fileExtension) {
-            throw CARD_IMPORT_ERRORS.invalidFileType(`expected_${parser.fileExtension.slice(1)}_for_${card.bank.toLowerCase()}`);
-        }
+        return this.applyImport(upload.card, upload.month, upload.parsed, upload.source);
+    }
 
-        const month = parseMonth(data.month);
-        const parsed = await this.parse(parser, {
-            file: file.content,
-            month: { year: month.getUTCFullYear(), month: month.getUTCMonth() + 1 },
-            password: data.password
+    /**
+     * Mostra o que o upload faria, sem gravar nada: as compras do arquivo (novas ou
+     * atualizadas, com a sugestão de apelido, categoria e pessoa), as despesas do mês
+     * que seriam apagadas e o resumo.
+     */
+    public async preview(data: CreateCardImportDto, file: UploadedStatementFile): Promise<CardImportPreviewResponse> {
+        const { card, month, parsed, source } = await this.prepareUpload(data, file);
+        const transactions = assignPurchaseKeys(parsed.transactions, month);
+        const defaultCategory = await this.categoryService.findDefault();
+        const context = await this.cardImportRepository.loadPlanningContext(
+            card.id,
+            month,
+            transactions.map(transaction => transaction.purchaseKey)
+        );
+        const plan = planCardImport({
+            cardId: card.id,
+            month,
+            transactions,
+            existing: context.existing,
+            nextImportedMonth: context.nextImportedMonth,
+            defaultCategoryId: defaultCategory.id
         });
+        const deleted = new Set(plan.deleteIds);
+        const removed = context.existing
+            .filter(row => deleted.has(row.id) && row.month.getTime() === month.getTime())
+            .sort((first, second) =>
+                first.transactionDate.getTime() - second.transactionDate.getTime()
+                || first.originalDescription.localeCompare(second.originalDescription)
+                || first.id.localeCompare(second.id));
 
-        return this.applyImport(card, month, parsed, {
-            fileName: file.fileName.slice(0, MAX_FILE_NAME_LENGTH),
-            fileHash: this.hash(file.content),
-            parserVersion: parser.version
-        });
+        return {
+            cardId: card.id,
+            month: formatMonth(month),
+            fileName: source.fileName,
+            transactions: plan.transactions.map(({ transaction, status, suggestion, projectedCount }) => ({
+                key: transaction.purchaseKey,
+                status,
+                transactionDate: transaction.transactionDate,
+                description: transaction.description,
+                amount: formatAmountCents(transaction.amountCents),
+                installment: transaction.installmentNumber !== null && transaction.installmentTotal !== null
+                    ? { number: transaction.installmentNumber, total: transaction.installmentTotal }
+                    : null,
+                holderName: transaction.holderName,
+                cardLastDigits: transaction.cardLastDigits,
+                nickname: suggestion.nickname,
+                categoryId: suggestion.categoryId,
+                personId: suggestion.personId,
+                projectedCount
+            })),
+            removed: removed.map(row => toCardExpenseResponse(row)),
+            summary: {
+                ...plan.summary,
+                ignored: parsed.ignoredCount
+            }
+        };
     }
 
     /**
@@ -141,9 +192,8 @@ export class CardImportService {
                 ignoredCount: parsed.ignoredCount
             },
             purchaseKeys: transactions.map(transaction => transaction.purchaseKey),
-            plan: ({ importId, existing, nextImportedMonth }) => planCardImport({
+            plan: ({ existing, nextImportedMonth }) => planCardImport({
                 cardId: card.id,
-                importId,
                 month,
                 transactions,
                 existing,
@@ -160,6 +210,34 @@ export class CardImportService {
             summary: {
                 ...plan.summary,
                 ignored: parsed.ignoredCount
+            }
+        };
+    }
+
+    /** Validações comuns ao upload e à pré-visualização: cartão ativo, tipo do arquivo e leitura. */
+    private async prepareUpload(data: CreateCardImportDto, file: UploadedStatementFile): Promise<PreparedUpload> {
+        const card = await this.creditCardService.getActiveById(data.cardId);
+        const parser = this.parsers.get(card.bank);
+
+        if (extname(file.fileName).toLowerCase() !== parser.fileExtension) {
+            throw CARD_IMPORT_ERRORS.invalidFileType(`expected_${parser.fileExtension.slice(1)}_for_${card.bank.toLowerCase()}`);
+        }
+
+        const month = parseMonth(data.month);
+        const parsed = await this.parse(parser, {
+            file: file.content,
+            month: { year: month.getUTCFullYear(), month: month.getUTCMonth() + 1 },
+            password: data.password
+        });
+
+        return {
+            card,
+            month,
+            parsed,
+            source: {
+                fileName: file.fileName.slice(0, MAX_FILE_NAME_LENGTH),
+                fileHash: this.hash(file.content),
+                parserVersion: parser.version
             }
         };
     }

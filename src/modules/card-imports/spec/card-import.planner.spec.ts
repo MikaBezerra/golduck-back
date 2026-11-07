@@ -42,7 +42,6 @@ function plan(
 ) {
     return planCardImport({
         cardId: CARD,
-        importId: 'import-1',
         month: parseMonth(month),
         transactions,
         existing: rows,
@@ -158,5 +157,50 @@ describe('planCardImport', () => {
 
         expect(result.creates).toHaveLength(2);
         expect(result.creates.every(row => row.nickname === 'Sofá' && row.categoryId === 'cat-casa' && row.personId === 'p2')).toBe(true);
+    });
+
+    describe('informações por compra (usadas na pré-visualização)', () => {
+        it('compra nova: status "new", sugestão herdada ou padrão e parcelas projetadas', () => {
+            const items = assignPurchaseKeys([
+                transaction({ description: 'Loja A', installmentNumber: 3, installmentTotal: 4 }),
+                transaction({ description: 'Loja B' })
+            ], december);
+            const rows = [existing({ purchaseKey: items[0].purchaseKey, month: november, nickname: 'Sofá', categoryId: 'cat-casa', personId: 'p2' })];
+            const [inherited, plain] = plan('2026-12', items, rows).transactions;
+
+            expect(inherited).toMatchObject({
+                status: 'new',
+                suggestion: { nickname: 'Sofá', categoryId: 'cat-casa', personId: 'p2' },
+                projectedCount: 1
+            });
+            expect(plain).toMatchObject({
+                status: 'new',
+                suggestion: { nickname: null, categoryId: DEFAULT_CATEGORY, personId: null },
+                projectedCount: 0
+            });
+        });
+
+        it('compra já existente no mês: status "update" e sugestão igual à da própria linha', () => {
+            const items = assignPurchaseKeys([transaction({ installmentNumber: 2, installmentTotal: 3 })], november);
+            const key = items[0].purchaseKey;
+            const rows = [
+                existing({ purchaseKey: key, month: october, nickname: 'Outro apelido' }),
+                existing({ purchaseKey: key, month: november, sourceMonth: october, nickname: 'Geladeira', categoryId: 'cat-casa', personId: 'p1' })
+            ];
+            const [item] = plan('2026-11', items, rows).transactions;
+
+            expect(item).toMatchObject({
+                status: 'update',
+                suggestion: { nickname: 'Geladeira', categoryId: 'cat-casa', personId: 'p1' },
+                projectedCount: 1
+            });
+        });
+
+        it('projectedCount respeita o próximo mês com upload próprio', () => {
+            const items = assignPurchaseKeys([transaction({ installmentNumber: 1, installmentTotal: 6 })], october);
+            const [item] = plan('2026-10', items, [], '2026-12').transactions;
+
+            expect(item.projectedCount).toBe(1);
+        });
     });
 });

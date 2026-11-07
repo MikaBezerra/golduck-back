@@ -25,6 +25,7 @@ import { Role } from '../../../generated/prisma/client';
 import { Roles } from '../../auth/security/auth.decorators';
 import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs';
 import {
+    CardImportPreviewResponse,
     CardImportResponse,
     CardImportResultResponse,
     CardImportUploadDto,
@@ -70,6 +71,26 @@ export class CardImportController {
         const fields = this.createPipe.transform(upload.fields) as CreateCardImportDto;
 
         return this.cardImportService.create(fields, upload.file);
+    }
+
+    /**
+     * Mesmo formulário do upload, mas não grava nada: devolve o que o upload faria,
+     * para o usuário revisar e escolher apelido, categoria e pessoa antes de salvar.
+     */
+    @Post('preview')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({
+        summary: 'Pré-visualiza a fatura sem gravar nada',
+        description: 'Faz as mesmas validações e a mesma leitura do upload e calcula o mesmo plano, sem criar upload nem despesas.'
+    })
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({ type: CardImportUploadDto })
+    @ApiDataResponse(CardImportPreviewResponse)
+    public async preview(@Req() request: FastifyRequest): Promise<CardImportPreviewResponse> {
+        const upload = await readStatementUpload(request);
+        const fields = this.createPipe.transform(upload.fields) as CreateCardImportDto;
+
+        return this.cardImportService.preview(fields, upload.file);
     }
 
     /**

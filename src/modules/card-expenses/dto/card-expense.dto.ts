@@ -1,6 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { CardInstallmentDto } from '../../card-imports/dto/card-import.dto';
 import {
     DATE_PATTERN,
     DATE_TIME_PROPERTY,
@@ -8,6 +7,14 @@ import {
     MONTH_PROPERTY,
     UUID_PROPERTY
 } from '../../common/swagger/api-docs';
+
+export class CardInstallmentDto {
+    @ApiProperty({ type: Number, minimum: 1, maximum: 99, example: 3 })
+    public number!: number;
+
+    @ApiProperty({ type: Number, minimum: 1, maximum: 99, example: 10 })
+    public total!: number;
+}
 
 export class ListCardExpensesDto {
     @ApiProperty(MONTH_PROPERTY)

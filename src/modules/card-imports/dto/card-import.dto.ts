@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+import { CardExpenseResponse, CardInstallmentDto } from '../../card-expenses/dto/card-expense.dto';
 import {
     DATE_PATTERN,
     DATE_TIME_PROPERTY,
@@ -23,14 +24,6 @@ export class CreateCardImportDto {
 export class CardImportUploadDto extends CreateCardImportDto {
     @ApiProperty({ type: String, format: 'binary', description: 'Fatura: .csv para NUBANK e C6, .pdf para NEON (máx. 2 MB)' })
     public file!: unknown;
-}
-
-export class CardInstallmentDto {
-    @ApiProperty({ type: Number, minimum: 1, maximum: 99, example: 3 })
-    public number!: number;
-
-    @ApiProperty({ type: Number, minimum: 1, maximum: 99, example: 10 })
-    public total!: number;
 }
 
 export class ManualCardTransactionDto {
@@ -121,5 +114,66 @@ export class CardImportResultResponse {
     public import!: CardImportResponse;
 
     @ApiProperty({ type: () => CardImportSummary })
+    public summary!: CardImportSummary;
+}
+
+export class CardImportPreviewTransactionDto {
+    @ApiProperty({ type: String, example: 'P|2026-08|8|FERREIRA COSTA', description: 'Identificador da compra no arquivo (opaco); usado nos overrides' })
+    public key!: string;
+
+    @ApiProperty({ type: String, enum: ['new', 'update'], description: '"new": ainda não existe no mês; "update": já existe e será atualizada' })
+    public status!: 'new' | 'update';
+
+    @ApiProperty({ type: String, format: 'date', pattern: DATE_PATTERN, example: '2026-10-26' })
+    public transactionDate!: string;
+
+    @ApiProperty({ type: String, description: 'Descrição original do banco' })
+    public description!: string;
+
+    @ApiProperty(MONEY_PROPERTY)
+    public amount!: string;
+
+    @ApiProperty({ type: () => CardInstallmentDto, nullable: true })
+    public installment!: CardInstallmentDto | null;
+
+    @ApiProperty({ type: String, nullable: true })
+    public holderName!: string | null;
+
+    @ApiProperty({ type: String, nullable: true })
+    public cardLastDigits!: string | null;
+
+    @ApiProperty({ type: String, nullable: true, description: 'Sugestão: o que será gravado sem override' })
+    public nickname!: string | null;
+
+    @ApiProperty({ ...UUID_PROPERTY, description: 'Sugestão: o que será gravado sem override' })
+    public categoryId!: string;
+
+    @ApiProperty({ ...UUID_PROPERTY, nullable: true, description: 'Sugestão: o que será gravado sem override (null = compartilhada)' })
+    public personId!: string | null;
+
+    @ApiProperty({ type: Number, description: 'Parcelas futuras que esta linha vai lançar' })
+    public projectedCount!: number;
+}
+
+export class CardImportPreviewResponse {
+    @ApiProperty(UUID_PROPERTY)
+    public cardId!: string;
+
+    @ApiProperty({ ...MONTH_PROPERTY, description: 'Mês da fatura' })
+    public month!: string;
+
+    @ApiProperty({ type: String })
+    public fileName!: string;
+
+    @ApiProperty({ type: () => [CardImportPreviewTransactionDto], description: 'Compras do arquivo, na ordem do arquivo' })
+    public transactions!: CardImportPreviewTransactionDto[];
+
+    @ApiProperty({
+        type: () => [CardExpenseResponse],
+        description: 'Despesas do mês que serão apagadas por não estarem no arquivo (as parcelas futuras delas também saem e contam em summary.removed)'
+    })
+    public removed!: CardExpenseResponse[];
+
+    @ApiProperty({ type: () => CardImportSummary, description: 'Igual ao que o salvamento devolveria agora' })
     public summary!: CardImportSummary;
 }

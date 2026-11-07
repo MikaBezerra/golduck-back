@@ -14,6 +14,11 @@ import { addMonths, formatMonth } from '../../common/date/month';
  *    diante, quem decide é o upload dele (inclusive compras que ele removeu). Uma
  *    projeção também nunca sobrescreve linhas gravadas por uploads de meses > M.
  * 4. Linhas novas herdam apelido, categoria e pessoa de outra parcela da mesma compra.
+ * 5. Uma escolha do usuário (override) para uma compra vale para todas as linhas que
+ *    o upload grava dela: a do mês e as parcelas projetadas, criadas ou atualizadas.
+ *
+ * O plano não conhece o upload (CardImport): o repositório acrescenta o importId ao
+ * gravar. Assim o mesmo plano serve para a pré-visualização, que não grava nada.
  */
 
 const MAX_DESCRIPTION_LENGTH = 200;
@@ -27,6 +32,13 @@ export type ExistingCardExpense = Pick<
     'id' | 'month' | 'sourceMonth' | 'purchaseKey' | 'nickname' | 'categoryId' | 'personId'
 >;
 
+/** O que o usuário escolhe para uma despesa: apelido, categoria e pessoa. */
+export type CardExpensePersonalization = {
+    nickname: string | null;
+    categoryId: string;
+    personId: string | null;
+};
+
 export type CardExpenseBankData = {
     transactionDate: Date;
     originalDescription: string;
@@ -36,22 +48,35 @@ export type CardExpenseBankData = {
     installmentNumber: number | null;
     installmentTotal: number | null;
     sourceMonth: Date;
-    importId: string;
 };
 
-export type NewCardExpense = CardExpenseBankData & {
+export type CardExpenseUpdate = {
+    id: string;
+    /** Dados do banco; apelido, categoria e pessoa só entram quando há override. */
+    data: CardExpenseBankData & Partial<CardExpensePersonalization>;
+};
+
+export type NewCardExpense = CardExpenseBankData & CardExpensePersonalization & {
     cardId: string;
     month: Date;
     purchaseKey: string;
-    nickname: string | null;
-    categoryId: string;
-    personId: string | null;
+};
+
+export type PlannedTransaction = {
+    transaction: KeyedTransaction;
+    /** "new": a compra ainda não existe no mês; "update": já existe e será atualizada. */
+    status: 'new' | 'update';
+    /** Apelido, categoria e pessoa que o upload grava na linha do mês sem override. */
+    suggestion: CardExpensePersonalization;
+    /** Parcelas futuras que esta linha lança (criadas ou atualizadas). */
+    projectedCount: number;
 };
 
 export type CardImportPlan = {
     deleteIds: string[];
-    updates: { id: string; data: CardExpenseBankData }[];
+    updates: CardExpenseUpdate[];
     creates: NewCardExpense[];
+    transactions: PlannedTransaction[];
     summary: {
         created: number;
         updated: number;
@@ -62,7 +87,6 @@ export type CardImportPlan = {
 
 export type PlanCardImportInput = {
     cardId: string;
-    importId: string;
     month: Date;
     transactions: KeyedTransaction[];
     /** Todas as linhas do cartão cujas chaves aparecem no arquivo ou no mês M. */
@@ -70,6 +94,8 @@ export type PlanCardImportInput = {
     /** Primeiro mês posterior a M com upload próprio no cartão; as projeções param antes dele. */
     nextImportedMonth: Date | null;
     defaultCategoryId: string;
+    /** Escolhas do usuário por purchaseKey. */
+    overrides?: ReadonlyMap<string, CardExpensePersonalization>;
 };
 
 /**
@@ -138,6 +164,7 @@ export function planCardImport(input: PlanCardImportInput): CardImportPlan {
         deleteIds,
         updates: [],
         creates: [],
+        transactions: [],
         summary: { created: 0, updated: 0, removed: deleteIds.length, projected: 0 }
     };
 
@@ -145,6 +172,15 @@ export function planCardImport(input: PlanCardImportInput): CardImportPlan {
         const remaining = transaction.installmentNumber !== null && transaction.installmentTotal !== null
             ? transaction.installmentTotal - transaction.installmentNumber
             : 0;
+        const source = latestByKey.get(transaction.purchaseKey);
+        const inherited: CardExpensePersonalization = {
+            nickname: source?.nickname ?? null,
+            categoryId: source?.categoryId ?? input.defaultCategoryId,
+            personId: source ? source.personId : null
+        };
+        const override = input.overrides?.get(transaction.purchaseKey);
+        const monthRow = byKeyAndMonth.get(slot(transaction.purchaseKey, month));
+        let projectedCount = 0;
 
         for (let offset = 0; offset <= remaining; offset++) {
             const targetMonth = addMonths(month, offset);
@@ -167,27 +203,23 @@ export function planCardImport(input: PlanCardImportInput): CardImportPlan {
                 amountCents: transaction.amountCents,
                 installmentNumber: transaction.installmentNumber === null ? null : transaction.installmentNumber + offset,
                 installmentTotal: transaction.installmentTotal,
-                sourceMonth: month,
-                importId: input.importId
+                sourceMonth: month
             };
 
             if (current && !deleted.has(current.id)) {
-                plan.updates.push({ id: current.id, data });
+                plan.updates.push({ id: current.id, data: override ? { ...data, ...override } : data });
             } else {
-                const source = latestByKey.get(transaction.purchaseKey);
-
                 plan.creates.push({
                     ...data,
+                    ...(override ?? inherited),
                     cardId: input.cardId,
                     month: targetMonth,
-                    purchaseKey: transaction.purchaseKey,
-                    nickname: source?.nickname ?? null,
-                    categoryId: source?.categoryId ?? input.defaultCategoryId,
-                    personId: source ? source.personId : null
+                    purchaseKey: transaction.purchaseKey
                 });
             }
 
             if (offset > 0) {
+                projectedCount++;
                 plan.summary.projected++;
             } else if (current) {
                 plan.summary.updated++;
@@ -195,6 +227,15 @@ export function planCardImport(input: PlanCardImportInput): CardImportPlan {
                 plan.summary.created++;
             }
         }
+
+        plan.transactions.push({
+            transaction,
+            status: monthRow ? 'update' : 'new',
+            suggestion: monthRow
+                ? { nickname: monthRow.nickname, categoryId: monthRow.categoryId, personId: monthRow.personId }
+                : inherited,
+            projectedCount
+        });
     }
 
     return plan;

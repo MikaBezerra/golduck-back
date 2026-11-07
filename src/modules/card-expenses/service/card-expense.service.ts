@@ -1,13 +1,12 @@
-import type { CardExpense } from '../../../generated/prisma/client';
 import { Injectable } from '@nestjs/common';
 
 import { CategoryService } from '../../categories/service/category.service';
-import { formatDate, formatMonth, parseMonth } from '../../common/date/month';
-import { formatAmountCents } from '../../common/money/money';
+import { parseMonth } from '../../common/date/month';
 import { PersonService } from '../../people/service/person.service';
 import { CardExpenseResponse, ListCardExpensesDto, UpdateCardExpensesDto } from '../dto/card-expense.dto';
 import { CARD_EXPENSE_ERRORS } from '../errors/card-expense.errors';
 import { CardExpenseChanges, CardExpenseRepository } from '../repository/card-expense.repository';
+import { toCardExpenseResponse } from './card-expense.mapper';
 
 @Injectable()
 export class CardExpenseService {
@@ -23,7 +22,7 @@ export class CardExpenseService {
             cardId: query.cardId
         });
 
-        return expenses.map(expense => this.toResponse(expense));
+        return expenses.map(expense => toCardExpenseResponse(expense));
     }
 
     public async findById(id: string): Promise<CardExpenseResponse> {
@@ -33,7 +32,7 @@ export class CardExpenseService {
             throw CARD_EXPENSE_ERRORS.notFound('card_expense_id_not_found');
         }
 
-        return this.toResponse(expense);
+        return toCardExpenseResponse(expense);
     }
 
     /**
@@ -58,7 +57,7 @@ export class CardExpenseService {
         };
         const updated = await this.cardExpenseRepository.updateWithFollowingInstallments(expenses, changes);
 
-        return updated.map(expense => this.toResponse(expense));
+        return updated.map(expense => toCardExpenseResponse(expense));
     }
 
     private async resolveCategoryId(categoryId: string): Promise<string> {
@@ -83,28 +82,5 @@ export class CardExpenseService {
         }
 
         return person.id;
-    }
-
-    private toResponse(expense: CardExpense): CardExpenseResponse {
-        return {
-            id: expense.id,
-            cardId: expense.cardId,
-            importId: expense.importId,
-            month: formatMonth(expense.month),
-            transactionDate: formatDate(expense.transactionDate),
-            description: expense.nickname ?? expense.originalDescription,
-            originalDescription: expense.originalDescription,
-            nickname: expense.nickname,
-            holderName: expense.holderName,
-            cardLastDigits: expense.cardLastDigits,
-            amount: formatAmountCents(expense.amountCents),
-            installment: expense.installmentNumber !== null && expense.installmentTotal !== null
-                ? { number: expense.installmentNumber, total: expense.installmentTotal }
-                : null,
-            categoryId: expense.categoryId,
-            personId: expense.personId,
-            createdAt: expense.createdAt,
-            updatedAt: expense.updatedAt
-        };
     }
 }
