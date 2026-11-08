@@ -108,8 +108,13 @@ describe('CategoryService', () => {
             await expect(service.findDefault()).resolves.toBe(outros);
         });
 
-        it('sem categoria padrão é erro de instalação (falta a migração), não erro do usuário', async () => {
-            await expect(service.findDefault()).rejects.toThrow('Categoria padrão não encontrada');
+        it('sem categoria padrão (apagada direto no banco): 500 CATEGORY_DEFAULT_MISSING, com a mensagem de como corrigir', async () => {
+            repository.seed({ name: 'Outros', isDefault: false });
+
+            await expectAppError(service.findDefault(), {
+                code: 'CATEGORY_DEFAULT_MISSING', statusCode: 500, reason: 'default_category_missing'
+            });
+            await expect(service.findDefault()).rejects.toThrow('A categoria padrão ("Outros") não existe no banco.');
         });
     });
 

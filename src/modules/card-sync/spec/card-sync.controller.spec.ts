@@ -1,4 +1,4 @@
-import type { CreditCard } from '../../../generated/prisma/client.js';
+import type { Category, CreditCard } from '../../../generated/prisma/client.js';
 import type { CardSyncResultResponse } from '../dto/card-sync.dto.js';
 
 import { dataOf, errorOf, HttpTestApp } from '../../../testing/http-test-app.js';
@@ -26,13 +26,14 @@ describe('rotas da sincronização', () => {
     let pluggy: FakePluggyClient;
     let api: HttpTestApp;
     let card: CreditCard;
+    let outros: Category;
 
     beforeEach(async () => {
         process.env.CRON_SECRET = CRON_SECRET;
         cards = new InMemoryCreditCardRepository();
         pluggy = new FakePluggyClient();
         const categories = new InMemoryCategoryRepository();
-        categories.seed({ name: 'Outros', isDefault: true });
+        outros = categories.seed({ name: 'Outros', isDefault: true });
         card = cards.seed({
             name: 'C6', bank: 'C6', dueDay: 1, bestPurchaseDay: 25, pluggyItemId: ITEM_ID, syncFromMonth: new Date('2026-11-01T00:00:00.000Z')
         });
@@ -80,6 +81,18 @@ describe('rotas da sincronização', () => {
 
         expect(response.status).toBe(502);
         expect(errorOf(response).code).toBe('PLUGGY_UNAVAILABLE');
+    });
+
+    it('sem categoria padrão: o botão do cartão responde 500 CATEGORY_DEFAULT_MISSING e o de todos traz o erro no cartão', async () => {
+        outros.isDefault = false;
+
+        const one = await api.post(`/credit-cards/${card.id}/sync`);
+        const all = await api.post('/card-sync');
+
+        expect(one.status).toBe(500);
+        expect(errorOf(one).code).toBe('CATEGORY_DEFAULT_MISSING');
+        expect(all.status).toBe(200);
+        expect(dataOf<CardSyncResultResponse[]>(all).map(result => result.error?.code)).toEqual(['CATEGORY_DEFAULT_MISSING']);
     });
 
     it('POST /card-sync sincroniza todos e responde 200 com o resultado de cada cartão', async () => {

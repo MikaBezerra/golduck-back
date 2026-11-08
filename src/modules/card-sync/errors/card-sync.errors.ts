@@ -41,6 +41,13 @@ export const CARD_SYNC_ERRORS = {
             'A Pluggy não respondeu como esperado. Nada foi alterado; tente de novo em alguns minutos.',
             reason
         ),
+    unexpected: (reason?: string): AppError =>
+        new AppError(
+            'CARD_SYNC_FAILED',
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            'Erro inesperado ao sincronizar o cartão. As compras não foram alteradas; se continuar, procure o erro nos logs da API.',
+            reason
+        ),
     cronUnauthorized: (reason?: string): AppError =>
         new AppError('CRON_UNAUTHORIZED', HttpStatus.UNAUTHORIZED, 'Chamada da rotina agendada sem a chave correta.', reason)
 };

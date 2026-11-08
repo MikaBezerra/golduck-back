@@ -1,9 +1,11 @@
 import type { Category, CreditCard } from '../../../generated/prisma/client.js';
 import type { CategoryRepository } from '../../categories/repository/category.repository.js';
 import type { AppError } from '../../common/errors/app-error.js';
-import type { Config } from '../../common/index.js';
+import type { Config, LoggerService } from '../../common/index.js';
 import type { CreditCardRepository } from '../../credit-cards/repository/credit-card.repository.js';
 import type { CardSyncRepository } from '../repository/card-sync.repository.js';
+
+import { jest } from '@jest/globals';
 
 import { InMemoryCardExpenseRepository } from '../../card-expenses/spec/in-memory-card-expense.repository.js';
 import { CategoryService } from '../../categories/service/category.service.js';
@@ -30,6 +32,7 @@ describe('CardSyncService', () => {
     let expenses: InMemoryCardExpenseRepository;
     let categories: InMemoryCategoryRepository;
     let pluggy: FakePluggyClient;
+    let logger: { error: jest.Mock };
     let service: CardSyncService;
     let outros: Category;
     let c6: CreditCard;
@@ -39,7 +42,8 @@ describe('CardSyncService', () => {
         new CreditCardService(cards as unknown as CreditCardRepository),
         new CategoryService(categories as unknown as CategoryRepository),
         pluggy,
-        config as Config
+        config as Config,
+        logger as unknown as LoggerService
     );
 
     beforeEach(() => {
@@ -47,6 +51,7 @@ describe('CardSyncService', () => {
         expenses = new InMemoryCardExpenseRepository();
         categories = new InMemoryCategoryRepository();
         pluggy = new FakePluggyClient();
+        logger = { error: jest.fn() };
         outros = categories.seed({ name: 'Outros', isDefault: true });
         c6 = cards.seed({ name: 'C6', bank: 'C6', dueDay: 1, bestPurchaseDay: 25, pluggyItemId: ITEM_ID, syncFromMonth: NOVEMBER });
         pluggy.transactions = [
@@ -175,11 +180,29 @@ describe('CardSyncService', () => {
             expect(expenses.expenses.size).toBe(0);
         });
 
-        it('erro inesperado passa como veio', async () => {
-            const failure = new Error('bug');
-            pluggy.failure = failure;
+        it('erro inesperado: 500 CARD_SYNC_FAILED gravado no cartão e o erro original vai para o log com a pilha', async () => {
+            pluggy.failure = new Error('bug');
 
-            await expect(service.syncCard(c6.id)).rejects.toBe(failure);
+            await expectAppError(service.syncCard(c6.id), { code: 'CARD_SYNC_FAILED', statusCode: 500, reason: 'unexpected_error' });
+            expect(cards.get(c6.id).syncError).toBe(
+                'Erro inesperado ao sincronizar o cartão. As compras não foram alteradas; se continuar, procure o erro nos logs da API.'
+            );
+            expect(logger.error).toHaveBeenCalledWith('Erro inesperado ao sincronizar o cartão', expect.objectContaining({
+                cardId: c6.id, errorName: 'Error', errorMessage: 'bug', stack: expect.any(String) as string
+            }));
+        });
+
+        it('sem categoria padrão: 500 CATEGORY_DEFAULT_MISSING gravado no cartão e nenhuma compra gravada', async () => {
+            outros.isDefault = false;
+
+            await expectAppError(service.syncCard(c6.id), {
+                code: 'CATEGORY_DEFAULT_MISSING', statusCode: 500, reason: 'default_category_missing'
+            });
+            expect(cards.get(c6.id).syncError).toBe(
+                'A categoria padrão ("Outros") não existe no banco. Marque uma categoria como padrão (isDefault) ou aplique a migração de categorias.'
+            );
+            expect(expenses.expenses.size).toBe(0);
+            expect(logger.error).not.toHaveBeenCalled();
         });
     });
 
@@ -200,15 +223,29 @@ describe('CardSyncService', () => {
             expect(cards.get(broken.id).syncError).toBe(results[1].sync.error);
         });
 
-        it('erro que não é da API vira PLUGGY_UNAVAILABLE no resultado', async () => {
+        it('erro que não é da API nem da Pluggy vira CARD_SYNC_FAILED no resultado (não finge que a Pluggy caiu)', async () => {
             pluggy.failure = new Error('bug');
 
             const [result] = await service.syncAll();
 
             expect(result.error).toEqual({
-                code: 'PLUGGY_UNAVAILABLE',
-                message: 'A Pluggy não respondeu como esperado. Nada foi alterado; tente de novo em alguns minutos.'
+                code: 'CARD_SYNC_FAILED',
+                message: 'Erro inesperado ao sincronizar o cartão. As compras não foram alteradas; se continuar, procure o erro nos logs da API.'
             });
+            expect(result.sync.error).toBe(result.error?.message);
+        });
+
+        it('se nem gravar a situação do cartão der certo, o resultado ainda vem como CARD_SYNC_FAILED e o erro vai para o log', async () => {
+            pluggy.failure = new Error('bug');
+            const failure = new Error('banco fora do ar');
+            jest.spyOn(cards, 'updateSyncState').mockRejectedValueOnce(failure);
+
+            const [result] = await service.syncAll();
+
+            expect(result.error?.code).toBe('CARD_SYNC_FAILED');
+            expect(logger.error).toHaveBeenLastCalledWith('Erro inesperado ao sincronizar o cartão', expect.objectContaining({
+                cardId: c6.id, errorMessage: 'banco fora do ar'
+            }));
         });
     });
 

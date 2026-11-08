@@ -6,6 +6,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { CategoryService } from '../../categories/service/category.service.js';
 import { addMonths, formatDate } from '../../common/date/month.js';
 import { AppError } from '../../common/errors/app-error.js';
+import { describeError, LoggerService } from '../../common/index.js';
 import { monthOf } from '../../credit-cards/service/billing-calendar.js';
 import { CreditCardService, isSyncConfigured, SyncableCreditCard, toCreditCardSyncResponse } from '../../credit-cards/service/credit-card.service.js';
 import { Service } from '../../tokens.js';
@@ -31,7 +32,8 @@ export class CardSyncService {
         private readonly creditCardService: CreditCardService,
         private readonly categoryService: CategoryService,
         private readonly pluggy: PluggyClient,
-        @Inject(Service.CONFIG) private readonly config: Config
+        @Inject(Service.CONFIG) private readonly config: Config,
+        private readonly logger: LoggerService
     ) { }
 
     /** Sincroniza um cartão; erros viram a resposta de erro da API. */
@@ -50,7 +52,7 @@ export class CardSyncService {
             try {
                 results.push(await this.sync(card));
             } catch (error: unknown) {
-                const appError = error instanceof AppError ? error : CARD_SYNC_ERRORS.pluggyUnavailable('unexpected_error');
+                const appError = error instanceof AppError ? error : this.unexpected(card.id, error);
                 const current = await this.creditCardService.getById(card.id);
 
                 results.push({
@@ -85,7 +87,7 @@ export class CardSyncService {
         try {
             return await this.run(card);
         } catch (error: unknown) {
-            const appError = this.toAppError(error);
+            const appError = this.toAppError(card.id, error);
 
             await this.creditCardService.updateSyncState(card.id, { syncError: appError.publicMessage.slice(0, MAX_ERROR_LENGTH) });
 
@@ -168,7 +170,11 @@ export class CardSyncService {
         };
     }
 
-    private toAppError(error: unknown): AppError {
+    /**
+     * Todo erro vira um AppError, para ficar gravado no cartão e aparecer na tela. O que não é da API
+     * nem da Pluggy (um bug, o banco fora do ar) vai para o log com a pilha e chega como CARD_SYNC_FAILED.
+     */
+    private toAppError(cardId: string, error: unknown): AppError {
         if (error instanceof AppError) {
             return error;
         }
@@ -183,7 +189,13 @@ export class CardSyncService {
             return error.status === 404 ? CARD_SYNC_ERRORS.itemNotFound(reason) : CARD_SYNC_ERRORS.pluggyUnavailable(reason);
         }
 
-        throw error;
+        return this.unexpected(cardId, error);
+    }
+
+    private unexpected(cardId: string, error: unknown): AppError {
+        this.logger.error('Erro inesperado ao sincronizar o cartão', { cardId, ...describeError(error) });
+
+        return CARD_SYNC_ERRORS.unexpected('unexpected_error');
     }
 }
 

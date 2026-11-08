@@ -38,7 +38,7 @@ export class CategoryService {
         const category = await this.categoryRepository.findDefault();
 
         if (!category) {
-            throw new Error('Categoria padrão não encontrada. Aplique a migração de categorias.');
+            throw CATEGORY_ERRORS.defaultMissing('default_category_missing');
         }
 
         return category;

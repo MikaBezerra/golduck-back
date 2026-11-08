@@ -8,5 +8,14 @@ export const CATEGORY_ERRORS = {
     nameConflict: (reason?: string): AppError =>
         new AppError('CATEGORY_NAME_CONFLICT', HttpStatus.CONFLICT, 'Já existe uma categoria com esse nome', reason),
     defaultProtected: (reason?: string): AppError =>
-        new AppError('CATEGORY_DEFAULT_PROTECTED', HttpStatus.CONFLICT, 'A categoria padrão não pode ser alterada nem excluída', reason)
+        new AppError('CATEGORY_DEFAULT_PROTECTED', HttpStatus.CONFLICT, 'A categoria padrão não pode ser alterada nem excluída', reason),
+    /** Ninguém apaga a padrão pela API: só some se for apagada direto no banco. */
+    defaultMissing: (reason?: string): AppError =>
+        new AppError(
+            'CATEGORY_DEFAULT_MISSING',
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            'A categoria padrão ("Outros") não existe no banco. Marque uma categoria como padrão (isDefault) ou aplique a '
+                + 'migração de categorias.',
+            reason
+        )
 };

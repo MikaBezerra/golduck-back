@@ -124,6 +124,18 @@ sincronização, última atualização dos dados na Pluggy, situação do item, 
 | `502 PLUGGY_AUTH_FAILED` | Client ID/Secret recusados |
 | `502 PLUGGY_UNAVAILABLE` | a Pluggy não respondeu ou respondeu erro (nada é gravado) |
 | `503 PLUGGY_DISABLED` | sem `PLUGGY_CLIENT_ID`/`PLUGGY_CLIENT_SECRET` no ambiente |
+| `500 CATEGORY_DEFAULT_MISSING` | não há categoria padrão ("Outros" com `isDefault`), onde entram as compras novas |
+| `500 CARD_SYNC_FAILED` | qualquer outro erro (um bug, o banco fora do ar): o erro original vai para o log como `Erro inesperado ao sincronizar o cartão`, com `cardId` e a pilha |
+
+Todo erro fica gravado no cartão (`sync.error`), inclusive no "atualizar todos", onde cada cartão traz o
+seu código: a tela mostra a causa de verdade, e não "Pluggy indisponível" para tudo. As faturas fechadas
+informadas pela Pluggy são gravadas antes das compras, então podem ficar salvas mesmo quando a
+sincronização falha depois; as compras só mudam se tudo der certo (transação).
+
+> **Caso real (develop, 08/11/2026):** a "Outros" original foi apagada direto no banco e recriada como
+> categoria comum. A Pluggy respondia, mas toda sincronização quebrava ao buscar a padrão, com um 500
+> genérico no botão do cartão e "Pluggy indisponível" no de todos, sem nada gravado no cartão. Para
+> corrigir, marque a "Outros" como padrão: `UPDATE "Category" SET "isDefault" = true WHERE "nameKey" = 'outros'`.
 
 ## Testes
 
