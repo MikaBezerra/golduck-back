@@ -5,7 +5,7 @@
 **Toda implementação (feature, correção ou refatoração) atualiza, no mesmo PR:**
 
 1. **Os testes** do que mudou ([testes.md](testes.md)): a cobertura não pode cair (o `test:cov` barra
-   abaixo das metas) e a mutação do módulo mexido não pode piorar.
+   abaixo das metas).
 2. **A documentação** em `docs/` que descreve o que mudou (o [guia geral](README.md) diz qual documento
    cobre cada assunto). Se nenhum documento cobre o assunto, crie um e acrescente no guia.
 
@@ -18,20 +18,17 @@ descrição do PR.
 1. Crie a branch a partir da `develop`: `feat/nome-curto`, `fix/nome-curto`...
 2. Implemente com os testes. Para um bug, comece por um teste que reproduz o problema.
 3. Atualize `docs/` (e o `README.md` da raiz, se mudou algo do resumo ou do "como rodar").
-4. Rode a mutação do módulo mexido e trate os sobreviventes do código novo:
-   `STRYKER_MUTATE=src/modules/<módulo> npm run test:mutation`.
-5. Rode `npm run verify` (o mesmo do CI).
-6. Commit no padrão Conventional Commits, em português: `feat: ...`, `fix: ...`, `test: ...`,
+4. Rode `npm run verify` (o mesmo do CI).
+5. Commit no padrão Conventional Commits, em português: `feat: ...`, `fix: ...`, `test: ...`,
    `docs: ...`, `refactor: ...`, `chore: ...`, `ci: ...`. O hook `commit-msg` (Husky + commitlint)
    barra mensagens fora do padrão, e o `pre-commit` barra `DATABASE_URL`, `DATABASE_DIRECT_URL` ou
    `JWT_SECRET` sem criptografia no `.env.develop`/`.env.production` (`scripts/check-env-encrypted.mjs`).
-7. Abra o PR para a `develop` com o título no mesmo padrão (vira o commit do squash) e preencha o
+6. Abra o PR para a `develop` com o título no mesmo padrão (vira o commit do squash) e preencha o
    checklist do template.
 
 ## Definição de pronto
 
 - [ ] Testes novos/alterados para o que mudou; `npm run verify` passa.
-- [ ] Mutação do módulo mexido sem sobreviventes novos no código alterado (ou justificados no PR).
 - [ ] `docs/` atualizado (e o guia, se criou um documento).
 - [ ] Contrato da API mudou? Swagger (`@ApiProperty`) e [api.md](api.md) atualizados, front avisado.
 - [ ] `schema.prisma` mudou? Migração criada e [banco-de-dados.md](banco-de-dados.md) atualizado.

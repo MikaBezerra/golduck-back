@@ -5,13 +5,11 @@
 | Workflow | Quando roda | O que faz |
 | --- | --- | --- |
 | `ci.yml` | PR para `develop`/`main` e push nessas branches | lint, valores sensíveis dos `.env` criptografados, tipos (testes inclusive), testes com cobertura mínima e build; migrações aplicadas do zero num Postgres 18 (no schema `develop`, como nos ambientes publicados) e checagem de que o `schema.prisma` não mudou sem migração |
-| `mutation.yml` | PR para `main`, toda segunda-feira e sob demanda | testes de mutação (Stryker) do projeto todo; falha abaixo da meta `break`; relatório HTML como artefato |
 | `pr-title.yml` | abertura e edição de PR | exige título no padrão Conventional Commits (`feat: ...`, `fix: ...`), usado no squash merge |
 | `release.yml` | push na `main` | [release-please](https://github.com/googleapis/release-please): PR de release com `CHANGELOG.md` e versão; ao fazer merge, cria a tag `vX.Y.Z` |
 | `deploy.yml` | push na `develop` (develop) e na `main` (produção) | job **Migrações**: aplica as migrações no banco do ambiente (sempre roda). Job **Deploy na Vercel**: só depois das migrações e **desligado** até a variável `DEPLOY_ENABLED` ser `true` |
 
-`npm run verify` roda localmente o mesmo que o `ci.yml` (precisa do Postgres no ar para o `db:check`);
-`npm run verify:full` acrescenta a mutação completa.
+`npm run verify` roda localmente o mesmo que o `ci.yml` (precisa do Postgres no ar para o `db:check`).
 
 ## Fluxo e versões
 

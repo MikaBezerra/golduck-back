@@ -14,7 +14,7 @@ com o líquido de cada pessoa. O front-end fica em [golduck-front](https://githu
 | Autenticação | JWT de curta duração + refresh token rotativo em cookie httpOnly; senhas com Argon2id |
 | Faturas | `csv-parse` (Nubank e C6) e `pdfjs-dist` (Neon, PDF com senha) |
 | Documentação | OpenAPI/Swagger em `/docs` e `/docs-json` |
-| Testes | Jest em modo ESM (ts-jest) e testes de mutação com [Stryker](https://stryker-mutator.io) |
+| Testes | Jest em modo ESM (ts-jest) |
 | Ambientes | [dotenvx](https://dotenvx.com) com arquivos criptografados por ambiente |
 
 ## O que a API faz
@@ -72,7 +72,7 @@ A pasta [docs/](docs/README.md) explica o projeto por tema, com um guia geral de
 | [Regras de negócio](docs/regras-de-negocio.md) | entradas, reserva, despesas e as fórmulas do resumo |
 | [Importação de faturas](docs/importacao-de-faturas.md) | upload, pré-visualização, parcelas e parsers por banco |
 | [Observabilidade](docs/observabilidade.md) | logs, `x-request-id`, status e versão |
-| [Testes](docs/testes.md) | tipos de teste, cobertura e testes de mutação (Stryker) |
+| [Testes](docs/testes.md) | tipos de teste, helpers e cobertura |
 | [CI/CD e versões](docs/ci-cd-e-versoes.md) | workflows, releases e deploy |
 | [Contribuindo](docs/contribuindo.md) | fluxo de trabalho e a regra: toda mudança atualiza testes e documentação |
 

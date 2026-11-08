@@ -33,10 +33,8 @@ npm run dev                     # http://localhost:3000/api
 | `npm run lint` / `lint:check` | ESLint com correção automática / só verificação |
 | `npm run typecheck` | checagem de tipos de todo o código, testes inclusive |
 | `npm test` / `test:cov` | testes / testes com cobertura e metas mínimas |
-| `npm run test:mutation` | testes de mutação (Stryker); `STRYKER_MUTATE=<pasta>` limita a uma parte ([testes.md](testes.md)) |
 | `npm run db:check` | confere se o banco local tem todas as migrações e se o `schema.prisma` não mudou sem migração |
 | **`npm run verify`** | **o que o CI roda:** client do Prisma, `lint:check`, `typecheck`, `test:cov`, `build` e `db:check` (precisa do Postgres no ar) |
-| `npm run verify:full` | `verify` + testes de mutação do projeto todo (demorado; antes de PR para `main`) |
 | `npm run admin:create` / `admin:create:develop` / `admin:create:production` | cria um usuário ADMIN (interativo) no banco local / develop / produção; antes de pedir os dados, mostra o ambiente, o banco e o schema de destino |
 | `npm run db:migrate:develop` / `db:migrate:production` | aplica as migrações no banco do ambiente |
 | `npx prisma migrate dev --name <nome>` | cria uma migração a partir do `schema.prisma` (desenvolvimento) |

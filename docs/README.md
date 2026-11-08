@@ -22,7 +22,7 @@ tema; este aqui é o mapa. O `README.md` da raiz do repositório tem só o resum
 | [regras-de-negocio.md](regras-de-negocio.md) | dinheiro, mês, entradas, reserva, despesas, cartões, resumo e suas fórmulas | mudar qualquer regra de cálculo ou de cadastro |
 | [importacao-de-faturas.md](importacao-de-faturas.md) | upload da fatura, pré-visualização, parcelas, exclusões, parsers por banco | mexer em `card-imports`/`card-expenses` ou adicionar um banco |
 | [observabilidade.md](observabilidade.md) | logs, `x-request-id`, rotas de status e versão | mudar logs, níveis ou rotas de status |
-| [testes.md](testes.md) | tipos de teste, helpers, cobertura, testes de mutação (Stryker) | mudar a forma de testar, helpers ou metas |
+| [testes.md](testes.md) | tipos de teste, helpers e cobertura | mudar a forma de testar, helpers ou metas |
 | [ci-cd-e-versoes.md](ci-cd-e-versoes.md) | workflows do GitHub, releases, deploy, configuração do repositório | mudar workflows, deploy ou o fluxo de branches |
 | [contribuindo.md](contribuindo.md) | do branch ao merge: commits, PR, checklist e definição de pronto | mudar o processo de trabalho |
 
@@ -39,7 +39,7 @@ tema; este aqui é o mapa. O `README.md` da raiz do repositório tem só o resum
 | `src/modules/summary/` | [regras-de-negocio.md](regras-de-negocio.md) |
 | `src/modules/card-imports/`, `card-expenses/` | [importacao-de-faturas.md](importacao-de-faturas.md) |
 | `prisma/` | [banco-de-dados.md](banco-de-dados.md) |
-| `src/testing/`, `**/spec/`, `stryker.config.mjs`, `jest.json` | [testes.md](testes.md) |
+| `src/testing/`, `**/spec/`, `jest.json` | [testes.md](testes.md) |
 | `.github/`, `release-please-config.json`, `Dockerfile` | [ci-cd-e-versoes.md](ci-cd-e-versoes.md) |
 
 ## Como escrever aqui

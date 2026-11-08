@@ -32,7 +32,3 @@ npm-debug.log
 
 # configurações locais de ferramentas (ficam só na máquina)
 .claude/
-
-# testes de mutação (Stryker): relatórios e pasta temporária
-/reports
-.stryker-tmp/

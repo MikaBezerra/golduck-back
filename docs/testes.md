@@ -4,10 +4,8 @@ Jest 30 em modo ESM (ts-jest). Os testes ficam na pasta `spec/` de cada módulo
 (`src/modules/<módulo>/spec/*.spec.ts`) e nunca usam banco nem os arquivos `.env`.
 
 ```sh
-npm test                                   # todos os testes
-npm run test:cov                           # com cobertura e metas mínimas (o CI roda este)
-npm run test:mutation                      # testes de mutação do projeto todo (demorado)
-STRYKER_MUTATE=src/modules/people npm run test:mutation   # mutação só de uma parte (minutos)
+npm test            # todos os testes
+npm run test:cov    # com cobertura e metas mínimas (o CI roda este)
 ```
 
 Rodar só um arquivo ou pasta, sem gerar o client do Prisma de novo:
@@ -55,42 +53,10 @@ O relatório fica em `coverage/` (no CI, como artefato).
 
 Fora da cobertura: `src/generated/`, os próprios testes (`spec/`, `src/testing/`).
 
-## Testes de mutação (Stryker)
-
-Cobertura diz que uma linha **rodou**; não diz se algum teste **percebeu** quando ela está errada. O
-[Stryker](https://stryker-mutator.io) mede isso: faz pequenas mudanças no código (os "mutantes": trocar
-`>` por `>=`, `&&` por `||`, apagar um `if`, trocar um texto por `""`) e roda os testes para cada uma.
-
-- **Morto (killed):** algum teste falhou. Bom: os testes pegam esse erro.
-- **Sobrevivente (survived):** todos os testes passaram com o código errado. Falta um teste, ou o teste
-  existente não confere o resultado.
-- **Sem cobertura (no coverage):** nenhum teste passa por ali.
-- **Mutation score:** % de mutantes mortos. Metas em `stryker.config.mjs` (`thresholds`); abaixo de
-  `break`, o comando falha.
-
-Como usar no dia a dia:
-
-1. Mexeu num módulo? Rode a mutação só dele:
-   `STRYKER_MUTATE=src/modules/<módulo> npm run test:mutation`
-   (PowerShell: `$env:STRYKER_MUTATE='src/modules/<módulo>'; npm run test:mutation`).
-2. Abra `reports/mutation-<módulo>/index.html` e veja os sobreviventes do código que você mudou.
-3. Para cada um: escreva o teste que o mata, **ou** conclua que é equivalente (a mudança não altera
-   nenhum comportamento observável, como trocar a ordem de dois filtros independentes) e siga.
-4. O modo incremental reaproveita a rodada anterior: as próximas rodadas só testam o que mudou.
-
-Configuração:
-
-- `stryker.config.mjs`: o que é mutado (todo `src/`, menos testes, código gerado, `server.ts` e
-  `*.module.ts`), o runner do Jest em ESM e os relatórios (`reports/`, fora do git).
-- `stryker/ignore-decorators.mjs`: não muta o que está dentro de decorators (`@ApiProperty`,
-  `@Controller`...): são metadados do Swagger/Nest; rotas e limites são conferidos pelos testes HTTP.
-- No CI, o workflow `mutation.yml` roda a mutação completa nos PRs para `main`, toda semana e sob
-  demanda ([ci-cd-e-versoes.md](ci-cd-e-versoes.md)).
-
 ## Toda mudança vem com testes
 
 Regra do projeto ([contribuindo.md](contribuindo.md)): código novo ou alterado vem com testes no mesmo
-PR, a cobertura não pode cair e a mutação do módulo mexido não pode piorar. Guia rápido:
+PR e a cobertura não pode cair. Guia rápido:
 
 | Mudou... | Teste |
 | --- | --- |
