@@ -1,5 +1,4 @@
 import type { Category } from '../../../generated/prisma/client.js';
-import type { MovedExpenses } from '../repository/category.repository.js';
 import { randomUUID } from 'node:crypto';
 
 import { Prisma } from '../../../generated/prisma/client.js';
@@ -8,8 +7,8 @@ import { Prisma } from '../../../generated/prisma/client.js';
 /** CategoryRepository em memória, com a mesma ordenação e a mesma unicidade de nome do banco. */
 export class InMemoryCategoryRepository {
     public readonly categories = new Map<string, Category>();
-    /** Despesas que apontam para cada categoria (o que o banco moveria na exclusão), por id da categoria. */
-    public readonly expenseCounts = new Map<string, MovedExpenses>();
+    /** Compras do cartão que apontam para cada categoria (o que o banco moveria na exclusão), por id da categoria. */
+    public readonly cardExpenseCounts = new Map<string, number>();
 
     /** Cadastra direto, sem passar pelo serviço (monta o cenário do teste). */
     public seed(data: Partial<Category> & Pick<Category, 'name'>): Category {
@@ -72,15 +71,11 @@ export class InMemoryCategoryRepository {
         return updated;
     }
 
-    public async deleteMovingExpenses(id: string, targetId: string): Promise<MovedExpenses> {
-        const moved = this.expenseCounts.get(id) ?? { manualExpenses: 0, cardExpenses: 0 };
-        const target = this.expenseCounts.get(targetId) ?? { manualExpenses: 0, cardExpenses: 0 };
+    public async deleteMovingCardExpenses(id: string, targetId: string): Promise<number> {
+        const moved = this.cardExpenseCounts.get(id) ?? 0;
 
-        this.expenseCounts.set(targetId, {
-            manualExpenses: target.manualExpenses + moved.manualExpenses,
-            cardExpenses: target.cardExpenses + moved.cardExpenses
-        });
-        this.expenseCounts.delete(id);
+        this.cardExpenseCounts.set(targetId, (this.cardExpenseCounts.get(targetId) ?? 0) + moved);
+        this.cardExpenseCounts.delete(id);
         this.categories.delete(id);
         return moved;
     }

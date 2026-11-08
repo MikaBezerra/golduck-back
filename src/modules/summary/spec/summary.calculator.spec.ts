@@ -13,7 +13,6 @@ describe('computeMonth e combinePeriods', () => {
     const month = (overrides: Partial<MonthGroups>): MonthGroups => ({
         incomeCents: null,
         reserveCents: null,
-        manualByCategory: [],
         manualByPerson: [],
         cardByCategory: [],
         cardByPerson: [],
@@ -22,14 +21,12 @@ describe('computeMonth e combinePeriods', () => {
     });
     const january = computeMonth(month({
         incomeCents: 1001n,
-        manualByCategory: [{ key: 'casa', amountCents: 300n, count: 1 }],
         manualByPerson: [{ key: null, amountCents: 300n, count: 1 }],
         cardByCategory: [{ key: 'casa', amountCents: 100n, count: 2 }],
         cardByPerson: [{ key: 'b', amountCents: 100n, count: 2 }]
     }), people);
     const february = computeMonth(month({
         incomeCents: 1001n,
-        manualByCategory: [{ key: 'lazer', amountCents: 1n, count: 1 }],
         manualByPerson: [{ key: null, amountCents: 1n, count: 1 }]
     }), people);
     const march = computeMonth(month({}), people);
@@ -46,10 +43,9 @@ describe('computeMonth e combinePeriods', () => {
         const year = combinePeriods([january, february, march], people);
 
         expect(year).toMatchObject({ incomeCents: 2002n, expensesCents: 401n, expensesCount: 4, balanceCents: 1601n });
-        expect(year.byCategory).toEqual([
-            { key: 'casa', amountCents: 400n, count: 3 },
-            { key: 'lazer', amountCents: 1n, count: 1 }
-        ]);
+        // Só as compras do cartão têm categoria.
+        expect(year.byCategory).toEqual([{ key: 'casa', amountCents: 100n, count: 2 }]);
+        expect(year.manual).toEqual({ amountCents: 301n, count: 2 });
         // fevereiro: (1001 − 1) / 2 = 500 para cada, sem centavo extra
         expect(year.nets.map(net => [net.participant.name, net.shareCents, net.individualCents, net.netCents])).toEqual([
             ['Ayanne', 851n, 0n, 851n],
@@ -86,7 +82,6 @@ describe('computeMonth e combinePeriods', () => {
         const withReserve = computeMonth(month({
             incomeCents: 1000n,
             reserveCents: 101n,
-            manualByCategory: [{ key: 'casa', amountCents: 400n, count: 2 }],
             manualByPerson: [{ key: null, amountCents: 300n, count: 1 }, { key: 'b', amountCents: 100n, count: 1 }]
         }), people);
 
@@ -241,7 +236,6 @@ describe('ordem das pessoas na divisão', () => {
         const empty: MonthGroups = {
             incomeCents: null,
             reserveCents: null,
-            manualByCategory: [],
             manualByPerson: [],
             cardByCategory: [],
             cardByPerson: [],

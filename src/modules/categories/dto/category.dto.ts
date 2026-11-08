@@ -40,13 +40,10 @@ export class CategoryResponse {
     public updatedAt!: Date;
 }
 
-/** Resultado da exclusão: para onde foram as despesas da categoria. */
+/** Resultado da exclusão: para onde foram as compras do cartão da categoria. */
 export class DeleteCategoryResponse {
-    @ApiProperty({ type: () => CategoryResponse, description: 'Categoria que recebeu as despesas (a padrão)' })
+    @ApiProperty({ type: () => CategoryResponse, description: 'Categoria que recebeu as compras (a padrão)' })
     public movedTo!: CategoryResponse;
-
-    @ApiProperty({ type: Number, description: 'Despesas fora do cartão que mudaram de categoria' })
-    public movedManualExpenses!: number;
 
     @ApiProperty({ type: Number, description: 'Compras do cartão que mudaram de categoria (inclusive as excluídas)' })
     public movedCardExpenses!: number;

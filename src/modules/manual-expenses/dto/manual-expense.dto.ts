@@ -18,9 +18,6 @@ export class CreateManualExpenseDto {
     @ApiProperty(MONEY_PROPERTY)
     public amount!: string;
 
-    @ApiPropertyOptional({ ...UUID_PROPERTY, description: 'Sem categoria, usa a padrão ("Outros")' })
-    public categoryId?: string;
-
     @ApiProperty(CHOSEN_SPLIT_PROPERTY)
     public split!: ChosenSplit;
 
@@ -37,9 +34,6 @@ export class ManualExpenseChangesDto {
 
     @ApiPropertyOptional(MONEY_PROPERTY)
     public amount?: string;
-
-    @ApiPropertyOptional(UUID_PROPERTY)
-    public categoryId?: string;
 
     @ApiPropertyOptional(CHOSEN_SPLIT_PROPERTY)
     public split?: ChosenSplit;
@@ -69,22 +63,7 @@ export class ListManualExpensesDto {
     public month!: string;
 }
 
-/** Total de uma categoria no mês. */
-export class ManualExpenseCategoryTotal {
-    @ApiProperty(UUID_PROPERTY)
-    public categoryId!: string;
-
-    @ApiProperty({ type: String })
-    public name!: string;
-
-    @ApiProperty(MONEY_PROPERTY)
-    public total!: string;
-
-    @ApiProperty({ type: Number, description: 'Quantidade de despesas' })
-    public count!: number;
-}
-
-/** Resumo das despesas do mês por categoria. */
+/** Resumo das despesas do mês: total, pago e a pagar. */
 export class ManualExpensesSummaryResponse {
     @ApiProperty(MONTH_PROPERTY)
     public month!: string;
@@ -100,9 +79,6 @@ export class ManualExpensesSummaryResponse {
 
     @ApiProperty({ type: Number, description: 'Quantidade de despesas do mês' })
     public count!: number;
-
-    @ApiProperty({ type: () => [ManualExpenseCategoryTotal], description: 'Do maior total para o menor (empate pelo nome)' })
-    public categories!: ManualExpenseCategoryTotal[];
 }
 
 export class ManualExpenseResponse {
@@ -117,9 +93,6 @@ export class ManualExpenseResponse {
 
     @ApiProperty(MONEY_PROPERTY)
     public amount!: string;
-
-    @ApiProperty(UUID_PROPERTY)
-    public categoryId!: string;
 
     @ApiProperty({ ...CHOSEN_SPLIT_PROPERTY, enum: ExpenseSplit, description: 'SHARED ou PERSONAL (despesa manual nunca fica PENDING)' })
     public split!: ExpenseSplit;

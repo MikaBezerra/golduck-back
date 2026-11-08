@@ -57,16 +57,14 @@ describe('CategoryRepository', () => {
         expect(prisma.category.update).toHaveBeenCalledWith({ where: { id: 'id-1' }, data: { active: false } });
     });
 
-    it('deleteMovingExpenses passa as despesas para a outra categoria e apaga, numa transação', async () => {
+    it('deleteMovingCardExpenses passa as compras do cartão para a outra categoria e apaga, numa transação', async () => {
         const tx = {
-            manualExpense: { updateMany: jest.fn(async () => Promise.resolve({ count: 2 })) },
             cardExpense: { updateMany: jest.fn(async () => Promise.resolve({ count: 5 })) },
             category: { delete: jest.fn(async () => Promise.resolve({})) }
         };
         prisma.$transaction.mockImplementationOnce((async (callback: (client: typeof tx) => Promise<unknown>) => callback(tx)) as never);
 
-        await expect(repository.deleteMovingExpenses('feira', 'outros')).resolves.toEqual({ manualExpenses: 2, cardExpenses: 5 });
-        expect(tx.manualExpense.updateMany).toHaveBeenCalledWith({ where: { categoryId: 'feira' }, data: { categoryId: 'outros' } });
+        await expect(repository.deleteMovingCardExpenses('feira', 'outros')).resolves.toBe(5);
         expect(tx.cardExpense.updateMany).toHaveBeenCalledWith({ where: { categoryId: 'feira' }, data: { categoryId: 'outros' } });
         expect(tx.category.delete).toHaveBeenCalledWith({ where: { id: 'feira' } });
     });

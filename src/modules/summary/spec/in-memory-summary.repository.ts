@@ -9,7 +9,8 @@ import { addMonths, formatMonth } from '../../common/date/month.js';
 export type SummaryExpense = {
     /** "AAAA-MM" (no cartão, o mês da fatura). */
     month: string;
-    categoryId: string;
+    /** Só no cartão: as despesas fora do cartão não têm categoria. */
+    categoryId?: string;
     /** null = compartilhada. */
     personId: string | null;
     amountCents: bigint;
@@ -28,7 +29,7 @@ export type SummaryExpense = {
 /* eslint-disable @typescript-eslint/require-await -- imita a interface assíncrona do SummaryRepository */
 /**
  * SummaryRepository em memória: guarda entradas, reservas e despesas soltas e agrupa como o
- * groupBy do banco (por mês + categoria e por mês + pessoa), sem as despesas do cartão excluídas.
+ * groupBy do banco (por mês + pessoa e, no cartão, por mês + categoria), sem as despesas do cartão excluídas.
  */
 export class InMemorySummaryRepository {
     /** "AAAA-MM" → centavos. */
@@ -80,9 +81,8 @@ export class InMemorySummaryRepository {
             return {
                 incomeCents: this.incomes.get(month) ?? null,
                 reserveCents: this.reserves.get(month) ?? null,
-                manualByCategory: groupBy(manual, expense => expense.categoryId),
                 manualByPerson: groupBy(manual, expense => expense.personId),
-                cardByCategory: groupBy(card, expense => expense.categoryId),
+                cardByCategory: groupBy(card, expense => expense.categoryId ?? null),
                 cardByPerson: groupBy(card, expense => expense.personId),
                 pending: card
                     .filter(expense => expense.pending)

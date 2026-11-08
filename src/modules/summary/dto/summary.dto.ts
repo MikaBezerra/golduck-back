@@ -106,7 +106,10 @@ export class SummaryTotalsDto {
     @ApiProperty({ type: () => SummaryBySourceDto })
     public bySource!: SummaryBySourceDto;
 
-    @ApiProperty({ type: () => [SummaryCategoryDto], description: 'Valor decrescente; inclui categorias inativas com despesas no período' })
+    @ApiProperty({
+        type: () => [SummaryCategoryDto],
+        description: 'Só as compras do cartão (as despesas fora do cartão não têm categoria). Valor decrescente; inclui categorias inativas com compras no período'
+    })
     public byCategory!: SummaryCategoryDto[];
 
     @ApiProperty({ type: () => [SummaryPersonDto], description: 'Valor decrescente; o item com personId null são as despesas compartilhadas' })

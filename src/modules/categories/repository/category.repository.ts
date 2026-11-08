@@ -3,12 +3,6 @@ import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../common/index.js';
 
-/** Quantas despesas foram para a outra categoria quando a categoria foi excluída. */
-export type MovedExpenses = {
-    manualExpenses: number;
-    cardExpenses: number;
-};
-
 @Injectable()
 export class CategoryRepository {
     public constructor(private readonly prisma: PrismaService) { }
@@ -44,17 +38,16 @@ export class CategoryRepository {
     }
 
     /**
-     * Passa as despesas (fora do cartão e do cartão, inclusive as excluídas) para targetId e apaga a
-     * categoria, numa transação.
+     * Passa as compras do cartão (inclusive as excluídas) para targetId e apaga a categoria, numa
+     * transação. Devolve quantas compras mudaram de categoria.
      */
-    public async deleteMovingExpenses(id: string, targetId: string): Promise<MovedExpenses> {
+    public async deleteMovingCardExpenses(id: string, targetId: string): Promise<number> {
         return this.prisma.$transaction(async tx => {
-            const manual = await tx.manualExpense.updateMany({ where: { categoryId: id }, data: { categoryId: targetId } });
             const card = await tx.cardExpense.updateMany({ where: { categoryId: id }, data: { categoryId: targetId } });
 
             await tx.category.delete({ where: { id } });
 
-            return { manualExpenses: manual.count, cardExpenses: card.count };
+            return card.count;
         });
     }
 }

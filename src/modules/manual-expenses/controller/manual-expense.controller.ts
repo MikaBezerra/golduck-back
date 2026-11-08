@@ -59,7 +59,7 @@ export class ManualExpenseController {
     }
 
     @Get('summary')
-    @ApiOperation({ summary: 'Resumo das despesas do mês: total por categoria, total geral, pago e a pagar' })
+    @ApiOperation({ summary: 'Resumo das despesas do mês: total, pago e a pagar' })
     @ApiDataResponse(ManualExpensesSummaryResponse)
     public async summarize(
         @Query(ListManualExpensesPipe) query: ListManualExpensesDto

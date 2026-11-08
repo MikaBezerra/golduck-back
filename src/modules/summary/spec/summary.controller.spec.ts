@@ -28,7 +28,7 @@ describe('rotas /summary', () => {
         const mercado = repository.seedCategory({ name: 'Mercado' });
 
         repository.incomes.set('2026-11', 500_000n);
-        repository.manualExpenses.push({ month: '2026-11', categoryId: mercado.id, personId: ana.id, amountCents: 12_345n });
+        repository.manualExpenses.push({ month: '2026-11', personId: ana.id, amountCents: 12_345n });
         repository.cardExpenses.push(
             { month: '2026-11', categoryId: mercado.id, personId: null, amountCents: 1_000n },
             { month: '2026-11', categoryId: mercado.id, personId: null, amountCents: 99_999n, excluded: true }

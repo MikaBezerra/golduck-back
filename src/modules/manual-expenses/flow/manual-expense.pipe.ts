@@ -26,7 +26,6 @@ export class CreateManualExpensePipe extends JoiValidationPipePtbr {
             month: monthSchema.required(),
             title: titleSchema.required(),
             amount: amountSchema.required(),
-            categoryId: idSchema.optional(),
             ...splitSchemas(idSchema, { required: true }),
             replicateUntilYearEnd: Joi.boolean().optional()
         }).unknown(false);
@@ -40,7 +39,6 @@ export class UpdateManualExpensesPipe extends JoiValidationPipePtbr {
             changes: Joi.object<ManualExpenseChangesDto>({
                 title: titleSchema.optional(),
                 amount: amountSchema.optional(),
-                categoryId: idSchema.optional(),
                 ...splitSchemas(idSchema, { required: false }),
                 paid: Joi.boolean().optional()
             }).min(1).unknown(false).required()

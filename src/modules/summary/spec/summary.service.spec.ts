@@ -24,7 +24,6 @@ describe('SummaryService', () => {
         let carla: Person;
         let moradia: Category;
         let mercado: Category;
-        let antiga: Category;
 
         /*
          * Novembro/2026: entrada 10000.00, reserva 1000.00, despesas fora do cartão e do cartão
@@ -35,17 +34,16 @@ describe('SummaryService', () => {
             ana = repository.seedPerson({ name: 'Ana' });
             bruno = repository.seedPerson({ name: 'Bruno' });
             carla = repository.seedPerson({ name: 'Carla', active: false });
-            antiga = repository.seedCategory({ name: 'Antiga', active: false });
             mercado = repository.seedCategory({ name: 'Mercado' });
             moradia = repository.seedCategory({ name: 'Moradia' });
 
             repository.incomes.set('2026-11', 1_000_000n);
             repository.reserves.set('2026-11', 100_000n);
             repository.manualExpenses.push(
-                { month: '2026-11', categoryId: antiga.id, personId: carla.id, amountCents: 10_000n },
-                { month: '2026-11', categoryId: mercado.id, personId: ana.id, amountCents: 30_050n },
-                { month: '2026-11', categoryId: moradia.id, personId: null, amountCents: 200_000n },
-                { month: '2026-10', categoryId: moradia.id, personId: null, amountCents: 50_000n }
+                { month: '2026-11', personId: carla.id, amountCents: 10_000n },
+                { month: '2026-11', personId: ana.id, amountCents: 30_050n },
+                { month: '2026-11', personId: null, amountCents: 200_000n },
+                { month: '2026-10', personId: null, amountCents: 50_000n }
             );
             repository.cardExpenses.push(
                 // Ainda sem pessoa: conta como compartilhada e aparece em pending.
@@ -70,10 +68,9 @@ describe('SummaryService', () => {
                     manual: { amount: '2400.50', count: 3 },
                     card: { amount: '250.00', count: 2 }
                 },
+                // Só as compras do cartão têm categoria (a excluída não entra).
                 byCategory: [
-                    { categoryId: moradia.id, name: 'Moradia', active: true, amount: '2000.00', count: 1 },
-                    { categoryId: mercado.id, name: 'Mercado', active: true, amount: '550.50', count: 3 },
-                    { categoryId: antiga.id, name: 'Antiga', active: false, amount: '100.00', count: 1 }
+                    { categoryId: mercado.id, name: 'Mercado', active: true, amount: '250.00', count: 2 }
                 ],
                 byPerson: [
                     { personId: null, name: null, active: null, amount: '2199.99', count: 2 },
@@ -99,8 +96,8 @@ describe('SummaryService', () => {
 
             expect(loadMonths).toHaveBeenCalledTimes(1);
             expect(loadMonths).toHaveBeenCalledWith(new Date('2026-11-01T00:00:00.000Z'), 1);
-            // Sem repetir ids e sem o null das despesas compartilhadas.
-            expect(findCategories).toHaveBeenCalledWith([antiga.id, mercado.id, moradia.id]);
+            // Só as categorias das compras do cartão (sem repetir ids e sem a excluída).
+            expect(findCategories).toHaveBeenCalledWith([mercado.id]);
             expect(findPeople).toHaveBeenCalledWith([carla.id, ana.id, bruno.id]);
         });
 
@@ -140,7 +137,7 @@ describe('SummaryService', () => {
         });
 
         it('sem entrada, o saldo e o líquido ficam negativos', async () => {
-            repository.manualExpenses.push({ month: '2026-09', categoryId: mercado.id, personId: ana.id, amountCents: 12_345n });
+            repository.manualExpenses.push({ month: '2026-09', personId: ana.id, amountCents: 12_345n });
             repository.reserves.set('2026-09', 101n);
 
             const summary = await service.findByMonth({ month: '2026-09' });
@@ -160,9 +157,7 @@ describe('SummaryService', () => {
             const summary = await service.findByMonth({ month: '2026-11' });
 
             expect(summary.byCategory).toEqual([
-                { categoryId: moradia.id, name: '', active: false, amount: '2000.00', count: 1 },
-                { categoryId: mercado.id, name: '', active: false, amount: '550.50', count: 3 },
-                { categoryId: antiga.id, name: '', active: false, amount: '100.00', count: 1 }
+                { categoryId: mercado.id, name: '', active: false, amount: '250.00', count: 2 }
             ]);
             expect(summary.byPerson).toEqual([
                 { personId: null, name: null, active: null, amount: '2199.99', count: 2 },
@@ -181,7 +176,7 @@ describe('SummaryService', () => {
             const abacate = repository.seedCategory({ name: 'Abacate' });
             const elisa = repository.seedPerson({ name: 'Elisa' });
             const diego = repository.seedPerson({ name: 'Diego' });
-            repository.manualExpenses.push(
+            repository.cardExpenses.push(
                 { month: '2027-01', categoryId: zebra.id, personId: null, amountCents: 500n },
                 { month: '2027-01', categoryId: abacate.id, personId: elisa.id, amountCents: 500n },
                 { month: '2027-01', categoryId: zebra.id, personId: diego.id, amountCents: 300n },
@@ -200,9 +195,9 @@ describe('SummaryService', () => {
                 ['Diego', '3.00']
             ]);
 
-            repository.manualExpenses.push({ month: '2027-02', categoryId: zebra.id, personId: null, amountCents: 700n });
-            repository.manualExpenses.push({ month: '2027-02', categoryId: zebra.id, personId: elisa.id, amountCents: 700n });
-            repository.manualExpenses.push({ month: '2027-02', categoryId: zebra.id, personId: diego.id, amountCents: 700n });
+            repository.manualExpenses.push({ month: '2027-02', personId: null, amountCents: 700n });
+            repository.manualExpenses.push({ month: '2027-02', personId: elisa.id, amountCents: 700n });
+            repository.manualExpenses.push({ month: '2027-02', personId: diego.id, amountCents: 700n });
 
             const tie = await service.findByMonth({ month: '2027-02' });
 
@@ -229,10 +224,10 @@ describe('SummaryService', () => {
             repository.incomes.set('2027-01', 999_999n);
             repository.reserves.set('2026-03', 5_000n);
             repository.manualExpenses.push(
-                { month: '2025-12', categoryId: moradia.id, personId: null, amountCents: 99_900n },
-                { month: '2026-01', categoryId: moradia.id, personId: null, amountCents: 10_000n },
-                { month: '2026-12', categoryId: moradia.id, personId: ana.id, amountCents: 1_000n },
-                { month: '2027-01', categoryId: moradia.id, personId: null, amountCents: 99_900n }
+                { month: '2025-12', personId: null, amountCents: 99_900n },
+                { month: '2026-01', personId: null, amountCents: 10_000n },
+                { month: '2026-12', personId: ana.id, amountCents: 1_000n },
+                { month: '2027-01', personId: null, amountCents: 99_900n }
             );
             repository.cardExpenses.push({ month: '2026-03', categoryId: moradia.id, personId: bruno.id, amountCents: 2_000n });
         });
@@ -253,7 +248,7 @@ describe('SummaryService', () => {
                     card: { amount: '20.00', count: 1 }
                 },
                 byCategory: [
-                    { categoryId: moradia.id, name: 'Moradia', active: true, amount: '130.00', count: 3 }
+                    { categoryId: moradia.id, name: 'Moradia', active: true, amount: '20.00', count: 1 }
                 ],
                 byPerson: [
                     { personId: null, name: null, active: null, amount: '100.00', count: 1 },
@@ -344,8 +339,8 @@ describe('SummaryService', () => {
             repository.reserves.set('2026-11', 20_000n);
             repository.reserves.set('2026-12', 99_900n);
             repository.manualExpenses.push(
-                { id: 'aluguel', title: 'Aluguel', month: '2026-11', categoryId: mercado.id, personId: null, amountCents: 100_000n },
-                { month: '2026-10', categoryId: mercado.id, personId: null, amountCents: 77_700n }
+                { id: 'aluguel', title: 'Aluguel', month: '2026-11', personId: null, amountCents: 100_000n },
+                { month: '2026-10', personId: null, amountCents: 77_700n }
             );
             repository.cardExpenses.push(
                 { id: 'curso', cardId: 'nubank', month: '2026-11', categoryId: mercado.id, personId: ana.id, amountCents: 10_000n },

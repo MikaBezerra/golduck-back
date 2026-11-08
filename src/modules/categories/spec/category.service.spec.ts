@@ -176,31 +176,30 @@ describe('CategoryService', () => {
     });
 
     describe('delete', () => {
-        it('apaga a categoria e passa as despesas dela para a padrão', async () => {
+        it('apaga a categoria e passa as compras do cartão dela para a padrão', async () => {
             const feira = repository.seed({ name: 'Feira', active: false });
             const outros = repository.seed({ name: 'Outros', isDefault: true });
-            repository.expenseCounts.set(feira.id, { manualExpenses: 2, cardExpenses: 7 });
-            repository.expenseCounts.set(outros.id, { manualExpenses: 1, cardExpenses: 0 });
+            repository.cardExpenseCounts.set(feira.id, 7);
+            repository.cardExpenseCounts.set(outros.id, 1);
 
             await expect(service.delete(feira.id)).resolves.toMatchObject({
                 movedTo: { id: outros.id, name: 'Outros', isDefault: true },
-                movedManualExpenses: 2,
                 movedCardExpenses: 7
             });
             expect(repository.categories.has(feira.id)).toBe(false);
-            expect(repository.expenseCounts.get(outros.id)).toEqual({ manualExpenses: 3, cardExpenses: 7 });
+            expect(repository.cardExpenseCounts.get(outros.id)).toBe(8);
         });
 
-        it('categoria sem despesas: só apaga', async () => {
+        it('categoria sem compras: só apaga', async () => {
             const feira = repository.seed({ name: 'Feira' });
             repository.seed({ name: 'Outros', isDefault: true });
 
-            await expect(service.delete(feira.id)).resolves.toMatchObject({ movedManualExpenses: 0, movedCardExpenses: 0 });
+            await expect(service.delete(feira.id)).resolves.toMatchObject({ movedCardExpenses: 0 });
         });
 
         it('a categoria padrão não pode ser excluída (409), sem apagar nada', async () => {
             const outros = repository.seed({ name: 'Outros', isDefault: true });
-            const remove = jest.spyOn(repository, 'deleteMovingExpenses');
+            const remove = jest.spyOn(repository, 'deleteMovingCardExpenses');
 
             await expectAppError(service.delete(outros.id), {
                 code: 'CATEGORY_DEFAULT_PROTECTED', statusCode: 409, reason: 'default_category_delete'

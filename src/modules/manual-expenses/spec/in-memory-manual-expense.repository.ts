@@ -4,8 +4,8 @@ import { randomUUID } from 'node:crypto';
 import { Prisma } from '../../../generated/prisma/client.js';
 import { assertSplitCheck, splitFor } from '../../../testing/expense-split-check.js';
 
-type NewManualExpense = Pick<ManualExpense, 'month' | 'title' | 'amountCents' | 'categoryId' | 'split' | 'personId'>;
-type ManualExpenseChanges = Partial<Pick<ManualExpense, 'title' | 'amountCents' | 'categoryId' | 'split' | 'personId' | 'paidAt'>>;
+type NewManualExpense = Pick<ManualExpense, 'month' | 'title' | 'amountCents' | 'split' | 'personId'>;
+type ManualExpenseChanges = Partial<Pick<ManualExpense, 'title' | 'amountCents' | 'split' | 'personId' | 'paidAt'>>;
 
 /* eslint-disable @typescript-eslint/require-await -- imita a interface assíncrona do ManualExpenseRepository */
 /**
@@ -16,7 +16,7 @@ export class InMemoryManualExpenseRepository {
     public readonly expenses = new Map<string, ManualExpense>();
 
     /** Cadastra direto, sem passar pelo serviço (monta o cenário do teste). */
-    public seed(data: Partial<ManualExpense> & Pick<ManualExpense, 'month' | 'title' | 'categoryId'>): ManualExpense {
+    public seed(data: Partial<ManualExpense> & Pick<ManualExpense, 'month' | 'title'>): ManualExpense {
         const now = new Date();
         const expense: ManualExpense = {
             id: randomUUID(),

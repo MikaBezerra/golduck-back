@@ -16,7 +16,7 @@ O Golduck organiza as contas de uma casa em que várias pessoas dividem as despe
 | Cadastro | Regras |
 | --- | --- |
 | **Pessoas** | não são apagadas, só desativadas (o histórico de despesas continua apontando para elas). Inativas não entram em despesas novas nem na divisão do resumo. |
-| **Categorias** | nome único sem diferenciar maiúsculas (espaços repetidos são removidos). "Outros" é a padrão: recebe despesas sem categoria e não pode ser renomeada, desativada nem excluída (`409 CATEGORY_DEFAULT_PROTECTED`). Desativar tira a categoria das escolhas e mantém o histórico; **excluir** (`DELETE /categories/{id}`) passa todas as despesas dela (fora do cartão e do cartão, inclusive as excluídas) para "Outros" e apaga a categoria, numa transação. A resposta diz quantas despesas mudaram (`movedManualExpenses`, `movedCardExpenses`). |
+| **Categorias** | só para as **compras do cartão** (as despesas fora do cartão não têm categoria). Nome único sem diferenciar maiúsculas (espaços repetidos são removidos). "Outros" é a padrão: recebe as compras sem categoria e não pode ser renomeada, desativada nem excluída (`409 CATEGORY_DEFAULT_PROTECTED`). Desativar tira a categoria das escolhas e mantém o histórico; **excluir** (`DELETE /categories/{id}`) passa todas as compras do cartão dela (inclusive as excluídas) para "Outros" e apaga a categoria, numa transação. A resposta diz quantas compras mudaram (`movedCardExpenses`). |
 | **Cartões** | um cartão = uma fatura de um banco (`NUBANK`, `C6`, `NEON`). O banco não muda depois do cadastro. Cartão inativo não recebe upload (`409 CREDIT_CARD_INACTIVE`). O **limite** (`creditLimit`) é sempre informado pelo usuário (opcional; zero é `400 CREDIT_CARD_INVALID_AMOUNT`; `null` no PATCH apaga). |
 
 ## Entrada e reserva do mês
@@ -52,17 +52,17 @@ Toda despesa diz de quem é no campo `split` (`common/expense-split/expense-spli
 
 ## Despesas fora do cartão (`manual-expenses`)
 
-- Cada despesa tem mês, título, valor, categoria e `split` (`SHARED` ou `PERSONAL` + `personId`),
-  escolhido na criação (obrigatório).
-- Sem categoria, vai para "Outros". Categoria ou pessoa inativa: `409 MANUAL_EXPENSE_INACTIVE_*`.
+- Cada despesa tem mês, título, valor e `split` (`SHARED` ou `PERSONAL` + `personId`), escolhido na
+  criação (obrigatório). **Não tem categoria** (categorias são só das compras do cartão): `categoryId`
+  no corpo é campo desconhecido (`400 VALIDATION_ERROR`).
+- Pessoa inativa: `409 MANUAL_EXPENSE_INACTIVE_PERSON`.
 - `replicateUntilYearEnd`: cria uma cópia por mês, do mês informado até dezembro.
 - Alteração e exclusão são em lote (lista de IDs) e numa transação: ou todas, ou nenhuma.
 - **Paga**: `changes.paid: true` marca as despesas como pagas (`paidAt` = agora) e `false` desmarca.
   Qualquer mês pode ser marcado; não muda nenhuma conta do resumo.
 - **Resumo da aba Despesas** (`GET /manual-expenses/summary?month=`, `manual-expenses/service/manual-expense-summary.ts`,
-  função pura): total por categoria (do maior para o menor; empate pelo nome), com a quantidade de
-  despesas, e no topo o total do mês, quanto já foi pago (`paid`) e quanto falta (`unpaid`). Categorias
-  inativas aparecem se tiverem despesas no mês. Só despesas fora do cartão: as faturas têm o resumo delas.
+  função pura): total do mês, quanto já foi pago (`paid`), quanto falta (`unpaid`) e a quantidade de
+  despesas. Só despesas fora do cartão: as faturas têm o resumo delas.
 
 ## Despesas do cartão (`card-expenses`)
 
@@ -143,7 +143,8 @@ líquido da pessoa p   = (E − C − R) / k − Dₚ
   primeiras pessoas em ordem alfabética: a soma das partes é sempre igual a `E − C − R`.
 - Pessoas inativas não entram na divisão, mas suas despesas individuais continuam nos totais.
 - Totais por categoria e por pessoa em ordem decrescente de valor (empate pelo nome; sem nome por
-  último).
+  último). `byCategory` tem só as compras do cartão (as despesas fora do cartão não têm categoria);
+  `byPerson` e os totais somam as duas.
 - Mês sem entrada (ou sem reserva) cadastrada responde `null` nesse campo, não zero.
 - **Resumo anual** (`/summary/annual?year=`): os mesmos totais somados nos 12 meses, mais a lista dos
   meses (para gráficos). O líquido anual de cada pessoa é a **soma dos líquidos mensais**, para o ano

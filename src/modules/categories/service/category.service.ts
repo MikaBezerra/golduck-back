@@ -65,7 +65,7 @@ export class CategoryService {
         }
     }
 
-    /** Exclui a categoria; as despesas dela vão para a padrão ("Outros"), que não pode ser excluída. */
+    /** Exclui a categoria; as compras do cartão dela vão para a padrão ("Outros"), que não pode ser excluída. */
     public async delete(id: string): Promise<DeleteCategoryResponse> {
         const category = await this.getById(id);
 
@@ -74,12 +74,11 @@ export class CategoryService {
         }
 
         const target = await this.findDefault();
-        const moved = await this.categoryRepository.deleteMovingExpenses(category.id, target.id);
+        const movedCardExpenses = await this.categoryRepository.deleteMovingCardExpenses(category.id, target.id);
 
         return {
             movedTo: this.toResponse(target),
-            movedManualExpenses: moved.manualExpenses,
-            movedCardExpenses: moved.cardExpenses
+            movedCardExpenses
         };
     }
 

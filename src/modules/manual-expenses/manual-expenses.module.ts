@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 
-import { CategoriesModule } from '../categories/categories.module.js';
 import { CommonModule } from '../common/index.js';
 import { PeopleModule } from '../people/people.module.js';
 import { ManualExpenseController } from './controller/manual-expense.controller.js';
@@ -8,7 +7,7 @@ import { ManualExpenseRepository } from './repository/manual-expense.repository.
 import { ManualExpenseService } from './service/manual-expense.service.js';
 
 @Module({
-    imports: [CommonModule, CategoriesModule, PeopleModule],
+    imports: [CommonModule, PeopleModule],
     controllers: [ManualExpenseController],
     providers: [ManualExpenseRepository, ManualExpenseService]
 })

@@ -11,10 +11,10 @@ só nos `repository/` de cada módulo.
 | `User` | quem entra no sistema | e-mail único; `role` `ADMIN` ou `USER`; senha com Argon2id (`hash`); `active` |
 | `AuthSession` | uma sessão de login | guarda só o hash do refresh token; `expiresAt` (renovado a cada refresh, até 30 dias do login) e `revokedAt` |
 | `Person` | quem divide as contas | `active`; e-mail e celular opcionais |
-| `Category` | categoria de despesa | `nameKey` único (nome em minúsculas); `isDefault` marca "Outros", a padrão |
+| `Category` | categoria das compras do cartão (as despesas fora do cartão não têm categoria) | `nameKey` único (nome em minúsculas); `isDefault` marca "Outros", a padrão |
 | `MonthlyIncome` | entrada de um mês | um registro por mês; valor em centavos |
 | `MonthlyReserve` | reserva (valor guardado) de um mês | um registro por mês; valor em centavos |
-| `ManualExpense` | despesa fora do cartão | mês, título, valor, categoria, `split` (`SHARED` ou `PERSONAL` com `personId`; nunca `PENDING`) e `paidAt` (quando foi marcada como paga) |
+| `ManualExpense` | despesa fora do cartão | mês, título, valor (sem categoria), `split` (`SHARED` ou `PERSONAL` com `personId`; nunca `PENDING`) e `paidAt` (quando foi marcada como paga) |
 | `CreditCard` | cartão | banco (`CardBank`: `NUBANK`, `C6`, `NEON`) e `active`; ciclo da fatura (`dueDay`, `bestPurchaseDay`); ligação com o Meu Pluggy (`pluggyItemId`, `pluggyAccountId`, `syncFromMonth`), situação da última sincronização (`sync*`) e limite informado pelo usuário (`creditLimitCents`) |
 | `CardBill` | uma fatura do cartão (mês do vencimento) | único por cartão e mês; melhor dia ajustado pelo usuário (`bestPurchaseDate`) e fechamento/vencimento informados pelo banco (`bankClosingDate`, `bankDueDate`) ([sincronizacao-de-cartoes.md](sincronizacao-de-cartoes.md)); pagamento (`paidAt` e `paidAmountCents`, o total no momento do pagamento) |
 | `CardPurchaseCorrection` | correção do usuário: em que fatura cai uma compra | único por cartão e `purchaseKey`; a parcela `installmentNumber` fica em `month` e as outras seguem |
@@ -27,8 +27,10 @@ só nos `repository/` de cada módulo.
 `split = 'PERSONAL'` (e, em `ManualExpense`, nunca `PENDING`). O Prisma não descreve `CHECK`: ele está só
 na migração `add_expense_split`, que também converteu as linhas antigas (sem pessoa → `SHARED`).
 
-Relações principais: despesas apontam para `Category` e `Person` com `onDelete: Restrict` (não dá para
-apagar categoria/pessoa em uso; por isso elas são desativadas, não apagadas). `CardExpense` pode pertencer a
+Relações principais: despesas apontam para `Person` e as compras do cartão também para `Category`, com
+`onDelete: Restrict` (não dá para apagar pessoa em uso, por isso ela é desativada; a categoria só é
+apagada pelo `DELETE /categories/{id}`, que antes passa as compras para "Outros"). A migração
+`remove_manual_expense_category` tirou a categoria das despesas fora do cartão. `CardExpense` pode pertencer a
 um `CardImport` (`onDelete: Cascade`: apagar o upload apaga as linhas dele); as linhas sincronizadas e as de
 "Adicionar compra" não têm upload (`importId` null). `CardBill` e `CardPurchaseCorrection` saem junto com o cartão.
 

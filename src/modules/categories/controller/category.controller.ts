@@ -53,8 +53,8 @@ export class CategoryController {
 
     @Delete(':id')
     @ApiOperation({
-        summary: 'Exclui a categoria e passa as despesas dela para a padrão',
-        description: 'Despesas fora do cartão e compras do cartão (inclusive as excluídas) vão para "Outros". '
+        summary: 'Exclui a categoria e passa as compras do cartão dela para a padrão',
+        description: 'As compras do cartão (inclusive as excluídas) vão para "Outros". '
             + 'A categoria padrão não pode ser excluída (409 CATEGORY_DEFAULT_PROTECTED).'
     })
     @ApiParam({ name: 'id', format: 'uuid' })

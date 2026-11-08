@@ -1,9 +1,7 @@
-import type { Category, Person } from '../../../generated/prisma/client.js';
+import type { Person } from '../../../generated/prisma/client.js';
 import type { TestResponse } from '../../../testing/http-test-app.js';
 
 import { dataOf, errorOf, HttpTestApp } from '../../../testing/http-test-app.js';
-import { CategoryRepository } from '../../categories/repository/category.repository.js';
-import { InMemoryCategoryRepository } from '../../categories/spec/in-memory-category.repository.js';
 import { PersonRepository } from '../../people/repository/person.repository.js';
 import { ManualExpensesModule } from '../manual-expenses.module.js';
 import { ManualExpenseRepository } from '../repository/manual-expense.repository.js';
@@ -11,11 +9,9 @@ import { FakePersonRepository } from './fake-person.repository.js';
 import { InMemoryManualExpenseRepository } from './in-memory-manual-expense.repository.js';
 
 const MISSING_ID = '3f2a9c1e-8b7d-4c2a-9e1f-5a6b7c8d9e0f';
-/** UUID válido, mas versão 1: os ids da API são v4. */
-const UUID_V1 = '3f2a9c1e-8b7d-1c2a-9e1f-5a6b7c8d9e0f';
 const OCTOBER = new Date('2026-10-01T00:00:00.000Z');
 
-type ExpenseBody = { id: string; month: string; title: string; amount: string; categoryId: string; split: string; personId: string | null; paidAt: string | null };
+type ExpenseBody = { id: string; month: string; title: string; amount: string; split: string; personId: string | null; paidAt: string | null };
 
 /** Campos apontados pela validação (details[].field). */
 const fieldsOf = (response: TestResponse): string[] =>
@@ -30,26 +26,19 @@ const messagesOf = (response: TestResponse): string[] =>
  * códigos de status. As regras finas ficam no manual-expense.service.spec.
  */
 describe('rotas /manual-expenses', () => {
-    let categories: InMemoryCategoryRepository;
     let people: FakePersonRepository;
     let repository: InMemoryManualExpenseRepository;
     let api: HttpTestApp;
-    let outros: Category;
-    let mercado: Category;
     let ana: Person;
 
     beforeEach(async () => {
-        categories = new InMemoryCategoryRepository();
         people = new FakePersonRepository();
         repository = new InMemoryManualExpenseRepository();
-        outros = categories.seed({ name: 'Outros', isDefault: true });
-        mercado = categories.seed({ name: 'Mercado' });
         ana = people.seed({ name: 'Ana' });
         api = await HttpTestApp.create({
             imports: [ManualExpensesModule],
             overrides: [
                 { provide: ManualExpenseRepository, useValue: repository },
-                { provide: CategoryRepository, useValue: categories },
                 { provide: PersonRepository, useValue: people }
             ]
         });
@@ -93,18 +82,19 @@ describe('rotas /manual-expenses', () => {
             expect(response.status).toBe(201);
             const [created] = dataOf<ExpenseBody[]>(response);
             expect(dataOf<ExpenseBody[]>(response)).toHaveLength(1);
-            expect(created).toMatchObject({ month: '2026-10', title: 'Internet', amount: '99.90', categoryId: outros.id, split: 'SHARED', personId: null });
+            expect(created).toMatchObject({ month: '2026-10', title: 'Internet', amount: '99.90', split: 'SHARED', personId: null });
+            expect(created).not.toHaveProperty('categoryId');
             expect(repository.get(created.id)).toMatchObject({ month: OCTOBER, amountCents: 9990n });
         });
 
         it('com replicateUntilYearEnd, devolve uma despesa por mês até dezembro', async () => {
-            const response = await api.post('/manual-expenses', newExpense({ replicateUntilYearEnd: true, split: 'PERSONAL', personId: ana.id, categoryId: mercado.id }));
+            const response = await api.post('/manual-expenses', newExpense({ replicateUntilYearEnd: true, split: 'PERSONAL', personId: ana.id }));
 
             expect(response.status).toBe(201);
-            expect(dataOf<ExpenseBody[]>(response).map(expense => [expense.month, expense.personId, expense.categoryId])).toEqual([
-                ['2026-10', ana.id, mercado.id],
-                ['2026-11', ana.id, mercado.id],
-                ['2026-12', ana.id, mercado.id]
+            expect(dataOf<ExpenseBody[]>(response).map(expense => [expense.month, expense.personId])).toEqual([
+                ['2026-10', ana.id],
+                ['2026-11', ana.id],
+                ['2026-12', ana.id]
             ]);
         });
 
@@ -181,7 +171,7 @@ describe('rotas /manual-expenses', () => {
             expect(repository.expenses.size).toBe(0);
         });
 
-        it('valida categoryId, split + personId (UUID v4; null só fora do PERSONAL), replicateUntilYearEnd e campos extras', async () => {
+        it('valida split + personId (UUID v4; null só fora do PERSONAL), replicateUntilYearEnd e campos extras (inclusive categoryId)', async () => {
             const shared = await api.post('/manual-expenses', newExpense({ personId: null }));
 
             expect(shared.status).toBe(201);
@@ -191,9 +181,8 @@ describe('rotas /manual-expenses', () => {
             expectValidationError(await api.post('/manual-expenses', newExpense({ split: 'PERSONAL' })), ['personId']);
             expectValidationError(await api.post('/manual-expenses', newExpense({ split: 'PERSONAL', personId: null })), ['personId']);
             expectValidationError(await api.post('/manual-expenses', newExpense({ personId: ana.id })), ['personId']);
-            expectValidationError(await api.post('/manual-expenses', newExpense({ categoryId: '123' })), ['categoryId']);
-            expectValidationError(await api.post('/manual-expenses', newExpense({ categoryId: UUID_V1 })), ['categoryId']);
-            expectValidationError(await api.post('/manual-expenses', newExpense({ categoryId: null })), ['categoryId']);
+            // Despesa não tem mais categoria (só as compras do cartão): o campo é desconhecido.
+            expectValidationError(await api.post('/manual-expenses', newExpense({ categoryId: MISSING_ID })), ['categoryId']);
             expectValidationError(await api.post('/manual-expenses', newExpense({ split: 'PERSONAL', personId: 'ana' })), ['personId']);
             expectValidationError(await api.post('/manual-expenses', newExpense({ replicateUntilYearEnd: 'talvez' })), ['replicateUntilYearEnd']);
             expectValidationError(await api.post('/manual-expenses', newExpense({ color: 'azul' })), ['color']);
@@ -201,21 +190,14 @@ describe('rotas /manual-expenses', () => {
             expect(repository.expenses.size).toBe(1);
         });
 
-        it('categoria ou pessoa inativa: 409; categoria ou pessoa inexistente: 404', async () => {
-            const antiga = categories.seed({ name: 'Antiga', active: false });
+        it('pessoa inativa: 409; pessoa inexistente: 404', async () => {
             const bia = people.seed({ name: 'Bia', active: false });
 
-            const inactiveCategory = await api.post('/manual-expenses', newExpense({ categoryId: antiga.id }));
             const inactivePerson = await api.post('/manual-expenses', newExpense({ split: 'PERSONAL', personId: bia.id }));
-            const missingCategory = await api.post('/manual-expenses', newExpense({ categoryId: MISSING_ID }));
             const missingPerson = await api.post('/manual-expenses', newExpense({ split: 'PERSONAL', personId: MISSING_ID }));
 
-            expect(inactiveCategory.status).toBe(409);
-            expect(errorOf(inactiveCategory)).toMatchObject({ code: 'MANUAL_EXPENSE_INACTIVE_CATEGORY', message: 'A categoria selecionada está inativa' });
             expect(inactivePerson.status).toBe(409);
             expect(errorOf(inactivePerson)).toMatchObject({ code: 'MANUAL_EXPENSE_INACTIVE_PERSON', message: 'A pessoa selecionada está inativa' });
-            expect(missingCategory.status).toBe(404);
-            expect(errorOf(missingCategory).code).toBe('CATEGORY_NOT_FOUND');
             expect(missingPerson.status).toBe(404);
             expect(errorOf(missingPerson).code).toBe('PERSON_NOT_FOUND');
             expect(repository.expenses.size).toBe(0);
@@ -224,9 +206,9 @@ describe('rotas /manual-expenses', () => {
 
     describe('GET /manual-expenses', () => {
         it('lista as despesas do mês, por título', async () => {
-            repository.seed({ month: OCTOBER, title: 'Luz', categoryId: outros.id, amountCents: 15075n });
-            repository.seed({ month: OCTOBER, title: 'Aluguel', categoryId: mercado.id, personId: ana.id });
-            repository.seed({ month: new Date('2026-11-01T00:00:00.000Z'), title: 'Internet', categoryId: outros.id });
+            repository.seed({ month: OCTOBER, title: 'Luz', amountCents: 15075n });
+            repository.seed({ month: OCTOBER, title: 'Aluguel', personId: ana.id });
+            repository.seed({ month: new Date('2026-11-01T00:00:00.000Z'), title: 'Internet' });
 
             const response = await api.get('/manual-expenses', { query: { month: '2026-10' } });
 
@@ -250,8 +232,8 @@ describe('rotas /manual-expenses', () => {
     });
 
     describe('GET /manual-expenses/summary', () => {
-        it('devolve o resumo por categoria (a rota não é confundida com /:id); mês obrigatório', async () => {
-            repository.seed({ month: OCTOBER, title: 'Feira', categoryId: mercado.id, amountCents: 2_500n });
+        it('devolve o resumo do mês, sem categorias (a rota não é confundida com /:id); mês obrigatório', async () => {
+            repository.seed({ month: OCTOBER, title: 'Feira', amountCents: 2_500n });
 
             const response = await api.get('/manual-expenses/summary', { query: { month: '2026-10' } });
 
@@ -261,8 +243,7 @@ describe('rotas /manual-expenses', () => {
                 total: '25.00',
                 paid: '0.00',
                 unpaid: '25.00',
-                count: 1,
-                categories: [{ categoryId: mercado.id, name: 'Mercado', total: '25.00', count: 1 }]
+                count: 1
             });
             expectValidationError(await api.get('/manual-expenses/summary'), ['month']);
             expectValidationError(await api.get('/manual-expenses/summary', { query: { month: '10/2026' } }), ['month']);
@@ -271,14 +252,14 @@ describe('rotas /manual-expenses', () => {
 
     describe('GET /manual-expenses/:id', () => {
         it('devolve a despesa; id que não é UUID dá 400 e id inexistente dá 404', async () => {
-            const expense = repository.seed({ month: OCTOBER, title: 'Gás', categoryId: mercado.id, amountCents: 4590n });
+            const expense = repository.seed({ month: OCTOBER, title: 'Gás', amountCents: 4590n });
 
             const found = await api.get(`/manual-expenses/${expense.id}`);
             const notUuid = await api.get('/manual-expenses/123');
             const missing = await api.get(`/manual-expenses/${MISSING_ID}`);
 
             expect(found.status).toBe(200);
-            expect(dataOf(found)).toMatchObject({ id: expense.id, month: '2026-10', title: 'Gás', amount: '45.90', categoryId: mercado.id, personId: null });
+            expect(dataOf(found)).toMatchObject({ id: expense.id, month: '2026-10', title: 'Gás', amount: '45.90', personId: null });
             expect(notUuid.status).toBe(400);
             expect(errorOf(notUuid).details).toEqual([expect.objectContaining({ field: '$', code: 'string.guid', message: 'id deve conter um UUID válido' })]);
             expect(missing.status).toBe(404);
@@ -288,23 +269,23 @@ describe('rotas /manual-expenses', () => {
 
     describe('PATCH /manual-expenses', () => {
         it('altera várias despesas de uma vez (vários campos) e devolve todas', async () => {
-            const first = repository.seed({ month: OCTOBER, title: 'A', categoryId: outros.id });
-            const second = repository.seed({ month: OCTOBER, title: 'B', categoryId: outros.id, personId: ana.id });
+            const first = repository.seed({ month: OCTOBER, title: 'A' });
+            const second = repository.seed({ month: OCTOBER, title: 'B', personId: ana.id });
 
             const response = await api.patch('/manual-expenses', {
                 ids: [first.id, second.id],
-                changes: { title: '  Fibra ', amount: '120.5', categoryId: mercado.id, split: 'SHARED' }
+                changes: { title: '  Fibra ', amount: '120.5', split: 'SHARED' }
             });
 
             expect(response.status).toBe(200);
             expect(dataOf<ExpenseBody[]>(response)).toEqual([
-                expect.objectContaining({ id: first.id, title: 'Fibra', amount: '120.50', categoryId: mercado.id, split: 'SHARED', personId: null }),
-                expect.objectContaining({ id: second.id, title: 'Fibra', amount: '120.50', categoryId: mercado.id, split: 'SHARED', personId: null })
+                expect.objectContaining({ id: first.id, title: 'Fibra', amount: '120.50', split: 'SHARED', personId: null }),
+                expect.objectContaining({ id: second.id, title: 'Fibra', amount: '120.50', split: 'SHARED', personId: null })
             ]);
         });
 
         it('paid marca e desmarca como paga; precisa ser booleano', async () => {
-            const expense = repository.seed({ month: OCTOBER, title: 'Luz', categoryId: outros.id });
+            const expense = repository.seed({ month: OCTOBER, title: 'Luz' });
 
             const paid = await api.patch('/manual-expenses', { ids: [expense.id], changes: { paid: true } });
 
@@ -315,7 +296,7 @@ describe('rotas /manual-expenses', () => {
         });
 
         it('valida ids: obrigatórios, pelo menos um, UUID v4 e sem repetição', async () => {
-            const expense = repository.seed({ month: OCTOBER, title: 'A', categoryId: outros.id });
+            const expense = repository.seed({ month: OCTOBER, title: 'A' });
             const changes = { title: 'B' };
 
             expectValidationError(await api.patch('/manual-expenses', { changes }), ['ids']);
@@ -328,7 +309,7 @@ describe('rotas /manual-expenses', () => {
         });
 
         it('valida changes: obrigatório, com pelo menos um campo conhecido e válido', async () => {
-            const expense = repository.seed({ month: OCTOBER, title: 'A', categoryId: outros.id });
+            const expense = repository.seed({ month: OCTOBER, title: 'A' });
             const ids = [expense.id];
 
             expectValidationError(await api.patch('/manual-expenses', { ids }), ['changes']);
@@ -338,7 +319,7 @@ describe('rotas /manual-expenses', () => {
             expectValidationError(await api.patch('/manual-expenses', { ids, changes: { title: ' ' } }), ['changes.title']);
             expectValidationError(await api.patch('/manual-expenses', { ids, changes: { title: 'x'.repeat(161) } }), ['changes.title']);
             expectValidationError(await api.patch('/manual-expenses', { ids, changes: { amount: '1,00' } }), ['changes.amount']);
-            expectValidationError(await api.patch('/manual-expenses', { ids, changes: { categoryId: null } }), ['changes.categoryId']);
+            expectValidationError(await api.patch('/manual-expenses', { ids, changes: { categoryId: MISSING_ID } }), ['changes.categoryId']);
             expectValidationError(await api.patch('/manual-expenses', { ids, changes: { split: 'PERSONAL', personId: 'ana' } }), ['changes.personId']);
             expectValidationError(await api.patch('/manual-expenses', { ids, changes: { split: 'PERSONAL' } }), ['changes.personId']);
             expectValidationError(await api.patch('/manual-expenses', { ids, changes: { personId: ana.id } }), ['changes.personId']);
@@ -346,22 +327,18 @@ describe('rotas /manual-expenses', () => {
             expect(repository.get(expense.id).title).toBe('A');
         });
 
-        it('valor zero: 400 MANUAL_EXPENSE_INVALID_AMOUNT; categoria inativa: 409', async () => {
-            const expense = repository.seed({ month: OCTOBER, title: 'A', categoryId: outros.id });
-            const antiga = categories.seed({ name: 'Antiga', active: false });
+        it('valor zero: 400 MANUAL_EXPENSE_INVALID_AMOUNT', async () => {
+            const expense = repository.seed({ month: OCTOBER, title: 'A' });
 
             const zero = await api.patch('/manual-expenses', { ids: [expense.id], changes: { amount: '0' } });
-            const inactive = await api.patch('/manual-expenses', { ids: [expense.id], changes: { categoryId: antiga.id } });
 
             expect(zero.status).toBe(400);
             expect(errorOf(zero).code).toBe('MANUAL_EXPENSE_INVALID_AMOUNT');
-            expect(inactive.status).toBe(409);
-            expect(errorOf(inactive).code).toBe('MANUAL_EXPENSE_INACTIVE_CATEGORY');
-            expect(repository.get(expense.id)).toMatchObject({ amountCents: 1000n, categoryId: outros.id });
+            expect(repository.get(expense.id)).toMatchObject({ amountCents: 1000n });
         });
 
         it('um id inexistente: 404 MANUAL_EXPENSE_NOT_FOUND e nada muda', async () => {
-            const expense = repository.seed({ month: OCTOBER, title: 'A', categoryId: outros.id });
+            const expense = repository.seed({ month: OCTOBER, title: 'A' });
 
             const response = await api.patch('/manual-expenses', { ids: [expense.id, MISSING_ID], changes: { title: 'B' } });
 
@@ -373,9 +350,9 @@ describe('rotas /manual-expenses', () => {
 
     describe('DELETE /manual-expenses', () => {
         it('exclui as despesas pedidas (204, sem corpo)', async () => {
-            const first = repository.seed({ month: OCTOBER, title: 'A', categoryId: outros.id });
-            const second = repository.seed({ month: OCTOBER, title: 'B', categoryId: outros.id });
-            const kept = repository.seed({ month: OCTOBER, title: 'C', categoryId: outros.id });
+            const first = repository.seed({ month: OCTOBER, title: 'A' });
+            const second = repository.seed({ month: OCTOBER, title: 'B' });
+            const kept = repository.seed({ month: OCTOBER, title: 'C' });
 
             const response = await api.delete('/manual-expenses', { body: { ids: [first.id, second.id] } });
 
@@ -385,7 +362,7 @@ describe('rotas /manual-expenses', () => {
         });
 
         it('valida o corpo: ids obrigatórios, UUID, sem repetição e sem campos extras', async () => {
-            const expense = repository.seed({ month: OCTOBER, title: 'A', categoryId: outros.id });
+            const expense = repository.seed({ month: OCTOBER, title: 'A' });
 
             expectValidationError(await api.delete('/manual-expenses', { body: {} }), ['ids']);
             expectValidationError(await api.delete('/manual-expenses', { body: { ids: [] } }), ['ids', 'ids']);
@@ -396,7 +373,7 @@ describe('rotas /manual-expenses', () => {
         });
 
         it('um id inexistente: 404 e nada é excluído', async () => {
-            const expense = repository.seed({ month: OCTOBER, title: 'A', categoryId: outros.id });
+            const expense = repository.seed({ month: OCTOBER, title: 'A' });
 
             const response = await api.delete('/manual-expenses', { body: { ids: [expense.id, MISSING_ID] } });
 

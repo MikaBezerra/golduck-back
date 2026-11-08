@@ -86,8 +86,8 @@ describe('SummaryRepository', () => {
 
             expect(prisma.monthlyIncome.findMany).toHaveBeenCalledWith({ where: { month: range }, select: { month: true, amountCents: true } });
             expect(prisma.monthlyReserve.findMany).toHaveBeenCalledWith({ where: { month: range }, select: { month: true, amountCents: true } });
-            expect(prisma.manualExpense.groupBy).toHaveBeenCalledTimes(2);
-            expect(prisma.manualExpense.groupBy).toHaveBeenCalledWith({ by: ['month', 'categoryId'], where: { month: range }, ...aggregates });
+            // Despesa fora do cartão não tem categoria: só o agrupamento por pessoa.
+            expect(prisma.manualExpense.groupBy).toHaveBeenCalledTimes(1);
             expect(prisma.manualExpense.groupBy).toHaveBeenCalledWith({ by: ['month', 'personId'], where: { month: range }, ...aggregates });
             expect(prisma.cardExpense.groupBy).toHaveBeenCalledTimes(3);
             expect(prisma.cardExpense.groupBy).toHaveBeenCalledWith({
@@ -111,7 +111,7 @@ describe('SummaryRepository', () => {
             incomes = [{ month: DECEMBER, amountCents: 300_000n }, { month: NOVEMBER, amountCents: 100_000n }];
             reserves = [{ month: DECEMBER, amountCents: 5_000n }];
             manualRows = {
-                byCategory: [row(DECEMBER, { categoryId: 'casa' }, 700n, 2), row(NOVEMBER, { categoryId: 'casa' }, 100n, 1)],
+                byCategory: [],
                 byPerson: [row(NOVEMBER, { personId: null }, 100n, 1), row(DECEMBER, { personId: 'ana' }, 700n, 2)]
             };
             cardRows = {
@@ -126,7 +126,6 @@ describe('SummaryRepository', () => {
                 {
                     incomeCents: 100_000n,
                     reserveCents: null,
-                    manualByCategory: [{ key: 'casa', amountCents: 100n, count: 1 }],
                     manualByPerson: [{ key: null, amountCents: 100n, count: 1 }],
                     cardByCategory: [{ key: 'lazer', amountCents: 250n, count: 3 }],
                     cardByPerson: [{ key: 'bruno', amountCents: 250n, count: 3 }],
@@ -135,7 +134,6 @@ describe('SummaryRepository', () => {
                 {
                     incomeCents: 300_000n,
                     reserveCents: 5_000n,
-                    manualByCategory: [{ key: 'casa', amountCents: 700n, count: 2 }],
                     manualByPerson: [{ key: 'ana', amountCents: 700n, count: 2 }],
                     cardByCategory: [{ key: 'lazer', amountCents: 40n, count: 1 }],
                     cardByPerson: [{ key: null, amountCents: 40n, count: 1 }],
@@ -144,7 +142,6 @@ describe('SummaryRepository', () => {
                 {
                     incomeCents: null,
                     reserveCents: null,
-                    manualByCategory: [],
                     manualByPerson: [],
                     cardByCategory: [],
                     cardByPerson: [],
@@ -155,11 +152,11 @@ describe('SummaryRepository', () => {
         });
 
         it('soma vazia do banco (null) vira zero centavos', async () => {
-            manualRows = { byCategory: [row(NOVEMBER, { categoryId: 'casa' }, null, 0)], byPerson: [] };
+            manualRows = { byCategory: [], byPerson: [row(NOVEMBER, { personId: null }, null, 0)] };
 
             const [november] = await repository.loadMonths(NOVEMBER, 1);
 
-            expect(november.manualByCategory).toEqual([{ key: 'casa', amountCents: 0n, count: 0 }]);
+            expect(november.manualByPerson).toEqual([{ key: null, amountCents: 0n, count: 0 }]);
         });
     });
 

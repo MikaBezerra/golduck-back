@@ -53,16 +53,16 @@ model Person {
   @@index([active, name])
 }
 
+/// Categoria das compras do cartão (as despesas fora do cartão não têm categoria).
 model Category {
-  id             String          @id @default(uuid()) @db.Uuid
-  name           String          @db.VarChar(120)
-  nameKey        String          @unique @db.VarChar(120)
-  active         Boolean         @default(true)
-  isDefault      Boolean         @default(false)
-  createdAt      DateTime        @default(now()) @db.Timestamptz(3)
-  updatedAt      DateTime        @updatedAt @db.Timestamptz(3)
-  manualExpenses ManualExpense[]
-  cardExpenses   CardExpense[]
+  id           String        @id @default(uuid()) @db.Uuid
+  name         String        @db.VarChar(120)
+  nameKey      String        @unique @db.VarChar(120)
+  active       Boolean       @default(true)
+  isDefault    Boolean       @default(false)
+  createdAt    DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime      @updatedAt @db.Timestamptz(3)
+  cardExpenses CardExpense[]
 
   @@index([active, name])
 }
@@ -89,7 +89,6 @@ model ManualExpense {
   month       DateTime     @db.Date
   title       String       @db.VarChar(160)
   amountCents BigInt       @db.BigInt
-  categoryId  String       @db.Uuid
   /// Nunca PENDING: quem lança a despesa à mão escolhe na hora.
   split       ExpenseSplit
   /// Preenchido só quando split = PERSONAL (CHECK no banco).
@@ -99,11 +98,9 @@ model ManualExpense {
   createdAt   DateTime     @default(now()) @db.Timestamptz(3)
   updatedAt   DateTime     @updatedAt @db.Timestamptz(3)
 
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  person   Person?  @relation(fields: [personId], references: [id], onDelete: Restrict)
+  person Person? @relation(fields: [personId], references: [id], onDelete: Restrict)
 
   @@index([month])
-  @@index([categoryId])
   @@index([personId])
 }
 

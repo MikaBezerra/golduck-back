@@ -11,7 +11,6 @@ type NewManualExpense = {
     month: Date;
     title: string;
     amountCents: bigint;
-    categoryId: string;
     split: ExpenseSplit;
     personId: string | null;
 };
@@ -19,7 +18,6 @@ type NewManualExpense = {
 type ManualExpenseChanges = {
     title?: string;
     amountCents?: bigint;
-    categoryId?: string;
     split?: ExpenseSplit;
     personId?: string | null;
     paidAt?: Date | null;

@@ -36,14 +36,14 @@ export type Total = {
 };
 
 /**
- * Entrada, reserva e despesas de um mês, com as despesas agrupadas por categoria e por pessoa.
+ * Entrada, reserva e despesas de um mês: as despesas fora do cartão agrupadas por pessoa e as do
+ * cartão por categoria e por pessoa (só as compras do cartão têm categoria).
  * pending = compras do cartão ainda sem pessoa: já estão em cardByPerson com key null (contam como
  * compartilhadas); aqui só para avisar.
  */
 export type MonthGroups = {
     incomeCents: bigint | null;
     reserveCents: bigint | null;
-    manualByCategory: AmountGroup[];
     manualByPerson: AmountGroup[];
     cardByCategory: AmountGroup[];
     cardByPerson: AmountGroup[];
@@ -61,6 +61,7 @@ export type PeriodTotals = {
     expensesCents: bigint;
     expensesCount: number;
     balanceCents: bigint;
+    /** Só as compras do cartão. */
     byCategory: AmountGroup[];
     byPerson: AmountGroup[];
     nets: ParticipantNet[];
@@ -70,7 +71,8 @@ export type PeriodTotals = {
 
 /** Calcula um mês: totais, saldo e o líquido de cada pessoa ativa. */
 export function computeMonth(groups: MonthGroups, participants: Participant[]): PeriodTotals {
-    const manual = sumGroups(groups.manualByCategory);
+    // Cada despesa está em um único grupo por pessoa (null = compartilhada): a soma é o total.
+    const manual = sumGroups(groups.manualByPerson);
     const card = sumGroups(groups.cardByCategory);
     const byPerson = mergeGroups(groups.manualByPerson, groups.cardByPerson);
     const expensesCents = manual.amountCents + card.amountCents;
@@ -89,7 +91,7 @@ export function computeMonth(groups: MonthGroups, participants: Participant[]): 
         expensesCents,
         expensesCount: manual.count + card.count,
         balanceCents: incomeCents - expensesCents - reserveCents,
-        byCategory: mergeGroups(groups.manualByCategory, groups.cardByCategory),
+        byCategory: mergeGroups(groups.cardByCategory),
         byPerson,
         // A reserva entra na divisão como mais um gasto compartilhado.
         nets: netByParticipant(incomeCents, sharedCents + reserveCents, participants, individualByPerson),

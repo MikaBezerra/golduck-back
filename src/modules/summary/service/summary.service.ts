@@ -91,7 +91,7 @@ export class SummaryService {
         const personIds = new Set<string>();
 
         for (const month of groups) {
-            [...month.manualByCategory, ...month.cardByCategory].forEach(group => categoryIds.add(group.key as string));
+            month.cardByCategory.forEach(group => categoryIds.add(group.key as string));
             [...month.manualByPerson, ...month.cardByPerson]
                 .filter(group => group.key !== null)
                 .forEach(group => personIds.add(group.key as string));

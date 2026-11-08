@@ -47,10 +47,10 @@ Login exigido em todas, salvo as marcadas como públicas. ADMIN acessa tudo.
 | status (públicas) | `GET /health/live`, `GET /version`; `GET /health` (só ADMIN; consulta o banco) |
 | `auth` | `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout` (públicas, com checagem de origem); `GET /auth/me` |
 | `people` | `POST /people`, `GET /people[?includeInactive]`, `GET /people/{id}`, `PATCH /people/{id}` |
-| `categories` | `POST /categories`, `GET /categories[?includeInactive]`, `GET /categories/{id}`, `PATCH /categories/{id}`, `DELETE /categories/{id}` (as despesas vão para a padrão) |
+| `categories` | `POST /categories`, `GET /categories[?includeInactive]`, `GET /categories/{id}`, `PATCH /categories/{id}`, `DELETE /categories/{id}` (as compras do cartão vão para a padrão). Categorias são só das compras do cartão |
 | `incomes` | `POST /incomes` (mesmo valor em vários meses), `GET /incomes[?year]`, `GET/PATCH/DELETE /incomes/{month}` |
 | `reserves` | `POST /reserves`, `GET /reserves[?year]`, `GET /reserves/totals`, `GET/PATCH/DELETE /reserves/{month}` |
-| `manual-expenses` | `POST /manual-expenses`, `GET /manual-expenses?month`, `GET /manual-expenses/summary?month` (total por categoria, pago e a pagar), `GET /manual-expenses/{id}`, `PATCH` e `DELETE /manual-expenses` (vários IDs, em transação; `changes.paid` marca/desmarca como paga) |
+| `manual-expenses` | `POST /manual-expenses`, `GET /manual-expenses?month`, `GET /manual-expenses/summary?month` (total, pago e a pagar; despesas não têm categoria), `GET /manual-expenses/{id}`, `PATCH` e `DELETE /manual-expenses` (vários IDs, em transação; `changes.paid` marca/desmarca como paga) |
 | `credit-cards` | `POST /credit-cards`, `GET /credit-cards`, `GET /credit-cards/{id}`, `PATCH /credit-cards/{id}` (ciclo da fatura, item do Meu Pluggy e limite), `GET /credit-cards/bills/summary?month` (resumo das faturas do mês por cartão, com o limite disponível), `GET /credit-cards/{id}/bills[?from&to]`, `PUT /credit-cards/{id}/bills/{month}` (melhor dia da fatura), `PUT`/`DELETE /credit-cards/{id}/bills/{month}/payment` (marca/desmarca a fatura como paga) |
 | `card-sync` | `POST /credit-cards/{id}/sync` (botão "Atualizar"), `POST /card-sync` (todos os cartões), `GET /card-sync/cron` (pública, só com `Authorization: Bearer <CRON_SECRET>`: rotina diária da Vercel) |
 | `card-imports` | `POST /card-imports` (upload), `POST /card-imports/preview`, `GET /card-imports`, `GET/DELETE /card-imports/{id}` |
@@ -97,7 +97,7 @@ Dos módulos (`errors/` de cada um):
 | `categories` | `CATEGORY_NOT_FOUND` 404, `CATEGORY_NAME_CONFLICT` 409, `CATEGORY_DEFAULT_PROTECTED` 409 |
 | `incomes` | `INCOME_NOT_FOUND` 404, `INCOME_MONTH_CONFLICT` 409, `INCOME_INVALID_AMOUNT` 400 |
 | `reserves` | `RESERVE_NOT_FOUND` 404, `RESERVE_MONTH_CONFLICT` 409, `RESERVE_INVALID_AMOUNT` 400 |
-| `manual-expenses` | `MANUAL_EXPENSE_NOT_FOUND` 404, `MANUAL_EXPENSE_INVALID_AMOUNT` 400, `MANUAL_EXPENSE_INACTIVE_CATEGORY` 409, `MANUAL_EXPENSE_INACTIVE_PERSON` 409 |
+| `manual-expenses` | `MANUAL_EXPENSE_NOT_FOUND` 404, `MANUAL_EXPENSE_INVALID_AMOUNT` 400, `MANUAL_EXPENSE_INACTIVE_PERSON` 409 |
 | `credit-cards` | `CREDIT_CARD_NOT_FOUND` 404, `CREDIT_CARD_INACTIVE` 409, `CREDIT_CARD_INVALID_AMOUNT` 400, `CREDIT_CARD_BILLING_NOT_CONFIGURED` 409, `CREDIT_CARD_BILL_RANGE_INVALID` 400, `CREDIT_CARD_BILL_DATE_OUT_OF_RANGE` 422, `CREDIT_CARD_BILL_NOT_CLOSED` 409 |
 | `card-sync` | `CARD_SYNC_NOT_CONFIGURED` 409, `CARD_SYNC_NO_CREDIT_ACCOUNT` 422, `CARD_SYNC_ITEM_NOT_FOUND` 422, `PLUGGY_AUTH_FAILED` 502, `PLUGGY_UNAVAILABLE` 502, `PLUGGY_DISABLED` 503, `CRON_UNAUTHORIZED` 401 (em `POST /card-sync`, o erro de cada cartão vem no resultado dele, com 200) |
 | `card-imports` | `CARD_IMPORT_NOT_FOUND` 404, `IMPORT_FILE_REQUIRED` 400, `IMPORT_INVALID_FILE_TYPE` 400, `IMPORT_OVERRIDE_UNKNOWN_KEY` 400, `IMPORT_FILE_TOO_LARGE` 413, `IMPORT_FILE_PASSWORD_INVALID` 422, `IMPORT_UNSUPPORTED_FORMAT` 422 |

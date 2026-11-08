@@ -3,7 +3,6 @@ import type { ChosenSplit, SplitAssignment } from '../../common/expense-split/ex
 import { Injectable } from '@nestjs/common';
 
 import { Prisma } from '../../../generated/prisma/client.js';
-import { CategoryService } from '../../categories/service/category.service.js';
 import { formatAmountCents, parsePositiveAmountCents } from '../../common/money/money.js';
 import { PersonService } from '../../people/service/person.service.js';
 import {
@@ -15,19 +14,17 @@ import {
 } from '../dto/manual-expense.dto.js';
 import { MANUAL_EXPENSE_ERRORS } from '../errors/manual-expense.errors.js';
 import { ManualExpenseRepository } from '../repository/manual-expense.repository.js';
-import { summarizeByCategory } from './manual-expense-summary.js';
+import { summarizeExpenses } from './manual-expense-summary.js';
 
 @Injectable()
 export class ManualExpenseService {
     public constructor(
         private readonly manualExpenseRepository: ManualExpenseRepository,
-        private readonly categoryService: CategoryService,
         private readonly personService: PersonService
     ) { }
 
     public async create(data: CreateManualExpenseDto): Promise<ManualExpenseResponse[]> {
         const amountCents = this.parseAmount(data.amount);
-        const categoryId = await this.resolveCategoryId(data.categoryId);
         const assignment = await this.resolveSplit(data.split, data.personId);
 
         const [year, firstMonth] = data.month.split('-').map(Number);
@@ -39,7 +36,6 @@ export class ManualExpenseService {
                 month: new Date(Date.UTC(year, month - 1, 1)),
                 title: data.title,
                 amountCents,
-                categoryId,
                 ...assignment
             });
         }
@@ -59,26 +55,17 @@ export class ManualExpenseService {
         return expenses.map(expense => this.toResponse(expense));
     }
 
-    /** Total por categoria (inclusive as inativas que ainda têm despesas), total geral e quanto já foi pago. */
+    /** Total geral do mês e quanto já foi pago. */
     public async summarize(query: ListManualExpensesDto): Promise<ManualExpensesSummaryResponse> {
-        const [expenses, categories] = await Promise.all([
-            this.manualExpenseRepository.findAllByMonth(this.toMonthDate(query.month)),
-            this.categoryService.findAll(true)
-        ]);
-        const totals = summarizeByCategory(expenses, categories);
+        const expenses = await this.manualExpenseRepository.findAllByMonth(this.toMonthDate(query.month));
+        const totals = summarizeExpenses(expenses);
 
         return {
             month: query.month,
             total: formatAmountCents(totals.totalCents),
             paid: formatAmountCents(totals.paidCents),
             unpaid: formatAmountCents(totals.unpaidCents),
-            count: totals.count,
-            categories: totals.categories.map(category => ({
-                categoryId: category.categoryId,
-                name: category.name,
-                total: formatAmountCents(category.totalCents),
-                count: category.count
-            }))
+            count: totals.count
         };
     }
 
@@ -100,9 +87,6 @@ export class ManualExpenseService {
             amountCents: data.changes.amount === undefined
                 ? undefined
                 : this.parseAmount(data.changes.amount),
-            categoryId: data.changes.categoryId === undefined
-                ? undefined
-                : await this.resolveCategoryId(data.changes.categoryId),
             ...(data.changes.split === undefined
                 ? {}
                 : await this.resolveSplit(data.changes.split, data.changes.personId)),
@@ -129,21 +113,6 @@ export class ManualExpenseService {
         } catch (error: unknown) {
             this.rethrowNotFound(error);
         }
-    }
-
-    private async resolveCategoryId(categoryId?: string): Promise<string> {
-        if (categoryId === undefined) {
-            const defaultCategory = await this.categoryService.findDefault();
-            return defaultCategory.id;
-        }
-
-        const category = await this.categoryService.findById(categoryId);
-
-        if (!category.active) {
-            throw MANUAL_EXPENSE_ERRORS.inactiveCategory('category_inactive');
-        }
-
-        return category.id;
     }
 
     /** O pipe já garante personId só (e sempre) no PERSONAL; aqui, que a pessoa existe e está ativa. */
@@ -182,7 +151,6 @@ export class ManualExpenseService {
             month: expense.month.toISOString().slice(0, 7),
             title: expense.title,
             amount: formatAmountCents(expense.amountCents),
-            categoryId: expense.categoryId,
             split: expense.split,
             personId: expense.personId,
             paidAt: expense.paidAt,

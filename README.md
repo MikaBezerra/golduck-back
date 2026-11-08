@@ -23,7 +23,7 @@ com o líquido de cada pessoa. O front-end fica em [golduck-front](https://githu
 | --- | --- | --- |
 | `auth` | `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/me` | login, renovação (pelo cookie) e encerramento da sessão; usuário logado |
 | `people` | `/people` | pessoas que dividem as contas (ativas e inativas) |
-| `categories` | `/categories` | categorias de despesa; "Outros" é a padrão |
+| `categories` | `/categories` | categorias das compras do cartão; "Outros" é a padrão |
 | `incomes` | `/incomes` | entrada de cada mês (o mesmo valor pode ser lançado em vários meses) |
 | `reserves` | `/reserves`, `/reserves/totals` | reserva do mês (quanto foi guardado) e somas anual e histórica |
 | `manual-expenses` | `/manual-expenses` | despesas fora do cartão, compartilhadas ou de uma pessoa, com réplica até dezembro |

@@ -28,10 +28,9 @@ export class SummaryRepository {
         const manualWhere = { month: range };
         const cardWhere = { month: range, excludedAt: null };
         const aggregates = { _sum: { amountCents: true }, _count: { _all: true } } as const;
-        const [incomes, reserves, manualByCategory, manualByPerson, cardByCategory, cardByPerson, pendingByMonth] = await Promise.all([
+        const [incomes, reserves, manualByPerson, cardByCategory, cardByPerson, pendingByMonth] = await Promise.all([
             this.prisma.monthlyIncome.findMany({ where: { month: range }, select: { month: true, amountCents: true } }),
             this.prisma.monthlyReserve.findMany({ where: { month: range }, select: { month: true, amountCents: true } }),
-            this.prisma.manualExpense.groupBy({ by: ['month', 'categoryId'], where: manualWhere, ...aggregates }),
             this.prisma.manualExpense.groupBy({ by: ['month', 'personId'], where: manualWhere, ...aggregates }),
             this.prisma.cardExpense.groupBy({ by: ['month', 'categoryId'], where: cardWhere, ...aggregates }),
             this.prisma.cardExpense.groupBy({ by: ['month', 'personId'], where: cardWhere, ...aggregates }),
@@ -41,7 +40,6 @@ export class SummaryRepository {
         const byMonth = new Map<string, MonthGroups>(months.map(month => [month, {
             incomeCents: null,
             reserveCents: null,
-            manualByCategory: [],
             manualByPerson: [],
             cardByCategory: [],
             cardByPerson: [],
@@ -57,7 +55,6 @@ export class SummaryRepository {
             bucket(reserve).reserveCents = reserve.amountCents;
         }
 
-        manualByCategory.forEach(row => bucket(row).manualByCategory.push(toGroup(row.categoryId, row)));
         manualByPerson.forEach(row => bucket(row).manualByPerson.push(toGroup(row.personId, row)));
         cardByCategory.forEach(row => bucket(row).cardByCategory.push(toGroup(row.categoryId, row)));
         cardByPerson.forEach(row => bucket(row).cardByPerson.push(toGroup(row.personId, row)));

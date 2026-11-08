@@ -28,7 +28,7 @@ export class SummaryController {
 
     @Get()
     @ApiOperation({
-        summary: 'Resumo do mês: entrada, despesas, saldo, totais por categoria e por pessoa e líquido individual',
+        summary: 'Resumo do mês: entrada, despesas, saldo, compras do cartão por categoria, totais por pessoa e líquido individual',
         description: RULES
     })
     @ApiDataResponse(SummaryResponse)
