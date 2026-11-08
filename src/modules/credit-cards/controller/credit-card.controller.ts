@@ -7,6 +7,8 @@ import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-doc
 import {
     CreateCreditCardDto,
     CreditCardBillResponse,
+    CreditCardBillsSummaryQueryDto,
+    CreditCardBillsSummaryResponse,
     CreditCardBillStatusResponse,
     CreditCardResponse,
     ListCreditCardBillsDto,
@@ -16,6 +18,7 @@ import {
 import {
     CreateCreditCardPipe,
     CreditCardBillMonthPipe,
+    CreditCardBillsSummaryPipe,
     CreditCardIdPipe,
     ListCreditCardBillsPipe,
     UpdateCreditCardBillPipe,
@@ -43,6 +46,18 @@ export class CreditCardController {
     @ApiDataResponse(CreditCardResponse, { isArray: true })
     public async findAll(): Promise<CreditCardResponse[]> {
         return this.creditCardService.findAll();
+    }
+
+    @Get('bills/summary')
+    @ApiOperation({
+        summary: 'Resumo das faturas do mês: total e situação de cada cartão, total geral e limite disponível',
+        description: 'Cartões ativos e os inativos com compras no mês. O limite disponível é o de hoje, qualquer que seja o mês.'
+    })
+    @ApiDataResponse(CreditCardBillsSummaryResponse)
+    public async summarizeBills(
+        @Query(CreditCardBillsSummaryPipe) query: CreditCardBillsSummaryQueryDto
+    ): Promise<CreditCardBillsSummaryResponse> {
+        return this.creditCardService.summarizeBills(query.month);
     }
 
     @Get(':id')

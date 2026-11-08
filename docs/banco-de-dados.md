@@ -15,7 +15,7 @@ só nos `repository/` de cada módulo.
 | `MonthlyIncome` | entrada de um mês | um registro por mês; valor em centavos |
 | `MonthlyReserve` | reserva (valor guardado) de um mês | um registro por mês; valor em centavos |
 | `ManualExpense` | despesa fora do cartão | mês, título, valor, categoria, `split` (`SHARED` ou `PERSONAL` com `personId`; nunca `PENDING`) e `paidAt` (quando foi marcada como paga) |
-| `CreditCard` | cartão | banco (`CardBank`: `NUBANK`, `C6`, `NEON`) e `active`; ciclo da fatura (`dueDay`, `bestPurchaseDay`); ligação com o Meu Pluggy (`pluggyItemId`, `pluggyAccountId`, `syncFromMonth`) e situação da última sincronização (`sync*`) |
+| `CreditCard` | cartão | banco (`CardBank`: `NUBANK`, `C6`, `NEON`) e `active`; ciclo da fatura (`dueDay`, `bestPurchaseDay`); ligação com o Meu Pluggy (`pluggyItemId`, `pluggyAccountId`, `syncFromMonth`), situação da última sincronização (`sync*`) e limite informado pelo usuário (`creditLimitCents`) |
 | `CardBill` | uma fatura do cartão (mês do vencimento) | único por cartão e mês; melhor dia ajustado pelo usuário (`bestPurchaseDate`) e fechamento/vencimento informados pelo banco (`bankClosingDate`, `bankDueDate`) ([sincronizacao-de-cartoes.md](sincronizacao-de-cartoes.md)); pagamento (`paidAt` e `paidAmountCents`, o total no momento do pagamento) |
 | `CardPurchaseCorrection` | correção do usuário: em que fatura cai uma compra | único por cartão e `purchaseKey`; a parcela `installmentNumber` fica em `month` e as outras seguem |
 | `CardImport` | um upload de fatura | cartão, mês da fatura, nome e hash do arquivo, versão do parser e contagens |

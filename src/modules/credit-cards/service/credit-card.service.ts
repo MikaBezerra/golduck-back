@@ -2,11 +2,13 @@ import type { CardBill, CreditCard } from '../../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 
 import { addMonths, formatDate, formatMonth, parseMonth } from '../../common/date/month.js';
-import { formatAmountCents } from '../../common/money/money.js';
+import { formatAmountCents, parsePositiveAmountCents } from '../../common/money/money.js';
 import {
     CreateCreditCardDto,
     CreditCardBillResponse,
+    CreditCardBillsSummaryResponse,
     CreditCardBillStatusResponse,
+    CreditCardBillSummaryItem,
     CreditCardResponse,
     CreditCardSyncResponse,
     ListCreditCardBillsDto,
@@ -14,9 +16,9 @@ import {
     UpdateCreditCardDto
 } from '../dto/credit-card.dto.js';
 import { CREDIT_CARD_ERRORS } from '../errors/credit-card.errors.js';
-import { CreditCardRepository, CreditCardSyncState } from '../repository/credit-card.repository.js';
+import { CardBillTotal, CreditCardRepository, CreditCardSyncState } from '../repository/credit-card.repository.js';
 import { BillTiming, isBillClosed, resolveBillStatus } from './bill-status.js';
-import { addDays, BillingCalendar, BillSchedule, dayInMonth } from './billing-calendar.js';
+import { addDays, BillingCalendar, BillSchedule, dayInMonth, monthOf } from './billing-calendar.js';
 import { todayInBrazil } from './brazil-time.js';
 
 const MAX_BILLS = 24;
@@ -56,7 +58,8 @@ export class CreditCardService {
             dueDay: data.dueDay,
             bestPurchaseDay: data.bestPurchaseDay,
             pluggyItemId: data.pluggyItemId,
-            syncFromMonth: data.syncFromMonth === undefined ? undefined : parseMonth(data.syncFromMonth)
+            syncFromMonth: data.syncFromMonth === undefined ? undefined : parseMonth(data.syncFromMonth),
+            creditLimitCents: data.creditLimit === undefined ? undefined : this.parseLimit(data.creditLimit)
         });
 
         return this.toResponse(card);
@@ -113,7 +116,10 @@ export class CreditCardService {
             pluggyAccountId: itemChanged ? null : undefined,
             syncFromMonth: data.syncFromMonth === undefined || data.syncFromMonth === null
                 ? data.syncFromMonth
-                : parseMonth(data.syncFromMonth)
+                : parseMonth(data.syncFromMonth),
+            creditLimitCents: data.creditLimit === undefined || data.creditLimit === null
+                ? data.creditLimit
+                : this.parseLimit(data.creditLimit)
         });
 
         return this.toResponse(card);
@@ -207,6 +213,60 @@ export class CreditCardService {
         return this.toBillStatusResponse(card.id, timing, bill, await this.billTotal(card.id, billMonth));
     }
 
+    /**
+     * Resumo das faturas do mês: total e situação de cada cartão (ativos e inativos com compras no mês),
+     * o total geral e o limite disponível de cada um.
+     */
+    public async summarizeBills(month: string): Promise<CreditCardBillsSummaryResponse> {
+        const billMonth = parseMonth(month);
+        const [monthTotals, unpaidCandidates] = await Promise.all([
+            this.creditCardRepository.sumBillTotals({ month: billMonth }),
+            this.creditCardRepository.sumBillTotals({ fromMonth: monthOf(todayInBrazil()) })
+        ]);
+        const cards = await this.creditCardRepository.findActiveOrIn(
+            monthTotals.filter(total => total.totalCents !== 0n).map(total => total.cardId)
+        );
+        const bills = await this.creditCardRepository.findBillsOfCards(cards.map(card => card.id));
+        let totalCents = 0n;
+
+        const items = cards.map((card): CreditCardBillSummaryItem => {
+            const cardBills = bills.filter(bill => bill.cardId === card.id);
+            const cardTotal = monthTotals.find(total => total.cardId === card.id)?.totalCents ?? 0n;
+            const stored = cardBills.find(bill => bill.month.getTime() === billMonth.getTime());
+            const available = this.availableLimit(card, cardBills, unpaidCandidates);
+
+            totalCents += cardTotal;
+
+            return {
+                ...this.toBillStatusResponse(card.id, this.billTiming(card, billMonth, cardBills), stored, cardTotal),
+                cardName: card.name,
+                bank: card.bank,
+                active: card.active,
+                creditLimit: card.creditLimitCents === null ? null : formatAmountCents(card.creditLimitCents),
+                availableLimit: available === null ? null : formatAmountCents(available)
+            };
+        });
+
+        return { month: formatMonth(billMonth), total: formatAmountCents(totalCents), cards: items };
+    }
+
+    /**
+     * Limite menos as faturas ainda não pagas do mês atual em diante (com as parcelas futuras). Faturas que
+     * venceram em meses anteriores não contam: o app não sabe se foram pagas antes de existir a marcação.
+     */
+    private availableLimit(card: CreditCard, cardBills: CardBill[], totals: CardBillTotal[]): bigint | null {
+        if (card.creditLimitCents === null) {
+            return null;
+        }
+
+        const paidMonths = new Set(cardBills.filter(bill => bill.paidAt !== null).map(bill => bill.month.getTime()));
+        const used = totals
+            .filter(total => total.cardId === card.id && !paidMonths.has(total.month.getTime()))
+            .reduce((sum, total) => sum + total.totalCents, 0n);
+
+        return card.creditLimitCents - used;
+    }
+
     /** Fechamento e vencimento da fatura; sem o ciclo configurado, só o vencimento que der para saber. */
     private billTiming(card: CreditCard, month: Date, bills: CardBill[]): BillTiming {
         if (card.dueDay !== null && card.bestPurchaseDay !== null) {
@@ -264,6 +324,16 @@ export class CreditCardService {
         };
     }
 
+    private parseLimit(amount: string): bigint {
+        const cents = parsePositiveAmountCents(amount);
+
+        if (cents === null) {
+            throw CREDIT_CARD_ERRORS.invalidAmount('credit_card_limit_invalid');
+        }
+
+        return cents;
+    }
+
     private normalizeName(name: string): string {
         return name.trim().replace(/\s+/g, ' ');
     }
@@ -278,6 +348,7 @@ export class CreditCardService {
             bestPurchaseDay: card.bestPurchaseDay,
             pluggyItemId: card.pluggyItemId,
             syncFromMonth: card.syncFromMonth === null ? null : formatMonth(card.syncFromMonth),
+            creditLimit: card.creditLimitCents === null ? null : formatAmountCents(card.creditLimitCents),
             sync: toCreditCardSyncResponse(card),
             createdAt: card.createdAt,
             updatedAt: card.updatedAt

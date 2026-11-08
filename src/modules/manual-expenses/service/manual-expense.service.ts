@@ -10,10 +10,12 @@ import {
     CreateManualExpenseDto,
     ListManualExpensesDto,
     ManualExpenseResponse,
+    ManualExpensesSummaryResponse,
     UpdateManualExpensesDto
 } from '../dto/manual-expense.dto.js';
 import { MANUAL_EXPENSE_ERRORS } from '../errors/manual-expense.errors.js';
 import { ManualExpenseRepository } from '../repository/manual-expense.repository.js';
+import { summarizeByCategory } from './manual-expense-summary.js';
 
 @Injectable()
 export class ManualExpenseService {
@@ -55,6 +57,29 @@ export class ManualExpenseService {
         );
 
         return expenses.map(expense => this.toResponse(expense));
+    }
+
+    /** Total por categoria (inclusive as inativas que ainda têm despesas), total geral e quanto já foi pago. */
+    public async summarize(query: ListManualExpensesDto): Promise<ManualExpensesSummaryResponse> {
+        const [expenses, categories] = await Promise.all([
+            this.manualExpenseRepository.findAllByMonth(this.toMonthDate(query.month)),
+            this.categoryService.findAll(true)
+        ]);
+        const totals = summarizeByCategory(expenses, categories);
+
+        return {
+            month: query.month,
+            total: formatAmountCents(totals.totalCents),
+            paid: formatAmountCents(totals.paidCents),
+            unpaid: formatAmountCents(totals.unpaidCents),
+            count: totals.count,
+            categories: totals.categories.map(category => ({
+                categoryId: category.categoryId,
+                name: category.name,
+                total: formatAmountCents(category.totalCents),
+                count: category.count
+            }))
+        };
     }
 
     public async findById(id: string): Promise<ManualExpenseResponse> {

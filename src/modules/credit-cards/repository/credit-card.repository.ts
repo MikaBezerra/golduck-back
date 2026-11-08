@@ -11,6 +11,7 @@ export type CreditCardSettings = {
     /** Muda junto com pluggyItemId: a conta de cartão é descoberta de novo na próxima sincronização. */
     pluggyAccountId?: string | null;
     syncFromMonth?: Date | null;
+    creditLimitCents?: bigint | null;
 };
 
 export type CreditCardChanges = CreditCardSettings & {
@@ -59,6 +60,17 @@ export class CreditCardRepository {
         });
     }
 
+    /** Cartões ativos e, mesmo inativos, os dos ids informados (que têm compras no mês do resumo). */
+    public async findActiveOrIn(ids: string[]): Promise<CreditCard[]> {
+        return this.prisma.creditCard.findMany({
+            where: { OR: [{ active: true }, { id: { in: ids } }] },
+            orderBy: [
+                { name: 'asc' },
+                { id: 'asc' }
+            ]
+        });
+    }
+
     public async findById(id: string): Promise<CreditCard | null> {
         return this.prisma.creditCard.findUnique({ where: { id } });
     }
@@ -74,6 +86,11 @@ export class CreditCardRepository {
     /** Faturas gravadas do cartão (ajustes do usuário e datas do banco). */
     public async findBills(cardId: string): Promise<CardBill[]> {
         return this.prisma.cardBill.findMany({ where: { cardId }, orderBy: { month: 'asc' } });
+    }
+
+    /** Faturas gravadas dos cartões informados. */
+    public async findBillsOfCards(cardIds: string[]): Promise<CardBill[]> {
+        return this.prisma.cardBill.findMany({ where: { cardId: { in: cardIds } }, orderBy: { month: 'asc' } });
     }
 
     /** Ajuste do usuário no melhor dia de uma fatura (null volta ao padrão). */
@@ -107,11 +124,15 @@ export class CreditCardRepository {
         });
     }
 
-    /** Total de cada fatura (cartão + mês) com as compras que não foram excluídas. */
-    public async sumBillTotals(filter: { cardId?: string; month?: Date }): Promise<CardBillTotal[]> {
+    /** Total de cada fatura (cartão + mês) com as compras que não foram excluídas; fromMonth = daquele mês em diante. */
+    public async sumBillTotals(filter: { cardId?: string; month?: Date; fromMonth?: Date }): Promise<CardBillTotal[]> {
         const rows = await this.prisma.cardExpense.groupBy({
             by: ['cardId', 'month'],
-            where: { excludedAt: null, cardId: filter.cardId, month: filter.month },
+            where: {
+                excludedAt: null,
+                cardId: filter.cardId,
+                month: filter.month ?? (filter.fromMonth === undefined ? undefined : { gte: filter.fromMonth })
+            },
             _sum: { amountCents: true }
         });
 

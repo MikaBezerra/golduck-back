@@ -10,17 +10,20 @@ const ITEM_ID = '0b7c5a52-3d4e-4f6a-8b9c-0d1e2f3a4b5c';
 const CREATED_AT = new Date('2026-03-01T12:00:00.000Z');
 const UPDATED_AT = new Date('2026-03-02T08:30:00.000Z');
 const NOVEMBER = new Date('2026-11-01T00:00:00.000Z');
-const PUBLIC_KEYS = ['active', 'bank', 'bestPurchaseDay', 'createdAt', 'dueDay', 'id', 'name', 'pluggyItemId', 'sync', 'syncFromMonth', 'updatedAt'];
+const PUBLIC_KEYS = ['active', 'bank', 'bestPurchaseDay', 'createdAt', 'creditLimit', 'dueDay', 'id', 'name', 'pluggyItemId', 'sync', 'syncFromMonth', 'updatedAt'];
 /** Cartão sem ciclo da fatura nem ligação com o Meu Pluggy. */
 const NO_SETTINGS = {
     dueDay: null,
     bestPurchaseDay: null,
     pluggyItemId: null,
     syncFromMonth: null,
+    creditLimit: null,
     sync: { configured: false, syncedAt: null, dataUpdatedAt: null, status: null, error: null, consentExpiresAt: null }
 };
 /** O que o service manda ao repositório quando o update não mexe no ciclo nem no Meu Pluggy. */
-const NO_SETTINGS_CHANGES = { dueDay: undefined, bestPurchaseDay: undefined, pluggyItemId: undefined, pluggyAccountId: undefined, syncFromMonth: undefined };
+const NO_SETTINGS_CHANGES = {
+    dueDay: undefined, bestPurchaseDay: undefined, pluggyItemId: undefined, pluggyAccountId: undefined, syncFromMonth: undefined, creditLimitCents: undefined
+};
 
 const day = (value: string): Date => new Date(`${value}T00:00:00.000Z`);
 
@@ -53,7 +56,8 @@ describe('CreditCardService', () => {
                 dueDay: undefined,
                 bestPurchaseDay: undefined,
                 pluggyItemId: undefined,
-                syncFromMonth: undefined
+                syncFromMonth: undefined,
+                creditLimitCents: undefined
             });
             expect(created).toMatchObject({ name: 'Nubank Mikaell Silva', bank: 'NUBANK', active: true });
             expect(Object.keys(created).sort()).toEqual(PUBLIC_KEYS);
@@ -401,6 +405,106 @@ describe('CreditCardService', () => {
         it('cartão inexistente: 404', async () => {
             await expectAppError(service.markBillPaid(MISSING_ID, '2026-12'), NOT_FOUND);
             await expectAppError(service.unmarkBillPaid(MISSING_ID, '2026-12'), NOT_FOUND);
+        });
+    });
+
+    describe('limite do cartão', () => {
+        it('cadastra e altera o limite em reais; null apaga', async () => {
+            const created = await service.create({ name: 'C6', bank: 'C6', creditLimit: '8000' });
+
+            expect(created.creditLimit).toBe('8000.00');
+            expect(repository.get(created.id).creditLimitCents).toBe(800_000n);
+            await expect(service.update(created.id, { creditLimit: '9500.5' })).resolves.toMatchObject({ creditLimit: '9500.50' });
+            await expect(service.update(created.id, { creditLimit: null })).resolves.toMatchObject({ creditLimit: null });
+            expect(repository.get(created.id).creditLimitCents).toBeNull();
+        });
+
+        it('limite zero: 400 CREDIT_CARD_INVALID_AMOUNT, sem gravar', async () => {
+            const card = repository.seed({ name: 'C6', creditLimitCents: 100n });
+            const invalid = { code: 'CREDIT_CARD_INVALID_AMOUNT', statusCode: 400, reason: 'credit_card_limit_invalid' };
+
+            await expectAppError(service.create({ name: 'Nubank', bank: 'NUBANK', creditLimit: '0' }), invalid);
+            await expectAppError(service.update(card.id, { creditLimit: '0.00' }), invalid);
+            expect(repository.cards.size).toBe(1);
+            expect(repository.get(card.id).creditLimitCents).toBe(100n);
+        });
+    });
+
+    describe('resumo das faturas do mês', () => {
+        const month = (value: string): Date => day(`${value}-01`);
+
+        beforeEach(() => {
+            // 30/11: a fatura de dezembro do C6 fechou em 24/11; o limite conta as faturas de novembro em diante.
+            jest.useFakeTimers({ now: new Date('2026-11-30T15:00:00.000Z'), doNotFake: ['nextTick', 'setImmediate'] });
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        it('um item por cartão (ativos e inativos com compras), total geral e limite disponível', async () => {
+            const c6 = repository.seed({ name: 'C6', bank: 'C6', dueDay: 1, bestPurchaseDay: 25, creditLimitCents: 500_000n });
+            const nubank = repository.seed({ name: 'Nubank' });
+            const old = repository.seed({ name: 'Antigo', active: false });
+            repository.seed({ name: 'Cancelado', active: false });
+            repository.billTotals.push(
+                { cardId: c6.id, month: month('2026-10'), totalCents: 40_000n },
+                { cardId: c6.id, month: month('2026-11'), totalCents: 80_000n },
+                { cardId: c6.id, month: month('2026-12'), totalCents: 100_000n },
+                { cardId: c6.id, month: month('2027-01'), totalCents: 30_000n },
+                { cardId: c6.id, month: month('2027-02'), totalCents: 20_000n },
+                { cardId: nubank.id, month: month('2026-12'), totalCents: 25_050n },
+                { cardId: old.id, month: month('2026-12'), totalCents: 4_950n }
+            );
+            await repository.savePayment(c6.id, month('2026-11'), { paidAt: new Date('2026-11-02T10:00:00.000Z'), paidAmountCents: 80_000n });
+
+            const summary = await service.summarizeBills('2026-12');
+
+            expect(summary.month).toBe('2026-12');
+            expect(summary.total).toBe('1300.00');
+            expect(summary.cards.map(card => card.cardName)).toEqual(['Antigo', 'C6', 'Nubank']);
+            expect(summary.cards[1]).toEqual({
+                cardId: c6.id,
+                cardName: 'C6',
+                bank: 'C6',
+                active: true,
+                month: '2026-12',
+                status: 'closed',
+                total: '1000.00',
+                closingDate: '2026-11-24',
+                dueDate: '2026-12-01',
+                paidAt: null,
+                paidAmount: null,
+                changedAfterPayment: false,
+                creditLimit: '5000.00',
+                // 5000 − (dezembro 1000 + janeiro 300 + fevereiro 200): novembro foi paga e outubro já venceu.
+                availableLimit: '3500.00'
+            });
+            expect(summary.cards[0]).toMatchObject({ active: false, total: '49.50', creditLimit: null, availableLimit: null });
+            expect(summary.cards[2]).toMatchObject({ status: 'open', total: '250.50', closingDate: null, dueDate: null });
+        });
+
+        it('fatura paga que mudou depois avisa; limite estourado fica negativo', async () => {
+            const c6 = repository.seed({ name: 'C6', bank: 'C6', dueDay: 1, bestPurchaseDay: 25, creditLimitCents: 50_000n });
+            repository.billTotals.push(
+                { cardId: c6.id, month: month('2026-12'), totalCents: 100_000n },
+                { cardId: c6.id, month: month('2027-01'), totalCents: 60_000n }
+            );
+            await repository.savePayment(c6.id, month('2026-12'), { paidAt: new Date('2026-11-28T10:00:00.000Z'), paidAmountCents: 90_000n });
+
+            const [item] = (await service.summarizeBills('2026-12')).cards;
+
+            expect(item).toMatchObject({
+                status: 'paid', total: '1000.00', paidAmount: '900.00', changedAfterPayment: true, availableLimit: '-100.00'
+            });
+        });
+
+        it('mês sem compras: os cartões ativos com total zero', async () => {
+            repository.seed({ name: 'Nubank' });
+
+            await expect(service.summarizeBills('2027-06')).resolves.toMatchObject({
+                total: '0.00', cards: [{ cardName: 'Nubank', total: '0.00', status: 'open' }]
+            });
         });
     });
 });

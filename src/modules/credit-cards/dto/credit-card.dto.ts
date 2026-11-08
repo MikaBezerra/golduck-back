@@ -25,6 +25,7 @@ const SYNC_FROM_PROPERTY = {
     description: 'Primeira fatura (mês do vencimento) controlada pela sincronização; as anteriores ficam como estão'
 };
 const DAY_DATE_PROPERTY = { type: String, format: 'date', pattern: DATE_PATTERN, example: '2026-11-25' };
+const LIMIT_PROPERTY = { ...MONEY_PROPERTY, example: '8000.00', description: 'Limite do cartão, em reais (base do limite disponível)' };
 
 export class CreateCreditCardDto {
     @ApiProperty({ type: String, maxLength: 120, example: 'Nubank Mikaell' })
@@ -44,6 +45,9 @@ export class CreateCreditCardDto {
 
     @ApiPropertyOptional(SYNC_FROM_PROPERTY)
     public syncFromMonth?: string;
+
+    @ApiPropertyOptional(LIMIT_PROPERTY)
+    public creditLimit?: string;
 }
 
 export class UpdateCreditCardDto {
@@ -64,6 +68,9 @@ export class UpdateCreditCardDto {
 
     @ApiPropertyOptional({ ...SYNC_FROM_PROPERTY, nullable: true })
     public syncFromMonth?: string | null;
+
+    @ApiPropertyOptional({ ...LIMIT_PROPERTY, nullable: true, description: 'null apaga o limite' })
+    public creditLimit?: string | null;
 }
 
 /** Situação da sincronização com o Meu Pluggy. */
@@ -111,6 +118,9 @@ export class CreditCardResponse {
 
     @ApiProperty({ ...SYNC_FROM_PROPERTY, nullable: true })
     public syncFromMonth!: string | null;
+
+    @ApiProperty({ ...LIMIT_PROPERTY, nullable: true })
+    public creditLimit!: string | null;
 
     @ApiProperty({ type: () => CreditCardSyncResponse })
     public sync!: CreditCardSyncResponse;
@@ -205,4 +215,44 @@ export class CreditCardBillStatusResponse {
         description: 'Paga, mas o total mudou depois (compra que chegou atrasada): marque como paga de novo para confirmar o valor novo'
     })
     public changedAfterPayment!: boolean;
+}
+
+export class CreditCardBillsSummaryQueryDto {
+    @ApiProperty({ ...MONTH_PROPERTY, description: 'Mês das faturas (o do vencimento)' })
+    public month!: string;
+}
+
+/** A fatura de um cartão no resumo do mês, com o limite disponível. */
+export class CreditCardBillSummaryItem extends CreditCardBillStatusResponse {
+    @ApiProperty({ type: String })
+    public cardName!: string;
+
+    @ApiProperty(BANK_PROPERTY)
+    public bank!: CardBank;
+
+    @ApiProperty({ type: Boolean, description: 'false: cartão inativo, listado porque tem compras no mês' })
+    public active!: boolean;
+
+    @ApiProperty({ ...LIMIT_PROPERTY, nullable: true })
+    public creditLimit!: string | null;
+
+    @ApiProperty({
+        ...MONEY_PROPERTY,
+        nullable: true,
+        description: 'Limite menos as faturas não pagas, do mês atual em diante (parcelas futuras incluídas); '
+            + 'negativo quando estourou; null sem limite cadastrado. Não depende do mês pedido.'
+    })
+    public availableLimit!: string | null;
+}
+
+/** Resumo das faturas do mês: uma por cartão e o total geral. */
+export class CreditCardBillsSummaryResponse {
+    @ApiProperty(MONTH_PROPERTY)
+    public month!: string;
+
+    @ApiProperty({ ...MONEY_PROPERTY, description: 'Soma das faturas de todos os cartões no mês' })
+    public total!: string;
+
+    @ApiProperty({ type: () => [CreditCardBillSummaryItem], description: 'Cartões ativos e os inativos com compras no mês, por nome' })
+    public cards!: CreditCardBillSummaryItem[];
 }

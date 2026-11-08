@@ -17,7 +17,7 @@ O Golduck organiza as contas de uma casa em que várias pessoas dividem as despe
 | --- | --- |
 | **Pessoas** | não são apagadas, só desativadas (o histórico de despesas continua apontando para elas). Inativas não entram em despesas novas nem na divisão do resumo. |
 | **Categorias** | nome único sem diferenciar maiúsculas (espaços repetidos são removidos). "Outros" é a padrão: recebe despesas sem categoria e não pode ser renomeada, desativada nem excluída (`409 CATEGORY_DEFAULT_PROTECTED`). Desativar tira a categoria das escolhas e mantém o histórico; **excluir** (`DELETE /categories/{id}`) passa todas as despesas dela (fora do cartão e do cartão, inclusive as excluídas) para "Outros" e apaga a categoria, numa transação. A resposta diz quantas despesas mudaram (`movedManualExpenses`, `movedCardExpenses`). |
-| **Cartões** | um cartão = uma fatura de um banco (`NUBANK`, `C6`, `NEON`). O banco não muda depois do cadastro. Cartão inativo não recebe upload (`409 CREDIT_CARD_INACTIVE`). |
+| **Cartões** | um cartão = uma fatura de um banco (`NUBANK`, `C6`, `NEON`). O banco não muda depois do cadastro. Cartão inativo não recebe upload (`409 CREDIT_CARD_INACTIVE`). O **limite** (`creditLimit`) é sempre informado pelo usuário (opcional; zero é `400 CREDIT_CARD_INVALID_AMOUNT`; `null` no PATCH apaga). |
 
 ## Entrada e reserva do mês
 
@@ -59,6 +59,10 @@ Toda despesa diz de quem é no campo `split` (`common/expense-split/expense-spli
 - Alteração e exclusão são em lote (lista de IDs) e numa transação: ou todas, ou nenhuma.
 - **Paga**: `changes.paid: true` marca as despesas como pagas (`paidAt` = agora) e `false` desmarca.
   Qualquer mês pode ser marcado; não muda nenhuma conta do resumo.
+- **Resumo da aba Despesas** (`GET /manual-expenses/summary?month=`, `manual-expenses/service/manual-expense-summary.ts`,
+  função pura): total por categoria (do maior para o menor; empate pelo nome), com a quantidade de
+  despesas, e no topo o total do mês, quanto já foi pago (`paid`) e quanto falta (`unpaid`). Categorias
+  inativas aparecem se tiverem despesas no mês. Só despesas fora do cartão: as faturas têm o resumo delas.
 
 ## Despesas do cartão (`card-expenses`)
 
@@ -102,6 +106,21 @@ A situação de cada fatura (`status`, `credit-cards/service/bill-status.ts`, fu
 - Exemplo: fatura de dezembro do C6 (melhor dia 25, vence dia 1) fecha em 24/11. Em 20/11 é `open` (e
   não pode ser paga); em 30/11, `closed`; em 02/12 sem pagamento, `overdue`. Paga em 30/11 com 1.234,56;
   uma compra de 50,00 chega em 01/12: `paid`, `paidAmount` 1234.56, `total` 1284.56, `changedAfterPayment` true.
+
+### Resumo das faturas do mês (`GET /credit-cards/bills/summary?month=`)
+
+Topo da aba Faturas: uma linha por cartão e o total geral.
+
+- Cartões: os ativos e, mesmo inativos, os que têm compras no mês; em ordem de nome.
+- Cada cartão traz o total da fatura (sem as compras excluídas), a situação (`status`, `paidAt`,
+  `paidAmount`, `changedAfterPayment`, como acima), `closingDate`/`dueDate`, o limite e o **limite disponível**.
+- `total` = soma das faturas de todos os cartões listados.
+- **Limite disponível** = limite − faturas **não pagas** do **mês atual em diante** (parcelas futuras
+  incluídas, porque já ocupam o limite). Faturas que venceram em meses anteriores não contam: o app não
+  sabe se foram pagas antes de existir a marcação. Pode ficar negativo (limite estourado); `null` sem
+  limite cadastrado. É o limite de hoje: não muda com o mês pedido.
+- Exemplo (hoje 30/11, limite 5.000,00): novembro 800,00 (paga), dezembro 1.000,00, janeiro 300,00,
+  fevereiro 200,00 (parcela), outubro 400,00 (já venceu). Disponível = 5.000 − (1.000 + 300 + 200) = 3.500,00.
 
 ## Resumo (`summary`)
 

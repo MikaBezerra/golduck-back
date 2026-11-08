@@ -28,6 +28,8 @@ export const CREDIT_CARD_ERRORS = {
             'O melhor dia de compra precisa estar entre o início do mês anterior e o fim do mês da fatura.',
             reason
         ),
+    invalidAmount: (reason?: string): AppError =>
+        new AppError('CREDIT_CARD_INVALID_AMOUNT', HttpStatus.BAD_REQUEST, 'O limite do cartão precisa ser maior que zero.', reason),
     billNotClosed: (reason?: string): AppError =>
         new AppError(
             'CREDIT_CARD_BILL_NOT_CLOSED',

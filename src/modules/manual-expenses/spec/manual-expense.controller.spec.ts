@@ -249,6 +249,26 @@ describe('rotas /manual-expenses', () => {
         });
     });
 
+    describe('GET /manual-expenses/summary', () => {
+        it('devolve o resumo por categoria (a rota não é confundida com /:id); mês obrigatório', async () => {
+            repository.seed({ month: OCTOBER, title: 'Feira', categoryId: mercado.id, amountCents: 2_500n });
+
+            const response = await api.get('/manual-expenses/summary', { query: { month: '2026-10' } });
+
+            expect(response.status).toBe(200);
+            expect(dataOf(response)).toEqual({
+                month: '2026-10',
+                total: '25.00',
+                paid: '0.00',
+                unpaid: '25.00',
+                count: 1,
+                categories: [{ categoryId: mercado.id, name: 'Mercado', total: '25.00', count: 1 }]
+            });
+            expectValidationError(await api.get('/manual-expenses/summary'), ['month']);
+            expectValidationError(await api.get('/manual-expenses/summary', { query: { month: '10/2026' } }), ['month']);
+        });
+    });
+
     describe('GET /manual-expenses/:id', () => {
         it('devolve a despesa; id que não é UUID dá 400 e id inexistente dá 404', async () => {
             const expense = repository.seed({ month: OCTOBER, title: 'Gás', categoryId: mercado.id, amountCents: 4590n });

@@ -20,6 +20,7 @@ import {
     DeleteManualExpensesDto,
     ListManualExpensesDto,
     ManualExpenseResponse,
+    ManualExpensesSummaryResponse,
     UpdateManualExpensesDto
 } from '../dto/manual-expense.dto.js';
 import {
@@ -55,6 +56,15 @@ export class ManualExpenseController {
         @Query(ListManualExpensesPipe) query: ListManualExpensesDto
     ): Promise<ManualExpenseResponse[]> {
         return this.manualExpenseService.findAll(query);
+    }
+
+    @Get('summary')
+    @ApiOperation({ summary: 'Resumo das despesas do mês: total por categoria, total geral, pago e a pagar' })
+    @ApiDataResponse(ManualExpensesSummaryResponse)
+    public async summarize(
+        @Query(ListManualExpensesPipe) query: ListManualExpensesDto
+    ): Promise<ManualExpensesSummaryResponse> {
+        return this.manualExpenseService.summarize(query);
     }
 
     @Get(':id')

@@ -222,6 +222,34 @@ describe('ManualExpenseService', () => {
         });
     });
 
+    describe('summarize', () => {
+        it('total por categoria do mês (inclusive categoria inativa), pago e a pagar', async () => {
+            const antiga = categories.seed({ name: 'Antiga', active: false });
+            repository.seed({ month: OCTOBER, title: 'Feira', categoryId: mercado.id, amountCents: 30_000n, paidAt: new Date() });
+            repository.seed({ month: OCTOBER, title: 'Açougue', categoryId: mercado.id, amountCents: 12_050n });
+            repository.seed({ month: OCTOBER, title: 'Velha', categoryId: antiga.id, amountCents: 5_000n });
+            repository.seed({ month: NOVEMBER, title: 'Outro mês', categoryId: outros.id, amountCents: 99_900n });
+
+            await expect(service.summarize({ month: '2026-10' })).resolves.toEqual({
+                month: '2026-10',
+                total: '470.50',
+                paid: '300.00',
+                unpaid: '170.50',
+                count: 3,
+                categories: [
+                    { categoryId: mercado.id, name: 'Mercado', total: '420.50', count: 2 },
+                    { categoryId: antiga.id, name: 'Antiga', total: '50.00', count: 1 }
+                ]
+            });
+        });
+
+        it('mês sem despesas: zeros e lista vazia', async () => {
+            await expect(service.summarize({ month: '2026-09' })).resolves.toEqual({
+                month: '2026-09', total: '0.00', paid: '0.00', unpaid: '0.00', count: 0, categories: []
+            });
+        });
+    });
+
     describe('findById', () => {
         it('devolve a despesa no formato da API', async () => {
             const expense = repository.seed({ month: OCTOBER, title: 'Gás', categoryId: mercado.id, personId: ana.id, amountCents: 5n });

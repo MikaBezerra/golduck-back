@@ -69,6 +69,42 @@ export class ListManualExpensesDto {
     public month!: string;
 }
 
+/** Total de uma categoria no mês. */
+export class ManualExpenseCategoryTotal {
+    @ApiProperty(UUID_PROPERTY)
+    public categoryId!: string;
+
+    @ApiProperty({ type: String })
+    public name!: string;
+
+    @ApiProperty(MONEY_PROPERTY)
+    public total!: string;
+
+    @ApiProperty({ type: Number, description: 'Quantidade de despesas' })
+    public count!: number;
+}
+
+/** Resumo das despesas do mês por categoria. */
+export class ManualExpensesSummaryResponse {
+    @ApiProperty(MONTH_PROPERTY)
+    public month!: string;
+
+    @ApiProperty({ ...MONEY_PROPERTY, description: 'Soma de todas as despesas do mês' })
+    public total!: string;
+
+    @ApiProperty({ ...MONEY_PROPERTY, description: 'Soma das despesas marcadas como pagas' })
+    public paid!: string;
+
+    @ApiProperty({ ...MONEY_PROPERTY, description: 'Soma das despesas ainda não pagas' })
+    public unpaid!: string;
+
+    @ApiProperty({ type: Number, description: 'Quantidade de despesas do mês' })
+    public count!: number;
+
+    @ApiProperty({ type: () => [ManualExpenseCategoryTotal], description: 'Do maior total para o menor (empate pelo nome)' })
+    public categories!: ManualExpenseCategoryTotal[];
+}
+
 export class ManualExpenseResponse {
     @ApiProperty(UUID_PROPERTY)
     public id!: string;

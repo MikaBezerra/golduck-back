@@ -31,6 +31,7 @@ export class InMemoryCreditCardRepository {
             syncStatus: null,
             syncError: null,
             syncConsentExpiresAt: null,
+            creditLimitCents: null,
             createdAt: FIXED_DATE,
             updatedAt: FIXED_DATE,
             ...data

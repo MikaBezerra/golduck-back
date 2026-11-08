@@ -39,6 +39,7 @@ export class InMemoryCreditCardRepository {
             syncStatus: null,
             syncError: null,
             syncConsentExpiresAt: null,
+            creditLimitCents: null,
             createdAt: now,
             updatedAt: now,
             ...data
@@ -65,6 +66,12 @@ export class InMemoryCreditCardRepository {
     public async findAll(): Promise<CreditCard[]> {
         return [...this.cards.values()]
             .filter(card => card.active)
+            .sort((a, b) => compareText(a.name, b.name) || compareText(a.id, b.id));
+    }
+
+    public async findActiveOrIn(ids: string[]): Promise<CreditCard[]> {
+        return [...this.cards.values()]
+            .filter(card => card.active || ids.includes(card.id))
             .sort((a, b) => compareText(a.name, b.name) || compareText(a.id, b.id));
     }
 
@@ -95,6 +102,12 @@ export class InMemoryCreditCardRepository {
             .sort((a, b) => a.month.getTime() - b.month.getTime());
     }
 
+    public async findBillsOfCards(cardIds: string[]): Promise<CardBill[]> {
+        return [...this.bills.values()]
+            .filter(bill => cardIds.includes(bill.cardId))
+            .sort((a, b) => a.month.getTime() - b.month.getTime());
+    }
+
     public async saveBestPurchaseDate(cardId: string, month: Date, bestPurchaseDate: Date | null): Promise<CardBill> {
         return this.upsertBill(cardId, month, { bestPurchaseDate });
     }
@@ -109,10 +122,11 @@ export class InMemoryCreditCardRepository {
         return this.upsertBill(cardId, month, payment);
     }
 
-    public async sumBillTotals(filter: { cardId?: string; month?: Date }): Promise<CardBillTotal[]> {
+    public async sumBillTotals(filter: { cardId?: string; month?: Date; fromMonth?: Date }): Promise<CardBillTotal[]> {
         return this.billTotals.filter(total =>
             (filter.cardId === undefined || total.cardId === filter.cardId)
-            && (filter.month === undefined || total.month.getTime() === filter.month.getTime()));
+            && (filter.month === undefined || total.month.getTime() === filter.month.getTime())
+            && (filter.fromMonth === undefined || total.month.getTime() >= filter.fromMonth.getTime()));
     }
 
     /** O CardBill gravado (ou undefined). */

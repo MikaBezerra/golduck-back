@@ -261,6 +261,39 @@ describe('rotas /credit-cards', () => {
         });
     });
 
+    describe('limite e resumo das faturas', () => {
+        it('POST e PATCH aceitam o limite em reais (PATCH aceita null); formato inválido é 400', async () => {
+            const created = await api.post('/credit-cards', { name: 'C6', bank: 'C6', creditLimit: '8000.00' });
+            const id = dataOf<{ id: string }>(created).id;
+
+            expect(created.status).toBe(201);
+            expect(dataOf(created)).toMatchObject({ creditLimit: '8000.00' });
+            expect(dataOf(await api.patch(`/credit-cards/${id}`, { creditLimit: null }))).toMatchObject({ creditLimit: null });
+            expectInvalid(await api.patch(`/credit-cards/${id}`, { creditLimit: '10,50' }), { field: 'creditLimit', code: 'string.pattern.base' });
+            expectInvalid(await api.post('/credit-cards', { name: 'X', bank: 'C6', creditLimit: 100 }), { field: 'creditLimit', code: 'string.base' });
+            expect(errorOf(await api.patch(`/credit-cards/${id}`, { creditLimit: '0' })).code).toBe('CREDIT_CARD_INVALID_AMOUNT');
+        });
+
+        it('GET /credit-cards/bills/summary?month devolve o resumo; mês obrigatório e no formato AAAA-MM', async () => {
+            const card = repository.seed({ name: 'Nubank', creditLimitCents: 100_000n });
+            repository.billTotals.push({ cardId: card.id, month: new Date('2020-01-01T00:00:00.000Z'), totalCents: 1_000n });
+
+            const summary = await api.get('/credit-cards/bills/summary', { query: { month: '2020-01' } });
+
+            expect(summary.status).toBe(200);
+            expect(dataOf(summary)).toEqual({
+                month: '2020-01',
+                total: '10.00',
+                cards: [expect.objectContaining({ cardId: card.id, cardName: 'Nubank', total: '10.00', status: 'closed', creditLimit: '1000.00' })]
+            });
+            expectInvalid(await api.get('/credit-cards/bills/summary'), { field: 'month', code: 'any.required' });
+            expectInvalid(await api.get('/credit-cards/bills/summary', { query: { month: '01/2020' } }), { field: 'month' });
+            expectInvalid(await api.get('/credit-cards/bills/summary', { query: { month: '2020-01', cardId: card.id } }), {
+                field: 'cardId', code: 'object.unknown'
+            });
+        });
+    });
+
     it('todo erro traz o requestId, igual ao header x-request-id', async () => {
         const response = await api.get(`/credit-cards/${MISSING_ID}`, { headers: { 'x-request-id': 'teste-cartoes-1' } });
 

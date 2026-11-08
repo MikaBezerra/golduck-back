@@ -116,6 +116,8 @@ model CreditCard {
   dueDay               Int?
   /// Melhor dia de compra padrão: compras a partir dele vão para a fatura seguinte.
   bestPurchaseDay      Int?
+  /// Limite do cartão, informado pelo usuário: base do limite disponível no resumo das faturas.
+  creditLimitCents     BigInt?                  @db.BigInt
   /// Item (a conexão de um banco) no Meu Pluggy.
   pluggyItemId         String?                  @db.Uuid
   /// Conta de cartão de crédito dentro do item, descoberta na primeira sincronização.

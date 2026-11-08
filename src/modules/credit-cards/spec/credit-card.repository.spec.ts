@@ -114,5 +114,26 @@ describe('CreditCardRepository', () => {
             where: { excludedAt: null, cardId: undefined, month },
             _sum: { amountCents: true }
         });
+
+        await repository.sumBillTotals({ cardId: 'id-1', fromMonth: month });
+        await repository.sumBillTotals({});
+
+        expect(prisma.cardExpense.groupBy).toHaveBeenNthCalledWith(2, expect.objectContaining({
+            where: { excludedAt: null, cardId: 'id-1', month: { gte: month } }
+        }));
+        expect(prisma.cardExpense.groupBy).toHaveBeenNthCalledWith(3, expect.objectContaining({
+            where: { excludedAt: null, cardId: undefined, month: undefined }
+        }));
+    });
+
+    it('resumo: cartões ativos ou dos ids pedidos, por nome; faturas dos cartões pedidos', async () => {
+        await repository.findActiveOrIn(['id-9']);
+        await repository.findBillsOfCards(['id-1', 'id-2']);
+
+        expect(prisma.creditCard.findMany).toHaveBeenCalledWith({
+            where: { OR: [{ active: true }, { id: { in: ['id-9'] } }] },
+            orderBy: [{ name: 'asc' }, { id: 'asc' }]
+        });
+        expect(prisma.cardBill.findMany).toHaveBeenCalledWith({ where: { cardId: { in: ['id-1', 'id-2'] } }, orderBy: { month: 'asc' } });
     });
 });

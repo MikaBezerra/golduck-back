@@ -2,11 +2,20 @@ import Joi from 'joi';
 
 import { CardBank } from '../../../generated/prisma/client.js';
 import { JoiValidationPipePtbr } from '../../common/index.js';
-import { CreateCreditCardDto, ListCreditCardBillsDto, UpdateCreditCardBillDto, UpdateCreditCardDto } from '../dto/credit-card.dto.js';
+import {
+    CreateCreditCardDto,
+    CreditCardBillsSummaryQueryDto,
+    ListCreditCardBillsDto,
+    UpdateCreditCardBillDto,
+    UpdateCreditCardDto
+} from '../dto/credit-card.dto.js';
 
 const nameSchema = Joi.string().trim().min(1).max(120);
 const daySchema = Joi.number().integer().min(1).max(31);
 const idSchema = Joi.string().guid({ version: 'uuidv4' });
+const amountSchema = Joi.string().pattern(/^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/).max(20).messages({
+    'string.pattern.base': 'O valor deve estar em reais, por exemplo 100.00'
+});
 const monthSchema = Joi.string().pattern(/^[1-9]\d{3}-(0[1-9]|1[0-2])$/).messages({
     'string.pattern.base': 'O mês deve estar no formato AAAA-MM'
 });
@@ -30,7 +39,8 @@ export class CreateCreditCardPipe extends JoiValidationPipePtbr {
             dueDay: daySchema.optional(),
             bestPurchaseDay: daySchema.optional(),
             pluggyItemId: idSchema.optional(),
-            syncFromMonth: monthSchema.optional()
+            syncFromMonth: monthSchema.optional(),
+            creditLimit: amountSchema.optional()
         }).unknown(false);
     }
 }
@@ -43,7 +53,8 @@ export class UpdateCreditCardPipe extends JoiValidationPipePtbr {
             dueDay: daySchema.optional(),
             bestPurchaseDay: daySchema.optional(),
             pluggyItemId: idSchema.allow(null).optional(),
-            syncFromMonth: monthSchema.allow(null).optional()
+            syncFromMonth: monthSchema.allow(null).optional(),
+            creditLimit: amountSchema.allow(null).optional()
         }).min(1).unknown(false);
     }
 }
@@ -73,6 +84,14 @@ export class UpdateCreditCardBillPipe extends JoiValidationPipePtbr {
     public buildSchema(): Joi.Schema {
         return Joi.object<UpdateCreditCardBillDto>({
             bestPurchaseDate: dateSchema.allow(null).required()
+        }).unknown(false);
+    }
+}
+
+export class CreditCardBillsSummaryPipe extends JoiValidationPipePtbr {
+    public buildSchema(): Joi.Schema {
+        return Joi.object<CreditCardBillsSummaryQueryDto>({
+            month: monthSchema.required()
         }).unknown(false);
     }
 }
