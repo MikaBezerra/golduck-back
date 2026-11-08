@@ -32,3 +32,6 @@ npm-debug.log
 
 # configurações locais de ferramentas (ficam só na máquina)
 .claude/
+
+# Vercel (criada pelo vercel link/pull; guarda o projeto vinculado e as variáveis baixadas)
+/.vercel

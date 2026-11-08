@@ -21,12 +21,32 @@ Branch da feature → PR (squash) para `develop` → PR de `develop` para `main`
 - **Environments** `develop` e `production`, com os secrets `DOTENV_PRIVATE_KEY_DEVELOP` e
   `DOTENV_PRIVATE_KEY_PRODUCTION`; cada um aceita deploy só da sua branch. Se a chave de um `.env`
   mudar (no `.env.keys`), atualize o secret, senão o job de migrações não consegue ler o arquivo.
-- **Secret** `VERCEL_TOKEN` e **variables** `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID` e `DEPLOY_ENABLED=true`
-  quando o deploy estiver pronto.
+- **Secret** `VERCEL_TOKEN` e **variables** `VERCEL_ORG_ID` e `DEPLOY_ENABLED=true` (quando o deploy
+  estiver pronto) no repositório; **variable** `VERCEL_PROJECT_ID` em cada environment, com o ID do
+  projeto da Vercel daquele ambiente.
 - **Ruleset** na `develop`: PR obrigatório, só squash e os checks de lint/testes/build, migrações e título
   do PR. O administrador do repositório pode passar por cima (por exemplo, para um force push).
-- Na Vercel, o deploy automático por Git fica desligado: quem publica é o `deploy.yml`, depois das
-  migrações.
+- Na Vercel, o deploy automático por Git fica desligado (`git.deploymentEnabled: false` no
+  `vercel.json`): quem publica é o `deploy.yml`, depois das migrações.
+
+## Vercel
+
+| Ambiente | Projeto | Branch | Banco |
+| --- | --- | --- | --- |
+| develop | `golduck-back-develop` | `develop` | Neon, schema `develop` |
+| produção | `golduck-back` | `main` | Neon, schema `production` |
+
+- Um projeto por ambiente, sempre publicado com `--prod`: cada um tem URL fixa
+  (`<projeto>.vercel.app`) e escapa da proteção que o plano Hobby põe nos deploys de preview.
+- O `vercel.json` usa o preset NestJS (entrada `src/server.ts`), roda `npm ci` e `npm run build` e
+  publica a função em São Paulo (`gru1`), perto do banco.
+- As variáveis da API ficam no painel de cada projeto (*Settings > Environment Variables*, ambiente
+  *Production*), não no `.env.develop`/`.env.production`: a Vercel não roda o `dotenvx`. Esses
+  arquivos continuam valendo para as migrações e o `admin:create:*`. Mudou um valor usado pelos dois
+  lados (como a `DATABASE_URL`)? Atualize nos dois. `DATABASE_DIRECT_URL` não vai para a Vercel.
+- O front chama a API pelo próprio domínio (rewrite de `/api` no projeto do front), então o cookie de
+  sessão é do mesmo site; a `API_CORS_ORIGINS` da API leva o endereço do front, porque o rewrite repassa
+  o `Origin` dele ([autenticacao-e-seguranca.md](autenticacao-e-seguranca.md)).
 
 ## Dependências
 

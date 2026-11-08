@@ -61,8 +61,11 @@ Usuários são criados por `npm run admin:create` (local), `admin:create:develop
 ## Deploy e cookie
 
 Com front e API em domínios `*.vercel.app` diferentes, o navegador trata o cookie como de outro site e
-o Safari o bloqueia. Em produção, use domínio próprio (API num subdomínio, ex.: `api.golduck.com.br`, com
-o front em `golduck.com.br`) ou sirva a API em `/api` no domínio do front.
+o Safari o bloqueia. Por isso o front serve a API em `/api` no próprio domínio (rewrite na Vercel para o
+projeto da API): para o navegador é tudo o mesmo site e o `AUTH_COOKIE_SAMESITE=strict` funciona. O
+`Origin` que chega à API é o do front, então ele precisa estar em `API_CORS_ORIGINS`. Com domínio
+próprio, a API também pode ficar num subdomínio (ex.: `api.golduck.com.br`, com o front em
+`golduck.com.br`).
 
 ## Onde está no código
 

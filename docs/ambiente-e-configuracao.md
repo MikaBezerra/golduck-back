@@ -49,6 +49,8 @@ npm run dev                     # http://localhost:3000/api
 | `.env.production` | produção; `DATABASE_URL`, `DATABASE_DIRECT_URL` e `JWT_SECRET` criptografados | sim |
 | `.env.keys` | chaves privadas (`DOTENV_PRIVATE_KEY_DEVELOP` e `..._PRODUCTION`) | **nunca** |
 
+- Na Vercel a API não lê esses arquivos: as variáveis ficam no painel de cada projeto
+  ([ci-cd-e-versoes.md](ci-cd-e-versoes.md#vercel)). Os arquivos servem às migrações e ao `admin:create:*`.
 - Os quatro arquivos seguem a mesma ordem, agrupada: Ambiente, API, Banco, Autenticação e Logs. Cada
   variável está explicada na tabela abaixo; os arquivos só têm comentários curtos.
 - Guarde uma cópia segura do `.env.keys`: sem ele não é possível ler os valores criptografados.
