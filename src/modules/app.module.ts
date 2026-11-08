@@ -11,6 +11,7 @@ import { ManualExpensesModule } from './manual-expenses/manual-expenses.module.j
 import { PeopleModule } from './people/people.module.js';
 import { ReservesModule } from './reserves/reserves.module.js';
 import { SummaryModule } from './summary/summary.module.js';
+import { SummaryDispatchModule } from './summary-dispatch/summary-dispatch.module.js';
 
 @Module({
     imports: [
@@ -24,7 +25,8 @@ import { SummaryModule } from './summary/summary.module.js';
         ManualExpensesModule,
         PeopleModule,
         ReservesModule,
-        SummaryModule
+        SummaryModule,
+        SummaryDispatchModule
     ]
 })
 export class ApplicationModule { }

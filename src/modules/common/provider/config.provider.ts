@@ -56,7 +56,13 @@ export const configProvider = {
             LOG_REQUEST_BODY: Joi.string().empty('').valid(...LOG_REQUEST_BODY_MODES).optional(),
             SLOW_REQUEST_MS: Joi.number().empty('').integer().min(0).optional(),
             SLOW_QUERY_MS: Joi.number().empty('').integer().min(0).optional(),
-            GIT_COMMIT_SHA: Joi.string().empty('').pattern(/^[0-9a-f]{7,40}$/i).optional()
+            GIT_COMMIT_SHA: Joi.string().empty('').pattern(/^[0-9a-f]{7,40}$/i).optional(),
+            MAIL_ENABLED: Joi.string().empty('').default('0').valid('0', '1'),
+            MAIL_SMTP_HOST: Joi.string().empty('').default('smtp.gmail.com').hostname(),
+            MAIL_SMTP_PORT: Joi.number().empty('').default(465).integer().min(1).max(65535),
+            MAIL_SMTP_USER: Joi.string().empty('').when('MAIL_ENABLED', { is: '1', then: Joi.required(), otherwise: Joi.optional() }),
+            MAIL_SMTP_PASS: Joi.string().empty('').when('MAIL_ENABLED', { is: '1', then: Joi.required(), otherwise: Joi.optional() }),
+            MAIL_FROM: Joi.string().empty('').max(254).optional()
         });
 
         const result = validationSchema.validate(env);

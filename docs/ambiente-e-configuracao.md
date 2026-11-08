@@ -86,6 +86,10 @@ de 32 caracteres, a API nem sobe.
 | `LOG_FORMAT` | `pretty` ou `json`; vazio = `pretty` com `APP_ENV=local` e `json` nos demais |
 | `LOG_REQUEST_BODY` | corpo das requisições no log: `off`, `errors` (padrão, só nas que falharam) ou `all` |
 | `SLOW_REQUEST_MS`, `SLOW_QUERY_MS` | a partir de quantos ms a requisição (padrão 1000) / consulta (padrão 500) é lenta |
+| `MAIL_ENABLED` | `1` liga o envio do resumo por e-mail; padrão `0` (o botão responde `503 MAIL_DISABLED`) ([envio-de-resumos.md](envio-de-resumos.md)) |
+| `MAIL_SMTP_HOST`, `MAIL_SMTP_PORT` | servidor SMTP (padrão `smtp.gmail.com` e `465`, com TLS direto; `587` usa STARTTLS) |
+| `MAIL_SMTP_USER`, `MAIL_SMTP_PASS` | usuário e senha SMTP (no Gmail, o endereço e a **senha de app**); obrigatórios com `MAIL_ENABLED=1` |
+| `MAIL_FROM` | remetente, como `Golduck <voce@gmail.com>`; vazio = `Golduck <MAIL_SMTP_USER>` |
 | `GIT_COMMIT_SHA` | commit publicado (o deploy preenche; na Vercel também vem em `VERCEL_GIT_COMMIT_SHA`) |
 
 Criou ou mudou uma variável? Atualize o `config.provider.ts` (validação), o tipo `Config`, o

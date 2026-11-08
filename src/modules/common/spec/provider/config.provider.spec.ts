@@ -47,13 +47,16 @@ describe('configProvider', () => {
             API_PORT: 3000,
             APP_ENV: 'local',
             AUTH_COOKIE_NAME: 'refresh_token',
-            AUTH_COOKIE_SAMESITE: 'strict'
+            AUTH_COOKIE_SAMESITE: 'strict',
+            MAIL_ENABLED: '0',
+            MAIL_SMTP_HOST: 'smtp.gmail.com',
+            MAIL_SMTP_PORT: 465
         });
         // O Joi não passa o valor padrão pelo custom(): hoje fica o texto 'false', não o booleano (veja o relatório).
         expect(String(config.TRUST_PROXY)).toBe('false');
 
         for (const key of ['API_CORS_ORIGINS', 'SWAGGER_ENABLE', 'AUTH_COOKIE_DOMAIN', 'LOG_LEVEL', 'LOG_FORMAT', 'LOG_REQUEST_BODY',
-            'SLOW_REQUEST_MS', 'SLOW_QUERY_MS', 'GIT_COMMIT_SHA'] as const) {
+            'SLOW_REQUEST_MS', 'SLOW_QUERY_MS', 'GIT_COMMIT_SHA', 'MAIL_SMTP_USER', 'MAIL_SMTP_PASS', 'MAIL_FROM'] as const) {
             expect(config[key]).toBeUndefined();
         }
     });
@@ -239,6 +242,20 @@ describe('configProvider', () => {
             for (const value of ['abc123', 'a'.repeat(41), 'abcdefg', 'zabc1234', 'abc1234z']) {
                 expectInvalid({ GIT_COMMIT_SHA: value }, `"GIT_COMMIT_SHA" with value "${value}" fails to match the required pattern`);
             }
+        });
+        it('e-mail: com MAIL_ENABLED=1 exige usuário e senha; porta numérica e servidor válido', () => {
+            const mail = { MAIL_ENABLED: '1', MAIL_SMTP_USER: 'golduck@gmail.com', MAIL_SMTP_PASS: 'senha de app' };
+
+            expect(load({ ...mail, MAIL_SMTP_PORT: '587', MAIL_FROM: 'Golduck <golduck@gmail.com>' })).toMatchObject({
+                ...mail,
+                MAIL_SMTP_PORT: 587,
+                MAIL_FROM: 'Golduck <golduck@gmail.com>'
+            });
+            expectInvalid({ ...mail, MAIL_SMTP_USER: '' }, '"MAIL_SMTP_USER" is required');
+            expectInvalid({ ...mail, MAIL_SMTP_PASS: undefined }, '"MAIL_SMTP_PASS" is required');
+            expectInvalid({ MAIL_ENABLED: 'sim' }, '"MAIL_ENABLED" must be one of [0, 1]');
+            expectInvalid({ MAIL_SMTP_PORT: '70000' }, '"MAIL_SMTP_PORT" must be less than or equal to 65535');
+            expectInvalid({ MAIL_SMTP_HOST: 'smtp gmail' }, '"MAIL_SMTP_HOST" must be a valid hostname');
         });
     });
 

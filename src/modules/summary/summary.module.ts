@@ -8,6 +8,7 @@ import { SummaryService } from './service/summary.service.js';
 @Module({
     imports: [CommonModule],
     controllers: [SummaryController],
-    providers: [SummaryRepository, SummaryService]
+    providers: [SummaryRepository, SummaryService],
+    exports: [SummaryService]
 })
 export class SummaryModule { }

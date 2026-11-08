@@ -48,6 +48,7 @@ model Person {
   updatedAt      DateTime        @updatedAt @db.Timestamptz(3)
   manualExpenses ManualExpense[]
   cardExpenses   CardExpense[]
+  dispatchItems  SummaryDispatchItem[]
 
   @@index([active, name])
 }
@@ -166,6 +167,60 @@ model CardExpense {
   @@index([importId])
   @@index([categoryId])
   @@index([personId])
+}
+
+/// Um envio do resumo do mês (botão "Enviar por e-mail"), com o resultado de cada pessoa.
+model SummaryDispatch {
+  id             String                @id @default(uuid()) @db.Uuid
+  month          DateTime              @db.Date
+  channel        SummaryChannel        @default(EMAIL)
+  status         SummaryDispatchStatus @default(RUNNING)
+  /// Preenchido só enquanto o envio roda: o índice único impede dois envios do mesmo mês ao mesmo tempo.
+  runningMonth   DateTime?             @unique @db.Date
+  /// Header Idempotency-Key: a mesma chave devolve o resultado gravado, sem enviar de novo.
+  idempotencyKey String                @unique @db.VarChar(64)
+  startedAt      DateTime              @default(now()) @db.Timestamptz(3)
+  finishedAt     DateTime?             @db.Timestamptz(3)
+  items          SummaryDispatchItem[]
+
+  @@index([month, startedAt])
+}
+
+model SummaryDispatchItem {
+  id         String                    @id @default(uuid()) @db.Uuid
+  dispatchId String                    @db.Uuid
+  personId   String                    @db.Uuid
+  /// Nome da pessoa no momento do envio.
+  name       String                    @db.VarChar(120)
+  /// Destinatário mascarado (ay•••@gmail.com); null quando a pessoa não tem e-mail.
+  recipient  String?                   @db.VarChar(254)
+  status     SummaryDispatchItemStatus
+  errorCode  String?                   @db.VarChar(60)
+  message    String?                   @db.VarChar(300)
+  createdAt  DateTime                  @default(now()) @db.Timestamptz(3)
+
+  dispatch SummaryDispatch @relation(fields: [dispatchId], references: [id], onDelete: Cascade)
+  person   Person          @relation(fields: [personId], references: [id], onDelete: Restrict)
+
+  @@index([dispatchId])
+  @@index([personId])
+}
+
+enum SummaryChannel {
+  EMAIL
+}
+
+enum SummaryDispatchStatus {
+  RUNNING
+  DONE
+  /// A função parou no meio (queda, tempo esgotado): liberado pelo próximo envio do mês.
+  INTERRUPTED
+}
+
+enum SummaryDispatchItemStatus {
+  SENT
+  SKIPPED_NO_EMAIL
+  FAILED
 }
 
 enum CardBank {

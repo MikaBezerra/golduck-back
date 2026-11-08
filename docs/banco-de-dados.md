@@ -17,6 +17,8 @@ só nos `repository/` de cada módulo.
 | `ManualExpense` | despesa fora do cartão | mês, título, valor, categoria e pessoa opcional (sem pessoa = compartilhada) |
 | `CreditCard` | cartão | banco (`CardBank`: `NUBANK`, `C6`, `NEON`) e `active` |
 | `CardImport` | um upload de fatura | cartão, mês da fatura, nome e hash do arquivo, versão do parser e contagens |
+| `SummaryDispatch` | um envio do resumo do mês por e-mail | `idempotencyKey` único; `runningMonth` único e preenchido só enquanto roda (trava um envio por mês); `status` `RUNNING`, `DONE` ou `INTERRUPTED` ([envio-de-resumos.md](envio-de-resumos.md)) |
+| `SummaryDispatchItem` | resultado de uma pessoa num envio | nome no momento do envio, destinatário mascarado, `status` `SENT`, `SKIPPED_NO_EMAIL` ou `FAILED`, código e mensagem |
 | `CardExpense` | uma linha da fatura num mês | `purchaseKey` identifica a compra; parcela `n/N`; `sourceMonth` (upload que lançou a linha); apelido, categoria e pessoa; exclusão suave (`excludedAt`, `exclusionRemembered`) |
 
 Relações principais: despesas apontam para `Category` e `Person` com `onDelete: Restrict` (não dá para

@@ -20,6 +20,7 @@ tema; este aqui é o mapa. O `README.md` da raiz do repositório tem só o resum
 | [api.md](api.md) | contrato HTTP: rotas, envelope, códigos de erro, validação, paginação, headers, Swagger | criar/mudar rota, DTO, código de erro ou header |
 | [autenticacao-e-seguranca.md](autenticacao-e-seguranca.md) | login, sessão em cookie, papéis, limites de tentativas, CSRF, CORS, Helmet | mexer em `auth`, guards, cookie, CORS ou limites |
 | [regras-de-negocio.md](regras-de-negocio.md) | dinheiro, mês, entradas, reserva, despesas, cartões, resumo e suas fórmulas | mudar qualquer regra de cálculo ou de cadastro |
+| [envio-de-resumos.md](envio-de-resumos.md) | botão de envio do resumo por e-mail: conteúdo, Gmail, duplo clique, falhas por pessoa | mexer em `summary-dispatch` ou no conteúdo do e-mail |
 | [importacao-de-faturas.md](importacao-de-faturas.md) | upload da fatura, pré-visualização, parcelas, exclusões, parsers por banco | mexer em `card-imports`/`card-expenses` ou adicionar um banco |
 | [observabilidade.md](observabilidade.md) | logs, `x-request-id`, rotas de status e versão | mudar logs, níveis ou rotas de status |
 | [testes.md](testes.md) | tipos de teste, helpers e cobertura | mudar a forma de testar, helpers ou metas |
@@ -37,6 +38,7 @@ tema; este aqui é o mapa. O `README.md` da raiz do repositório tem só o resum
 | `src/modules/common/http/`, `validation/`, `pagination/`, `swagger/` | [api.md](api.md) |
 | `src/modules/common/provider/config.provider.ts` | [ambiente-e-configuracao.md](ambiente-e-configuracao.md) |
 | `src/modules/summary/` | [regras-de-negocio.md](regras-de-negocio.md) |
+| `src/modules/summary-dispatch/` | [envio-de-resumos.md](envio-de-resumos.md) |
 | `src/modules/card-imports/`, `card-expenses/` | [importacao-de-faturas.md](importacao-de-faturas.md) |
 | `prisma/` | [banco-de-dados.md](banco-de-dados.md) |
 | `src/testing/`, `**/spec/`, `jest.json` | [testes.md](testes.md) |

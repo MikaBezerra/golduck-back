@@ -41,4 +41,16 @@ export interface Config {
     readonly SLOW_QUERY_MS?: number;
     /** Commit publicado; na Vercel vem de VERCEL_GIT_COMMIT_SHA. */
     readonly GIT_COMMIT_SHA?: string;
+    /** "1" liga o envio do resumo por e-mail (padrão "0": o botão responde 503 MAIL_DISABLED). */
+    readonly MAIL_ENABLED: '0' | '1';
+    /** Servidor SMTP (padrão smtp.gmail.com). */
+    readonly MAIL_SMTP_HOST: string;
+    /** Porta SMTP (padrão 465, com TLS direto; 587 usa STARTTLS). */
+    readonly MAIL_SMTP_PORT: number;
+    /** Usuário SMTP (no Gmail, o endereço). Obrigatório com MAIL_ENABLED=1. */
+    readonly MAIL_SMTP_USER?: string;
+    /** Senha SMTP (no Gmail, a senha de app). Obrigatória com MAIL_ENABLED=1. */
+    readonly MAIL_SMTP_PASS?: string;
+    /** Remetente, como "Golduck <voce@gmail.com>"; vazio = "Golduck <MAIL_SMTP_USER>". */
+    readonly MAIL_FROM?: string;
 }

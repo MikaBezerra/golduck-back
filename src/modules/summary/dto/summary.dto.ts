@@ -201,7 +201,7 @@ export class SummaryStatementSectionDto {
     @ApiProperty({ type: String, example: 'Dividido igualmente entre as pessoas ativas' })
     public hint!: string;
 
-    @ApiProperty({ type: () => [SummaryStatementRowDto] })
+    @ApiProperty({ type: [SummaryStatementRowDto] })
     public rows!: SummaryStatementRowDto[];
 }
 
@@ -237,16 +237,16 @@ export class SummaryStatementResponse {
     @ApiProperty(MONTH_PROPERTY)
     public month!: string;
 
-    @ApiProperty({ type: () => [SummaryStatementColumnDto], description: 'Pessoas ativas em ordem alfabética, depois as inativas com gasto individual' })
+    @ApiProperty({ type: [SummaryStatementColumnDto], description: 'Pessoas ativas em ordem alfabética, depois as inativas com gasto individual' })
     public columns!: SummaryStatementColumnDto[];
 
-    @ApiProperty({ type: () => [SummaryStatementSectionDto], description: 'Entrada, Compartilhado, Individual e Resultado' })
+    @ApiProperty({ type: [SummaryStatementSectionDto], description: 'Entrada, Compartilhado, Individual e Resultado' })
     public sections!: SummaryStatementSectionDto[];
 
-    @ApiProperty({ type: () => [SummaryStatementBreakdownDto], description: 'Líquido de cada pessoa ativa em etapas, em ordem alfabética' })
+    @ApiProperty({ type: [SummaryStatementBreakdownDto], description: 'Líquido de cada pessoa ativa em etapas, em ordem alfabética' })
     public breakdown!: SummaryStatementBreakdownDto[];
 
-    @ApiProperty({ type: () => SummaryStatementReserveDto })
+    @ApiProperty({ type: SummaryStatementReserveDto })
     public reserve!: SummaryStatementReserveDto;
 
     @ApiProperty({ type: Boolean, description: 'Há pessoas ativas para dividir o compartilhado' })
