@@ -1,9 +1,9 @@
 import { input, password } from '@inquirer/prompts';
-import * as Joi from 'joi';
+import Joi from 'joi';
 
-import { Prisma, Role } from '../src/generated/prisma/client';
-import { PasswordService } from '../src/modules/auth/security/password.service';
-import { PrismaService } from '../src/modules/common/provider/prisma.provider';
+import { Prisma, Role } from '../src/generated/prisma/client.js';
+import { PasswordService } from '../src/modules/auth/security/password.service.js';
+import { PrismaService } from '../src/modules/common/provider/prisma.provider.js';
 
 
 const emailSchema = Joi.string().email().required();

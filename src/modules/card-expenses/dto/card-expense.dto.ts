@@ -6,8 +6,8 @@ import {
     MONEY_PROPERTY,
     MONTH_PROPERTY,
     UUID_PROPERTY
-} from '../../common/swagger/api-docs';
-import { CARD_EXPENSE_SCOPES, CardExpenseScope } from '../service/card-expense-scope';
+} from '../../common/swagger/api-docs.js';
+import { CARD_EXPENSE_SCOPES, CardExpenseScope } from '../service/card-expense-scope.js';
 
 export const SCOPE_PROPERTY = {
     type: String,

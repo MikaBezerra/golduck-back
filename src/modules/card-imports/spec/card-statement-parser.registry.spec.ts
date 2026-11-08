@@ -1,11 +1,11 @@
 import { Test } from '@nestjs/testing';
 
-import { CardBank } from '../../../generated/prisma/client';
-import { C6CsvParser } from '../parsers/c6-csv.parser';
-import { CARD_STATEMENT_PARSERS, CardStatementParserRegistry } from '../parsers/card-statement-parser.registry';
-import { CardStatementFormatError } from '../parsers/card-statement.parser';
-import { NeonPdfParser } from '../parsers/neon-pdf.parser';
-import { NubankCsvParser } from '../parsers/nubank-csv.parser';
+import { CardBank } from '../../../generated/prisma/client.js';
+import { C6CsvParser } from '../parsers/c6-csv.parser.js';
+import { CARD_STATEMENT_PARSERS, CardStatementParserRegistry } from '../parsers/card-statement-parser.registry.js';
+import { CardStatementFormatError } from '../parsers/card-statement.parser.js';
+import { NeonPdfParser } from '../parsers/neon-pdf.parser.js';
+import { NubankCsvParser } from '../parsers/nubank-csv.parser.js';
 
 describe('CardStatementParserRegistry', () => {
     let registry: CardStatementParserRegistry;

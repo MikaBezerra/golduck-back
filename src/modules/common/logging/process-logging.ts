@@ -1,5 +1,5 @@
-import { LoggerService } from '../provider/logger.service';
-import { describeError } from './describe-error';
+import { LoggerService } from '../provider/logger.service.js';
+import { describeError } from './describe-error.js';
 
 /**
  * Erros que escapam de tudo (promise sem catch, exceção fora de requisição) também vão para o log.

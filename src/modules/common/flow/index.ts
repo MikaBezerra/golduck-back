@@ -1,1 +1,1 @@
-export { JoiValidationPipePtbr } from '../validation/joi-validation-ptbr.pipe';
+export { JoiValidationPipePtbr } from '../validation/joi-validation-ptbr.pipe.js';

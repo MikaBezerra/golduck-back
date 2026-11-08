@@ -1,7 +1,7 @@
-import * as Joi from 'joi';
+import Joi from 'joi';
 
-import { JoiValidationPipePtbr } from '../../common';
-import { AnnualSummaryQueryDto, SummaryQueryDto } from '../dto/summary.dto';
+import { JoiValidationPipePtbr } from '../../common/index.js';
+import { AnnualSummaryQueryDto, SummaryQueryDto } from '../dto/summary.dto.js';
 
 export class SummaryQueryPipe extends JoiValidationPipePtbr {
     public buildSchema(): Joi.Schema {

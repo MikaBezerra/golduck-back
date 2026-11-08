@@ -1,7 +1,7 @@
-import * as Joi from 'joi';
+import Joi from 'joi';
 
-import { JoiValidationPipePtbr } from '../../common';
-import { CreatePersonDto, ListPeopleDto, UpdatePersonDto } from '../dto/person.dto';
+import { JoiValidationPipePtbr } from '../../common/index.js';
+import { CreatePersonDto, ListPeopleDto, UpdatePersonDto } from '../dto/person.dto.js';
 
 const nameSchema = Joi.string().trim().min(1).max(120);
 const emailSchema = Joi.string().trim().lowercase().email().max(254).allow(null);

@@ -1,7 +1,7 @@
-import type { MonthlyReserve } from '../../../generated/prisma/client';
+import type { MonthlyReserve } from '../../../generated/prisma/client.js';
 import { randomUUID } from 'node:crypto';
 
-import { Prisma } from '../../../generated/prisma/client';
+import { Prisma } from '../../../generated/prisma/client.js';
 
 type ReserveEntry = { month: Date; amountCents: bigint };
 

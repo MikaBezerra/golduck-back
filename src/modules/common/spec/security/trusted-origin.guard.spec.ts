@@ -1,10 +1,10 @@
-import type { AppError } from '../../errors/app-error';
-import type { Config } from '../../model';
+import type { AppError } from '../../errors/app-error.js';
+import type { Config } from '../../model/index.js';
 import type { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { FastifyRequest } from 'fastify';
 
-import { isTrustedOrigin, TrustedOrigin, TrustedOriginGuard } from '../../security';
+import { isTrustedOrigin, TrustedOrigin, TrustedOriginGuard } from '../../security/index.js';
 
 const FRONT = 'https://front.test';
 const LOCAL_FRONT = 'http://localhost:4200';

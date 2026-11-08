@@ -27,7 +27,7 @@ npm run dev                     # http://localhost:3000/api
 
 | Comando | O que faz |
 | --- | --- |
-| `npm run dev` | sobe a API em modo watch, com o `.env` |
+| `npm run dev` | sobe a API em modo watch, com o `.env`: `tsc --watch` compila para `dist/` e o `node --watch` reinicia a API a cada compilação (`scripts/dev.mjs`). Rodar o `.ts` direto (tsx, ts-node) não serve: falta o metadado de tipos que a injeção de dependências do Nest usa |
 | `npm run build` / `npm start` | compila para `dist/` e roda o build |
 | `npm run start:develop` / `start:production` | roda o build com o `.env.develop` / `.env.production` |
 | `npm run lint` / `lint:check` | ESLint com correção automática / só verificação |

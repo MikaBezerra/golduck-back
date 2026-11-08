@@ -1,8 +1,8 @@
-import * as Joi from 'joi';
+import Joi from 'joi';
 
-import { CardBank } from '../../../generated/prisma/client';
-import { JoiValidationPipePtbr } from '../../common';
-import { CreateCreditCardDto, UpdateCreditCardDto } from '../dto/credit-card.dto';
+import { CardBank } from '../../../generated/prisma/client.js';
+import { JoiValidationPipePtbr } from '../../common/index.js';
+import { CreateCreditCardDto, UpdateCreditCardDto } from '../dto/credit-card.dto.js';
 
 const nameSchema = Joi.string().trim().min(1).max(120);
 

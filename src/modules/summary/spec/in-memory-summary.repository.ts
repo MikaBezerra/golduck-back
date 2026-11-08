@@ -1,8 +1,8 @@
-import type { Category, Person } from '../../../generated/prisma/client';
-import type { AmountGroup, MonthGroups } from '../service/summary.calculator';
+import type { Category, Person } from '../../../generated/prisma/client.js';
+import type { AmountGroup, MonthGroups } from '../service/summary.calculator.js';
 import { randomUUID } from 'node:crypto';
 
-import { addMonths, formatMonth } from '../../common/date/month';
+import { addMonths, formatMonth } from '../../common/date/month.js';
 
 /** Uma despesa já lançada, só com o que o resumo usa. */
 export type SummaryExpense = {

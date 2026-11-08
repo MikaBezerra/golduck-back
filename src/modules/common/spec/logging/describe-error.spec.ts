@@ -1,4 +1,4 @@
-import { describeError } from '../../logging/describe-error';
+import { describeError } from '../../logging/describe-error.js';
 
 /** Qualquer coisa lançada (Error ou não) vira os mesmos campos no log. */
 describe('describeError', () => {

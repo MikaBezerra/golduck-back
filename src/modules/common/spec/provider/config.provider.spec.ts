@@ -1,10 +1,10 @@
-import type { Config } from '../../model';
+import type { Config } from '../../model/index.js';
 import { Test } from '@nestjs/testing';
 
-import { Service } from '../../../tokens';
-import { CommonModule } from '../../common.module';
-import { configProvider } from '../../provider/config.provider';
-import { PrismaService } from '../../provider/prisma.provider';
+import { Service } from '../../../tokens.js';
+import { CommonModule } from '../../common.module.js';
+import { configProvider } from '../../provider/config.provider.js';
+import { PrismaService } from '../../provider/prisma.provider.js';
 
 /** Só as obrigatórias, com valores válidos. */
 const REQUIRED_ENV = {

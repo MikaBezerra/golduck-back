@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import * as winston from 'winston';
+import winston from 'winston';
 
-import { getAppInfo } from '../logging/app-info';
-import { readLogSettings } from '../logging/log-settings';
-import { formatPretty } from '../logging/pretty-format';
+import { getAppInfo } from '../logging/app-info.js';
+import { readLogSettings } from '../logging/log-settings.js';
+import { formatPretty } from '../logging/pretty-format.js';
 
 /**
  * Logger da API (winston), configurado pelas variáveis LOG_*.

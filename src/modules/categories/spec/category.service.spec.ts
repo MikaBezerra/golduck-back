@@ -1,10 +1,10 @@
-import type { AppError } from '../../common/errors/app-error';
+import type { AppError } from '../../common/errors/app-error.js';
 import { jest } from '@jest/globals';
 
-import { Prisma } from '../../../generated/prisma/client';
-import { CategoryRepository } from '../repository/category.repository';
-import { CategoryService } from '../service/category.service';
-import { InMemoryCategoryRepository } from './in-memory-category.repository';
+import { Prisma } from '../../../generated/prisma/client.js';
+import { CategoryRepository } from '../repository/category.repository.js';
+import { CategoryService } from '../service/category.service.js';
+import { InMemoryCategoryRepository } from './in-memory-category.repository.js';
 
 const MISSING_ID = '3f2a9c1e-8b7d-4c2a-9e1f-5a6b7c8d9e0f';
 

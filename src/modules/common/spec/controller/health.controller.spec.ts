@@ -1,8 +1,8 @@
 import { jest } from '@jest/globals';
 
-import { Role } from '../../../../generated/prisma/enums';
-import { dataOf, errorOf, HttpTestApp } from '../../../../testing/http-test-app';
-import { PrismaService } from '../../provider';
+import { Role } from '../../../../generated/prisma/enums.js';
+import { dataOf, errorOf, HttpTestApp } from '../../../../testing/http-test-app.js';
+import { PrismaService } from '../../provider/index.js';
 
 type HealthBody = {
     status: string;

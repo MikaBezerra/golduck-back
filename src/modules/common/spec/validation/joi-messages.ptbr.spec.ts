@@ -1,6 +1,6 @@
-import * as Joi from 'joi';
+import Joi from 'joi';
 
-import { JOI_MESSAGES_PTBR } from '../../validation/joi-messages.ptbr';
+import { JOI_MESSAGES_PTBR } from '../../validation/joi-messages.ptbr.js';
 
 const OPTIONS: Joi.ValidationOptions = { abortEarly: false, messages: JOI_MESSAGES_PTBR, errors: { wrap: { label: false } } };
 

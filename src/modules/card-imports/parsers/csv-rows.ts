@@ -1,6 +1,6 @@
 import { parse } from 'csv-parse/sync';
 
-import { CardStatementFormatError } from './card-statement.parser';
+import { CardStatementFormatError } from './card-statement.parser.js';
 
 /**
  * Lê o CSV inteiro e confere o cabeçalho. Devolve somente as linhas de dados,

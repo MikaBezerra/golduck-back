@@ -1,13 +1,13 @@
-import type { CardExpense } from '../../../generated/prisma/client';
+import type { CardExpense } from '../../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 
-import { CategoryService } from '../../categories/service/category.service';
-import { parseMonth } from '../../common/date/month';
-import { PersonService } from '../../people/service/person.service';
-import { CardExpenseResponse, CardExpenseScopeDto, ListCardExpensesDto, UpdateCardExpensesDto } from '../dto/card-expense.dto';
-import { CARD_EXPENSE_ERRORS } from '../errors/card-expense.errors';
-import { CardExpenseChanges, CardExpenseRepository } from '../repository/card-expense.repository';
-import { toCardExpenseResponse } from './card-expense.mapper';
+import { CategoryService } from '../../categories/service/category.service.js';
+import { parseMonth } from '../../common/date/month.js';
+import { PersonService } from '../../people/service/person.service.js';
+import { CardExpenseResponse, CardExpenseScopeDto, ListCardExpensesDto, UpdateCardExpensesDto } from '../dto/card-expense.dto.js';
+import { CARD_EXPENSE_ERRORS } from '../errors/card-expense.errors.js';
+import { CardExpenseChanges, CardExpenseRepository } from '../repository/card-expense.repository.js';
+import { toCardExpenseResponse } from './card-expense.mapper.js';
 
 @Injectable()
 export class CardExpenseService {

@@ -1,4 +1,4 @@
-import type { Role } from '../../../generated/prisma/client';
+import type { Role } from '../../../generated/prisma/client.js';
 import { SetMetadata } from '@nestjs/common';
 
 

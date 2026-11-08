@@ -1,9 +1,9 @@
-import type { Category, Person } from '../../../generated/prisma/client';
+import type { Category, Person } from '../../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 
-import { PrismaService } from '../../common';
-import { addMonths, formatMonth } from '../../common/date/month';
-import { AmountGroup, MonthGroups } from '../service/summary.calculator';
+import { addMonths, formatMonth } from '../../common/date/month.js';
+import { PrismaService } from '../../common/index.js';
+import { AmountGroup, MonthGroups } from '../service/summary.calculator.js';
 
 type GroupRow = {
     month: Date;

@@ -1,4 +1,4 @@
-import type { RequestFailure } from '../../logging/request-log.context';
+import type { RequestFailure } from '../../logging/request-log.context.js';
 import { jest } from '@jest/globals';
 import type { ArgumentsHost } from '@nestjs/common';
 import {
@@ -15,11 +15,11 @@ import {
     UnauthorizedException
 } from '@nestjs/common';
 
-import { AppError } from '../../errors/app-error';
-import { ERRORS } from '../../errors/error-catalog';
-import { ApiExceptionFilter } from '../../http/api-exception.filter';
-import { RequestLogContext } from '../../logging/request-log.context';
-import { ValidationError } from '../../validation/validation-error';
+import { AppError } from '../../errors/app-error.js';
+import { ERRORS } from '../../errors/error-catalog.js';
+import { ApiExceptionFilter } from '../../http/api-exception.filter.js';
+import { RequestLogContext } from '../../logging/request-log.context.js';
+import { ValidationError } from '../../validation/validation-error.js';
 
 /**
  * Filtro de erros direto, com request/reply falsos: o corpo { error } devolvido, o status, os

@@ -1,18 +1,18 @@
-import type { AuthSession, User } from '../../../generated/prisma/client';
-import type { Config } from '../../common';
-import type { AppError } from '../../common/errors/app-error';
+import type { AuthSession, User } from '../../../generated/prisma/client.js';
+import type { AppError } from '../../common/errors/app-error.js';
+import type { Config } from '../../common/index.js';
 import { jest } from '@jest/globals';
 import { createHash } from 'node:crypto';
 
-import { Role } from '../../../generated/prisma/enums';
-import { RateLimitStore } from '../../common/security';
-import { AuthRepository } from '../repository/auth.repository';
-import { AccessTokenService } from '../security/access-token.service';
-import { LoginAttemptsService } from '../security/login-attempts.service';
-import { PasswordService } from '../security/password.service';
-import { REFRESH_TOKEN_TTL_MS, RefreshTokenService, SESSION_MAX_AGE_MS } from '../security/refresh-token.service';
-import { AuthService } from '../service/auth.service';
-import { InMemoryAuthRepository } from './in-memory-auth.repository';
+import { Role } from '../../../generated/prisma/enums.js';
+import { RateLimitStore } from '../../common/security/index.js';
+import { AuthRepository } from '../repository/auth.repository.js';
+import { AccessTokenService } from '../security/access-token.service.js';
+import { LoginAttemptsService } from '../security/login-attempts.service.js';
+import { PasswordService } from '../security/password.service.js';
+import { REFRESH_TOKEN_TTL_MS, RefreshTokenService, SESSION_MAX_AGE_MS } from '../security/refresh-token.service.js';
+import { AuthService } from '../service/auth.service.js';
+import { InMemoryAuthRepository } from './in-memory-auth.repository.js';
 
 const NOW = Date.UTC(2026, 10, 7, 12, 0, 0);
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;

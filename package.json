@@ -5,6 +5,7 @@
   "author": "Mikaell Silva",
   "license": "MIT",
   "private": true,
+  "type": "module",
   "engines": {
     "node": "^22.13.0 || >=24.0.0"
   },
@@ -13,7 +14,7 @@
     "start": "node dist/server.js",
     "start:develop": "dotenvx run -f .env.develop -- node dist/server.js",
     "start:production": "dotenvx run -f .env.production -- node dist/server.js",
-    "dev": "prisma generate && dotenvx run -f .env -- node --watch -r ts-node/register/transpile-only src/server.ts",
+    "dev": "prisma generate && dotenvx run -f .env -- node scripts/dev.mjs",
     "admin:create": "prisma generate && dotenvx run -f .env -- tsx scripts/create-admin.ts",
     "admin:create:develop": "prisma generate && dotenvx run -f .env.develop -- tsx scripts/create-admin.ts",
     "admin:create:production": "prisma generate && dotenvx run -f .env.production -- tsx scripts/create-admin.ts",
@@ -23,8 +24,8 @@
     "test:cov": "prisma generate && node --experimental-vm-modules --disable-warning=ExperimentalWarning node_modules/jest/bin/jest.js --config=jest.json --coverage",
     "db:check": "prisma migrate status && prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --exit-code",
     "verify": "prisma generate && npm run lint:check && npm run typecheck && npm run test:cov && npm run build && npm run db:check",
-    "lint": "eslint -c .eslintrc.js --fix --ext .ts src",
-    "lint:check": "eslint -c .eslintrc.js --ext .ts src --max-warnings=0",
+    "lint": "eslint -c .eslintrc.cjs --fix --ext .ts src",
+    "lint:check": "eslint -c .eslintrc.cjs --ext .ts src --max-warnings=0",
     "db:migrate:develop": "dotenvx run -f .env.develop -- prisma migrate deploy",
     "db:migrate:production": "dotenvx run -f .env.production -- prisma migrate deploy",
     "prepare": "husky"
@@ -76,7 +77,6 @@
     "rimraf": "^6.1.3",
     "supertest": "^7.3.1",
     "ts-jest": "^29.4.15",
-    "ts-node": "^10.9.2",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3"
   },

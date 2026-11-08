@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 
-import { CategoriesModule } from '../categories/categories.module';
-import { CommonModule } from '../common';
-import { PeopleModule } from '../people/people.module';
-import { ManualExpenseController } from './controller/manual-expense.controller';
-import { ManualExpenseRepository } from './repository/manual-expense.repository';
-import { ManualExpenseService } from './service/manual-expense.service';
+import { CategoriesModule } from '../categories/categories.module.js';
+import { CommonModule } from '../common/index.js';
+import { PeopleModule } from '../people/people.module.js';
+import { ManualExpenseController } from './controller/manual-expense.controller.js';
+import { ManualExpenseRepository } from './repository/manual-expense.repository.js';
+import { ManualExpenseService } from './service/manual-expense.service.js';
 
 @Module({
     imports: [CommonModule, CategoriesModule, PeopleModule],

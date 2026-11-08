@@ -1,10 +1,10 @@
-import type { AppError } from '../../common/errors/app-error';
+import type { AppError } from '../../common/errors/app-error.js';
 import { jest } from '@jest/globals';
 
-import { Prisma } from '../../../generated/prisma/client';
-import { IncomeRepository } from '../repository/income.repository';
-import { IncomeService } from '../service/income.service';
-import { InMemoryIncomeRepository } from './in-memory-income.repository';
+import { Prisma } from '../../../generated/prisma/client.js';
+import { IncomeRepository } from '../repository/income.repository.js';
+import { IncomeService } from '../service/income.service.js';
+import { InMemoryIncomeRepository } from './in-memory-income.repository.js';
 
 const CREATED_AT = new Date('2026-03-01T12:00:00.000Z');
 const UPDATED_AT = new Date('2026-03-02T08:30:00.000Z');

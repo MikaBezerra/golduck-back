@@ -1,7 +1,7 @@
 import { Reflector } from '@nestjs/core';
 import { FASTIFY_ROUTE_CONFIG_METADATA } from '@nestjs/platform-fastify/constants';
 
-import { QUIET_REQUEST_LOG, QuietRequestLog } from '../../logging/quiet-request-log.decorator';
+import { QUIET_REQUEST_LOG, QuietRequestLog } from '../../logging/quiet-request-log.decorator.js';
 
 class HealthLikeController {
     @QuietRequestLog()

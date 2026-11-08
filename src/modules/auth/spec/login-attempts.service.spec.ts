@@ -1,8 +1,8 @@
-import type { AppError } from '../../common/errors/app-error';
+import type { AppError } from '../../common/errors/app-error.js';
 import { jest } from '@jest/globals';
 
-import { RateLimitStore } from '../../common/security';
-import { LOGIN_FAILURE_WINDOW_MS, LOGIN_MAX_FAILURES_PER_EMAIL, LoginAttemptsService } from '../security/login-attempts.service';
+import { RateLimitStore } from '../../common/security/index.js';
+import { LOGIN_FAILURE_WINDOW_MS, LOGIN_MAX_FAILURES_PER_EMAIL, LoginAttemptsService } from '../security/login-attempts.service.js';
 
 const NOW = Date.UTC(2026, 10, 7, 12, 0, 0);
 const EMAIL = 'pessoa@exemplo.com';

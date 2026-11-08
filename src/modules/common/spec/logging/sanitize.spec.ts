@@ -1,4 +1,4 @@
-import { REDACTED, sanitizeForLog, truncateText } from '../../logging/sanitize';
+import { REDACTED, sanitizeForLog, truncateText } from '../../logging/sanitize.js';
 
 /*
  * O que vem de fora (corpo, query, detalhes de validação) passa por aqui antes de ir para o log:

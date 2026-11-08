@@ -1,18 +1,18 @@
-import type { AuthSession, User } from '../../../generated/prisma/client';
-import type { Config } from '../../common';
-import type { AppError } from '../../common/errors/app-error';
-import type { AuthenticatedRequest } from '../security/jwt-auth.guard';
+import type { AuthSession, User } from '../../../generated/prisma/client.js';
+import type { AppError } from '../../common/errors/app-error.js';
+import type { Config } from '../../common/index.js';
+import type { AuthenticatedRequest } from '../security/jwt-auth.guard.js';
 import { jest } from '@jest/globals';
 import { Reflector } from '@nestjs/core';
-import * as jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 
-import { Role } from '../../../generated/prisma/enums';
-import { AuthRepository } from '../repository/auth.repository';
-import { AccessTokenService } from '../security/access-token.service';
-import { Public } from '../security/auth.decorators';
-import { JwtAuthGuard, readBearerToken } from '../security/jwt-auth.guard';
-import { httpContext } from './http-execution-context';
-import { InMemoryAuthRepository } from './in-memory-auth.repository';
+import { Role } from '../../../generated/prisma/enums.js';
+import { AuthRepository } from '../repository/auth.repository.js';
+import { AccessTokenService } from '../security/access-token.service.js';
+import { Public } from '../security/auth.decorators.js';
+import { JwtAuthGuard, readBearerToken } from '../security/jwt-auth.guard.js';
+import { httpContext } from './http-execution-context.js';
+import { InMemoryAuthRepository } from './in-memory-auth.repository.js';
 
 const SECRET = 'segredo-de-teste-com-mais-de-32-caracteres';
 const ISSUER = 'testes';

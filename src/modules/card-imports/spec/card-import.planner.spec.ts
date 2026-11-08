@@ -1,11 +1,11 @@
-import type { ParsedCardTransaction } from '../parsers/card-statement.parser';
-import { parseMonth } from '../../common/date/month';
+import type { ParsedCardTransaction } from '../parsers/card-statement.parser.js';
+import { parseMonth } from '../../common/date/month.js';
 import {
     assignPurchaseKeys,
     ExistingCardExpense,
     KeyedTransaction,
     planCardImport
-} from '../service/card-import.planner';
+} from '../service/card-import.planner.js';
 
 const CARD = 'card-1';
 const DEFAULT_CATEGORY = 'cat-outros';

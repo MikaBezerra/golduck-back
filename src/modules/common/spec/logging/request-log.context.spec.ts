@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 import type { FastifyRequest } from 'fastify';
 
-import { RequestLogContext } from '../../logging/request-log.context';
+import { RequestLogContext } from '../../logging/request-log.context.js';
 
 const fakeRequest = (): FastifyRequest => ({}) as FastifyRequest;
 

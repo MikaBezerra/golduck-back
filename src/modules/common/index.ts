@@ -1,8 +1,8 @@
-export { CommonModule } from './common.module';
+export { CommonModule } from './common.module.js';
 
-export * from './model';
-export * from './flow';
-export * from './logging';
-export * from './pagination';
-export * from './provider';
-export * from './security';
+export * from './model/index.js';
+export * from './flow/index.js';
+export * from './logging/index.js';
+export * from './pagination/index.js';
+export * from './provider/index.js';
+export * from './security/index.js';

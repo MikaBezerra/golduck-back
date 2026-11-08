@@ -1,4 +1,4 @@
-import { addMonths, formatDate, formatMonth, parseMonth } from '../../date/month';
+import { addMonths, formatDate, formatMonth, parseMonth } from '../../date/month.js';
 
 /** Mês "AAAA-MM" ↔ data do 1º dia do mês em UTC. */
 describe('parseMonth', () => {

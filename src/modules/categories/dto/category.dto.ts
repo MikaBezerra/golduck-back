@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { DATE_TIME_PROPERTY, UUID_PROPERTY } from '../../common/swagger/api-docs';
+import { DATE_TIME_PROPERTY, UUID_PROPERTY } from '../../common/swagger/api-docs.js';
 
 export class CreateCategoryDto {
     @ApiProperty({ type: String, maxLength: 120, example: 'Moradia' })

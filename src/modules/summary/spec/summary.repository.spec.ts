@@ -1,7 +1,7 @@
-import type { PrismaService } from '../../common';
+import type { PrismaService } from '../../common/index.js';
 import { jest } from '@jest/globals';
 
-import { SummaryRepository } from '../repository/summary.repository';
+import { SummaryRepository } from '../repository/summary.repository.js';
 
 type GroupByArgs = { by: string[] };
 type GroupRow = {

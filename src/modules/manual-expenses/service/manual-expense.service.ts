@@ -1,18 +1,18 @@
-import type { ManualExpense } from '../../../generated/prisma/client';
+import type { ManualExpense } from '../../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 
-import { Prisma } from '../../../generated/prisma/client';
-import { CategoryService } from '../../categories/service/category.service';
-import { formatAmountCents, parsePositiveAmountCents } from '../../common/money/money';
-import { PersonService } from '../../people/service/person.service';
+import { Prisma } from '../../../generated/prisma/client.js';
+import { CategoryService } from '../../categories/service/category.service.js';
+import { formatAmountCents, parsePositiveAmountCents } from '../../common/money/money.js';
+import { PersonService } from '../../people/service/person.service.js';
 import {
     CreateManualExpenseDto,
     ListManualExpensesDto,
     ManualExpenseResponse,
     UpdateManualExpensesDto
-} from '../dto/manual-expense.dto';
-import { MANUAL_EXPENSE_ERRORS } from '../errors/manual-expense.errors';
-import { ManualExpenseRepository } from '../repository/manual-expense.repository';
+} from '../dto/manual-expense.dto.js';
+import { MANUAL_EXPENSE_ERRORS } from '../errors/manual-expense.errors.js';
+import { ManualExpenseRepository } from '../repository/manual-expense.repository.js';
 
 @Injectable()
 export class ManualExpenseService {

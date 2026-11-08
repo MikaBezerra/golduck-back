@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
 
-import { REFRESH_TOKEN_TTL_MS, RefreshTokenService, SESSION_MAX_AGE_MS } from '../security/refresh-token.service';
+import { REFRESH_TOKEN_TTL_MS, RefreshTokenService, SESSION_MAX_AGE_MS } from '../security/refresh-token.service.js';
 
 const SESSION_ID = '7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d';
 /** 43 caracteres base64url (inclusive _ e -). */

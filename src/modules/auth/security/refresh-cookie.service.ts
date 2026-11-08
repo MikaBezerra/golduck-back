@@ -1,9 +1,9 @@
-import type { Config } from '../../common';
+import type { Config } from '../../common/index.js';
 import type { CookieSerializeOptions } from '@fastify/cookie';
 import { Inject, Injectable } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
-import { Service } from '../../tokens';
+import { Service } from '../../tokens.js';
 
 const DEFAULT_API_PREFIX = '/api';
 

@@ -1,7 +1,7 @@
-import type { PrismaService } from '../../common';
+import type { PrismaService } from '../../common/index.js';
 import { jest } from '@jest/globals';
 
-import { ReserveRepository } from '../repository/reserve.repository';
+import { ReserveRepository } from '../repository/reserve.repository.js';
 
 const AUGUST = new Date('2026-08-01T00:00:00.000Z');
 const SEPTEMBER = new Date('2026-09-01T00:00:00.000Z');

@@ -1,6 +1,6 @@
-import type { CardExpense } from '../../../generated/prisma/client';
-import type { ParsedCardTransaction } from '../parsers/card-statement.parser';
-import { addMonths, formatMonth } from '../../common/date/month';
+import type { CardExpense } from '../../../generated/prisma/client.js';
+import type { ParsedCardTransaction } from '../parsers/card-statement.parser.js';
+import { addMonths, formatMonth } from '../../common/date/month.js';
 
 /*
  * Regras da conciliação de um upload do mês M (todas puras, sem banco de dados):

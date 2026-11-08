@@ -1,9 +1,9 @@
-import type { AppError } from '../../common/errors/app-error';
+import type { AppError } from '../../common/errors/app-error.js';
 import { jest } from '@jest/globals';
 
-import { CreditCardRepository } from '../repository/credit-card.repository';
-import { CreditCardService } from '../service/credit-card.service';
-import { InMemoryCreditCardRepository } from './in-memory-credit-card.repository';
+import { CreditCardRepository } from '../repository/credit-card.repository.js';
+import { CreditCardService } from '../service/credit-card.service.js';
+import { InMemoryCreditCardRepository } from './in-memory-credit-card.repository.js';
 
 const MISSING_ID = '3f2a9c1e-8b7d-4c2a-9e1f-5a6b7c8d9e0f';
 const CREATED_AT = new Date('2026-03-01T12:00:00.000Z');

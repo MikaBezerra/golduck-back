@@ -1,9 +1,9 @@
-import type { PdfPage } from './neon-pdf.fixture';
+import type { PdfPage } from './neon-pdf.fixture.js';
 
-import { CardBank } from '../../../generated/prisma/client';
-import { CardStatementFormatError, CardStatementPasswordError } from '../parsers/card-statement.parser';
-import { NeonPdfParser } from '../parsers/neon-pdf.parser';
-import { buildNeonPdf, NEON_HEADER } from './neon-pdf.fixture';
+import { CardBank } from '../../../generated/prisma/client.js';
+import { CardStatementFormatError, CardStatementPasswordError } from '../parsers/card-statement.parser.js';
+import { NeonPdfParser } from '../parsers/neon-pdf.parser.js';
+import { buildNeonPdf, NEON_HEADER } from './neon-pdf.fixture.js';
 
 /*
  * Fatura do Neon em PDF, lida pelo pdf.js de verdade. Os PDFs são gerados no próprio teste

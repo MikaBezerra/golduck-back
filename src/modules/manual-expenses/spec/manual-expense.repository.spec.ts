@@ -1,7 +1,7 @@
-import type { PrismaService } from '../../common';
+import type { PrismaService } from '../../common/index.js';
 import { jest } from '@jest/globals';
 
-import { ManualExpenseRepository } from '../repository/manual-expense.repository';
+import { ManualExpenseRepository } from '../repository/manual-expense.repository.js';
 
 type WhereId = { where: { id: string } };
 

@@ -1,10 +1,10 @@
-import type { AnnualSummaryResponse, SummaryResponse } from '../dto/summary.dto';
+import type { AnnualSummaryResponse, SummaryResponse } from '../dto/summary.dto.js';
 
-import { Role } from '../../../generated/prisma/enums';
-import { dataOf, errorOf, HttpTestApp } from '../../../testing/http-test-app';
-import { SummaryRepository } from '../repository/summary.repository';
-import { SummaryModule } from '../summary.module';
-import { InMemorySummaryRepository } from './in-memory-summary.repository';
+import { Role } from '../../../generated/prisma/enums.js';
+import { dataOf, errorOf, HttpTestApp } from '../../../testing/http-test-app.js';
+import { SummaryRepository } from '../repository/summary.repository.js';
+import { SummaryModule } from '../summary.module.js';
+import { InMemorySummaryRepository } from './in-memory-summary.repository.js';
 
 /*
  * Rotas /summary por HTTP: login, validação das queries (Joi) e o envelope { data } / { error }.

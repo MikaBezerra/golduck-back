@@ -1,7 +1,7 @@
-import type { LoggerService } from '../../provider/logger.service';
+import type { LoggerService } from '../../provider/logger.service.js';
 import { jest } from '@jest/globals';
 
-import { registerProcessErrorLogging } from '../../logging/process-logging';
+import { registerProcessErrorLogging } from '../../logging/process-logging.js';
 
 type Listener = (...args: unknown[]) => void;
 

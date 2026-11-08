@@ -2,12 +2,12 @@ import { Module } from '@nestjs/common';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { TerminusModule } from '@nestjs/terminus';
 
-import { HealthController, VersionController } from './controller';
-import { ApiExceptionFilter } from './http/api-exception.filter';
-import { ApiResponseInterceptor } from './http/api-response.interceptor';
-import { RequestLogContext } from './logging/request-log.context';
-import { configProvider, LoggerService, PrismaService } from './provider';
-import { RateLimitStore } from './security/rate-limit.decorator';
+import { HealthController, VersionController } from './controller/index.js';
+import { ApiExceptionFilter } from './http/api-exception.filter.js';
+import { ApiResponseInterceptor } from './http/api-response.interceptor.js';
+import { RequestLogContext } from './logging/request-log.context.js';
+import { configProvider, LoggerService, PrismaService } from './provider/index.js';
+import { RateLimitStore } from './security/rate-limit.decorator.js';
 
 @Module({
     imports: [

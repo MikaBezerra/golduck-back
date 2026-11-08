@@ -1,4 +1,4 @@
-import type { AppInfo } from '../../logging/app-info';
+import type { AppInfo } from '../../logging/app-info.js';
 import { jest } from '@jest/globals';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -19,7 +19,7 @@ describe('getAppInfo', () => {
         let calls: [AppInfo, AppInfo] | undefined;
 
         await jest.isolateModulesAsync(async () => {
-            const { getAppInfo } = await import('../../logging/app-info');
+            const { getAppInfo } = await import('../../logging/app-info.js');
             calls = [getAppInfo(), getAppInfo()];
         });
 

@@ -1,7 +1,7 @@
-import * as Joi from 'joi';
+import Joi from 'joi';
 
-import { JoiValidationPipePtbr } from '../../common';
-import { LoginDto } from '../dto/auth.dto';
+import { JoiValidationPipePtbr } from '../../common/index.js';
+import { LoginDto } from '../dto/auth.dto.js';
 
 export class LoginPipe extends JoiValidationPipePtbr {
     public buildSchema(): Joi.Schema {

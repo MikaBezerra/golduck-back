@@ -1,12 +1,12 @@
 import { Body, Controller, Get, HttpStatus, Param, Patch, Post } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 
-import { Role } from '../../../generated/prisma/client';
-import { Roles } from '../../auth/security/auth.decorators';
-import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs';
-import { CreateCreditCardDto, CreditCardResponse, UpdateCreditCardDto } from '../dto/credit-card.dto';
-import { CreateCreditCardPipe, CreditCardIdPipe, UpdateCreditCardPipe } from '../flow/credit-card.pipe';
-import { CreditCardService } from '../service/credit-card.service';
+import { Role } from '../../../generated/prisma/client.js';
+import { Roles } from '../../auth/security/auth.decorators.js';
+import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs.js';
+import { CreateCreditCardDto, CreditCardResponse, UpdateCreditCardDto } from '../dto/credit-card.dto.js';
+import { CreateCreditCardPipe, CreditCardIdPipe, UpdateCreditCardPipe } from '../flow/credit-card.pipe.js';
+import { CreditCardService } from '../service/credit-card.service.js';
 
 @ApiTags('credit-cards')
 @ApiBearerAuth()

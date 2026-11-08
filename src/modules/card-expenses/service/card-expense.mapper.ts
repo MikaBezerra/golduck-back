@@ -1,7 +1,7 @@
-import type { CardExpense } from '../../../generated/prisma/client';
-import type { CardExpenseResponse } from '../dto/card-expense.dto';
-import { formatDate, formatMonth } from '../../common/date/month';
-import { formatAmountCents } from '../../common/money/money';
+import type { CardExpense } from '../../../generated/prisma/client.js';
+import type { CardExpenseResponse } from '../dto/card-expense.dto.js';
+import { formatDate, formatMonth } from '../../common/date/month.js';
+import { formatAmountCents } from '../../common/money/money.js';
 
 /** Converte a despesa do banco no formato da API (usado também pela pré-visualização de faturas). */
 export function toCardExpenseResponse(expense: CardExpense): CardExpenseResponse {

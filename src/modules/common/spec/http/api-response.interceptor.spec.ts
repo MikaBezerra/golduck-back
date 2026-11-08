@@ -1,7 +1,7 @@
 import type { CallHandler, ExecutionContext } from '@nestjs/common';
 import { lastValueFrom, of } from 'rxjs';
 
-import { ApiResponseInterceptor } from '../../http/api-response.interceptor';
+import { ApiResponseInterceptor } from '../../http/api-response.interceptor.js';
 
 /** Envelope { data } das respostas de sucesso, direto no interceptor (sem HTTP). */
 describe('ApiResponseInterceptor', () => {

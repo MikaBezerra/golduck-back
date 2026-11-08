@@ -1,7 +1,7 @@
-import * as Joi from 'joi';
+import Joi from 'joi';
 
-import { JoiValidationPipePtbr } from '../../common';
-import { CreateReserveDto, ListReserveDto, UpdateReserveDto } from '../dto/reserve.dto';
+import { JoiValidationPipePtbr } from '../../common/index.js';
+import { CreateReserveDto, ListReserveDto, UpdateReserveDto } from '../dto/reserve.dto.js';
 
 const yearSchema = Joi.number().integer().min(1000).max(9999);
 const amountSchema = Joi.string().pattern(/^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/).max(20).messages({

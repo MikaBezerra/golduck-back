@@ -1,9 +1,9 @@
-import type { ApiErrorDetail } from '../http/response.types';
+import type { ApiErrorDetail } from '../http/response.types.js';
 import { Injectable, PipeTransform } from '@nestjs/common';
-import * as Joi from 'joi';
+import Joi from 'joi';
 
-import { JOI_MESSAGES_PTBR } from './joi-messages.ptbr';
-import { ValidationError } from './validation-error';
+import { JOI_MESSAGES_PTBR } from './joi-messages.ptbr.js';
+import { ValidationError } from './validation-error.js';
 
 @Injectable()
 export abstract class JoiValidationPipePtbr implements PipeTransform<unknown> {

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
-import { ERRORS } from '../../common/errors/error-catalog';
-import { RateLimitStore } from '../../common/security';
+import { ERRORS } from '../../common/errors/error-catalog.js';
+import { RateLimitStore } from '../../common/security/index.js';
 
 /** Erros de login aceitos por e-mail dentro da janela; o próximo pedido recebe 429. */
 export const LOGIN_MAX_FAILURES_PER_EMAIL = 10;

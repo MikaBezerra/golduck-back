@@ -1,7 +1,7 @@
-import * as Joi from 'joi';
+import Joi from 'joi';
 
-import { JoiValidationPipePtbr } from '../../common';
-import { CreateCategoryDto, ListCategoriesDto, UpdateCategoryDto } from '../dto/category.dto';
+import { JoiValidationPipePtbr } from '../../common/index.js';
+import { CreateCategoryDto, ListCategoriesDto, UpdateCategoryDto } from '../dto/category.dto.js';
 
 const nameSchema = Joi.string().trim().min(1).max(120);
 

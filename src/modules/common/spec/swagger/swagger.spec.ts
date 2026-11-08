@@ -1,4 +1,4 @@
-import type { Config } from '../../model';
+import type { Config } from '../../model/index.js';
 import { jest } from '@jest/globals';
 import { Controller, Get, HttpStatus, Post } from '@nestjs/common';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
@@ -16,8 +16,8 @@ import {
     MONTH_PATTERN,
     MONTH_PROPERTY,
     UUID_PROPERTY
-} from '../../swagger/api-docs';
-import { setupSwagger, SWAGGER_PATH } from '../../swagger/swagger.setup';
+} from '../../swagger/api-docs.js';
+import { setupSwagger, SWAGGER_PATH } from '../../swagger/swagger.setup.js';
 
 class ProbeItemDto {
     @ApiProperty(MONEY_PROPERTY)

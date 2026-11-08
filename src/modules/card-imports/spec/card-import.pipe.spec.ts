@@ -1,6 +1,6 @@
-import type { ApiErrorDetail } from '../../common/http/response.types';
+import type { ApiErrorDetail } from '../../common/http/response.types.js';
 
-import { ValidationError } from '../../common/validation/validation-error';
+import { ValidationError } from '../../common/validation/validation-error.js';
 import {
     CardImportExclusionsPipe,
     CardImportIdPipe,
@@ -8,7 +8,7 @@ import {
     CreateCardImportPipe,
     CreateManualCardImportPipe,
     ListCardImportsPipe
-} from '../flow/card-import.pipe';
+} from '../flow/card-import.pipe.js';
 
 /*
  * Validação (Joi) dos dados do upload, das escolhas da pré-visualização e da fatura digitada.

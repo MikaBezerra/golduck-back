@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 
-import { CommonModule } from '../common';
-import { CategoryController } from './controller/category.controller';
-import { CategoryRepository } from './repository/category.repository';
-import { CategoryService } from './service/category.service';
+import { CommonModule } from '../common/index.js';
+import { CategoryController } from './controller/category.controller.js';
+import { CategoryRepository } from './repository/category.repository.js';
+import { CategoryService } from './service/category.service.js';
 
 @Module({
     imports: [CommonModule],

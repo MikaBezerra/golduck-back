@@ -1,17 +1,17 @@
-import type { Category, Person } from '../../../generated/prisma/client';
-import type { CategoryRepository } from '../../categories/repository/category.repository';
-import type { AppError } from '../../common/errors/app-error';
-import type { PersonRepository } from '../../people/repository/person.repository';
-import type { ManualExpenseRepository } from '../repository/manual-expense.repository';
+import type { Category, Person } from '../../../generated/prisma/client.js';
+import type { CategoryRepository } from '../../categories/repository/category.repository.js';
+import type { AppError } from '../../common/errors/app-error.js';
+import type { PersonRepository } from '../../people/repository/person.repository.js';
+import type { ManualExpenseRepository } from '../repository/manual-expense.repository.js';
 import { jest } from '@jest/globals';
 
-import { Prisma } from '../../../generated/prisma/client';
-import { CategoryService } from '../../categories/service/category.service';
-import { InMemoryCategoryRepository } from '../../categories/spec/in-memory-category.repository';
-import { PersonService } from '../../people/service/person.service';
-import { ManualExpenseService } from '../service/manual-expense.service';
-import { FakePersonRepository } from './fake-person.repository';
-import { InMemoryManualExpenseRepository } from './in-memory-manual-expense.repository';
+import { Prisma } from '../../../generated/prisma/client.js';
+import { CategoryService } from '../../categories/service/category.service.js';
+import { InMemoryCategoryRepository } from '../../categories/spec/in-memory-category.repository.js';
+import { PersonService } from '../../people/service/person.service.js';
+import { ManualExpenseService } from '../service/manual-expense.service.js';
+import { FakePersonRepository } from './fake-person.repository.js';
+import { InMemoryManualExpenseRepository } from './in-memory-manual-expense.repository.js';
 
 const MISSING_ID = '3f2a9c1e-8b7d-4c2a-9e1f-5a6b7c8d9e0f';
 const SEPTEMBER = new Date('2026-09-01T00:00:00.000Z');

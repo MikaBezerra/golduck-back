@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { CardBank } from '../../../generated/prisma/client';
+import { CardBank } from '../../../generated/prisma/client.js';
 import {
     CardStatementFormatError,
     CardStatementParseInput,
@@ -10,8 +10,8 @@ import {
     ParsedCardTransaction,
     parseInstallment,
     parseSignedAmountCents
-} from './card-statement.parser';
-import { readCsvRows } from './csv-rows';
+} from './card-statement.parser.js';
+import { readCsvRows } from './csv-rows.js';
 
 const HEADER = ['date', 'title', 'amount'];
 const INSTALLMENT_SUFFIX = /^(.*\S)\s+-\s+Parcela\s+(\d{1,2}\/\d{1,2})$/;

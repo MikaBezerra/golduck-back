@@ -1,10 +1,10 @@
 import { Injectable, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
 import { PrismaPg } from '@prisma/adapter-pg';
 
-import { PrismaClient } from '../../../generated/prisma/client';
-import { readLogSettings } from '../logging/log-settings';
-import { truncateText } from '../logging/sanitize';
-import { LoggerService } from './logger.service';
+import { PrismaClient } from '../../../generated/prisma/client.js';
+import { readLogSettings } from '../logging/log-settings.js';
+import { truncateText } from '../logging/sanitize.js';
+import { LoggerService } from './logger.service.js';
 
 /** Tamanho máximo do SQL registrado numa consulta lenta. */
 const MAX_LOGGED_QUERY_LENGTH = 1000;

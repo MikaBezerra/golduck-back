@@ -3,7 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { ApiTooManyRequestsResponse } from '@nestjs/swagger';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
-import { ERRORS } from '../errors/error-catalog';
+import { ERRORS } from '../errors/error-catalog.js';
 
 const ONE_MINUTE_MS = 60_000;
 const RATE_LIMIT_KEY = 'security:rateLimit';

@@ -1,8 +1,8 @@
-import type { Person } from '../../../generated/prisma/client';
-import type { CreatePersonDto, UpdatePersonDto } from '../dto/person.dto';
+import type { Person } from '../../../generated/prisma/client.js';
+import type { CreatePersonDto, UpdatePersonDto } from '../dto/person.dto.js';
 import { randomUUID } from 'node:crypto';
 
-import { Prisma } from '../../../generated/prisma/client';
+import { Prisma } from '../../../generated/prisma/client.js';
 
 /* eslint-disable @typescript-eslint/require-await -- imita a interface assíncrona do PersonRepository */
 /**

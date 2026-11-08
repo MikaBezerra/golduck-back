@@ -1,9 +1,9 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagger';
 
-import { Public } from '../../auth/security/auth.decorators';
-import { AppInfo, getAppInfo } from '../logging/app-info';
-import { ApiDataResponse, ApiErrorResponses } from '../swagger/api-docs';
+import { Public } from '../../auth/security/auth.decorators.js';
+import { AppInfo, getAppInfo } from '../logging/app-info.js';
+import { ApiDataResponse, ApiErrorResponses } from '../swagger/api-docs.js';
 
 export class VersionResponse implements AppInfo {
     @ApiProperty({ example: 'golduck-back' })

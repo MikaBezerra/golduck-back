@@ -1,8 +1,8 @@
-import type { PrismaService } from '../../common';
-import type { CardImportPlan } from '../service/card-import.planner';
+import type { PrismaService } from '../../common/index.js';
+import type { CardImportPlan } from '../service/card-import.planner.js';
 import { jest } from '@jest/globals';
 
-import { CardImportRepository, NewCardImport, PlanningContext } from '../repository/card-import.repository';
+import { CardImportRepository, NewCardImport, PlanningContext } from '../repository/card-import.repository.js';
 
 /*
  * O repositório monta as consultas do Prisma e a transação do upload. O teste usa um Prisma falso

@@ -1,12 +1,12 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
-import { LoggerService } from '../provider/logger.service';
-import { getAppInfo } from './app-info';
-import { LogSettings, readLogSettings } from './log-settings';
-import { QUIET_REQUEST_LOG } from './quiet-request-log.decorator';
-import { APP_VERSION_HEADER, REQUEST_ID_HEADER } from './request-id';
-import { RequestLogContext } from './request-log.context';
-import { sanitizeForLog } from './sanitize';
+import { LoggerService } from '../provider/logger.service.js';
+import { getAppInfo } from './app-info.js';
+import { LogSettings, readLogSettings } from './log-settings.js';
+import { QUIET_REQUEST_LOG } from './quiet-request-log.decorator.js';
+import { APP_VERSION_HEADER, REQUEST_ID_HEADER } from './request-id.js';
+import { RequestLogContext } from './request-log.context.js';
+import { sanitizeForLog } from './sanitize.js';
 
 type IdentifiedRequest = FastifyRequest & {
     auth?: { userId: string; email?: string; role?: string };

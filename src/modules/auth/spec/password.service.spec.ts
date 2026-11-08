@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 
-import { PasswordService } from '../security/password.service';
+import { PasswordService } from '../security/password.service.js';
 
 /** Argon2id com 19 MiB de memória, 2 passadas e paralelismo 1 (mínimo recomendado pelo OWASP). */
 const ARGON2_PREFIX = '$argon2id$v=19$m=19456,p=1,t=2$';

@@ -1,12 +1,12 @@
 import { Body, Controller, Get, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 
-import { Role } from '../../../generated/prisma/client';
-import { Roles } from '../../auth/security/auth.decorators';
-import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs';
-import { CategoryResponse, CreateCategoryDto, ListCategoriesDto, UpdateCategoryDto } from '../dto/category.dto';
-import { CategoryIdPipe, CreateCategoryPipe, ListCategoriesPipe, UpdateCategoryPipe } from '../flow/category.pipe';
-import { CategoryService } from '../service/category.service';
+import { Role } from '../../../generated/prisma/client.js';
+import { Roles } from '../../auth/security/auth.decorators.js';
+import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs.js';
+import { CategoryResponse, CreateCategoryDto, ListCategoriesDto, UpdateCategoryDto } from '../dto/category.dto.js';
+import { CategoryIdPipe, CreateCategoryPipe, ListCategoriesPipe, UpdateCategoryPipe } from '../flow/category.pipe.js';
+import { CategoryService } from '../service/category.service.js';
 
 @ApiTags('categories')
 @ApiBearerAuth()

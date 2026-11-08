@@ -1,4 +1,4 @@
-import { formatAmountCents, parsePositiveAmountCents } from '../../money/money';
+import { formatAmountCents, parsePositiveAmountCents } from '../../money/money.js';
 
 /** Maior valor que cabe no BIGINT do banco: 9223372036854775807 centavos. */
 const MAX_AMOUNT = '92233720368547758.07';

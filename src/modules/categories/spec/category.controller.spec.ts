@@ -1,7 +1,7 @@
-import { dataOf, errorOf, HttpTestApp } from '../../../testing/http-test-app';
-import { CategoriesModule } from '../categories.module';
-import { CategoryRepository } from '../repository/category.repository';
-import { InMemoryCategoryRepository } from './in-memory-category.repository';
+import { dataOf, errorOf, HttpTestApp } from '../../../testing/http-test-app.js';
+import { CategoriesModule } from '../categories.module.js';
+import { CategoryRepository } from '../repository/category.repository.js';
+import { InMemoryCategoryRepository } from './in-memory-category.repository.js';
 
 /*
  * Rotas /categories por HTTP: autenticação, validação (Joi), envelope { data } / { error } e

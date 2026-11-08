@@ -1,8 +1,8 @@
-import * as Joi from 'joi';
+import Joi from 'joi';
 
-import { CARD_EXPENSE_SCOPES } from '../../card-expenses/service/card-expense-scope';
-import { JoiValidationPipePtbr } from '../../common';
-import { ValidationError } from '../../common/validation/validation-error';
+import { CARD_EXPENSE_SCOPES } from '../../card-expenses/service/card-expense-scope.js';
+import { JoiValidationPipePtbr } from '../../common/index.js';
+import { ValidationError } from '../../common/validation/validation-error.js';
 import {
     CardImportExclusionDto,
     CardImportOverrideDto,
@@ -10,8 +10,8 @@ import {
     CreateManualCardImportDto,
     ListCardImportsDto,
     ManualCardTransactionDto
-} from '../dto/card-import.dto';
-import { toIsoDate } from '../parsers/card-statement.parser';
+} from '../dto/card-import.dto.js';
+import { toIsoDate } from '../parsers/card-statement.parser.js';
 
 const MAX_MANUAL_TRANSACTIONS = 500;
 const MAX_INSTALLMENTS = 99;

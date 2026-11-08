@@ -1,16 +1,16 @@
-import type { AuthSession, User } from '../../../generated/prisma/client';
+import type { AuthSession, User } from '../../../generated/prisma/client.js';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Test } from '@nestjs/testing';
-import * as jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import type { AddressInfo } from 'node:net';
 
-import { configureApp } from '../../../app.setup';
-import { Role } from '../../../generated/prisma/enums';
-import { PrismaService } from '../../common';
-import { generateRequestId } from '../../common/logging/request-id';
-import { AuthModule } from '../auth.module';
-import { AuthRepository } from '../repository/auth.repository';
-import { PasswordService } from '../security/password.service';
+import { configureApp } from '../../../app.setup.js';
+import { Role } from '../../../generated/prisma/enums.js';
+import { PrismaService } from '../../common/index.js';
+import { generateRequestId } from '../../common/logging/request-id.js';
+import { AuthModule } from '../auth.module.js';
+import { AuthRepository } from '../repository/auth.repository.js';
+import { PasswordService } from '../security/password.service.js';
 
 /*
  * Fluxo da sessão por HTTP de verdade (fetch numa porta local), com a API montada como em produção

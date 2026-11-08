@@ -1,4 +1,4 @@
-import { LOG_FORMATS, LOG_LEVELS, LOG_REQUEST_BODY_MODES, readLogSettings } from '../../logging/log-settings';
+import { LOG_FORMATS, LOG_LEVELS, LOG_REQUEST_BODY_MODES, readLogSettings } from '../../logging/log-settings.js';
 
 /*
  * As variáveis LOG_* são lidas antes de o Nest subir, por isso valores errados não derrubam a API:

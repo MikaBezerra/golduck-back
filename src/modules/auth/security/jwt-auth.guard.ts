@@ -1,4 +1,4 @@
-import type { Role } from '../../../generated/prisma/client';
+import type { Role } from '../../../generated/prisma/client.js';
 import {
     CanActivate,
     ExecutionContext,
@@ -7,10 +7,10 @@ import {
 import { Reflector } from '@nestjs/core';
 import type { FastifyRequest } from 'fastify';
 
-import { AUTH_ERRORS } from '../errors/auth.errors';
-import { AuthRepository } from '../repository/auth.repository';
-import { AccessTokenService } from './access-token.service';
-import { IS_PUBLIC_KEY } from './auth.decorators';
+import { AUTH_ERRORS } from '../errors/auth.errors.js';
+import { AuthRepository } from '../repository/auth.repository.js';
+import { AccessTokenService } from './access-token.service.js';
+import { IS_PUBLIC_KEY } from './auth.decorators.js';
 
 export interface AuthenticatedIdentity {
     readonly userId: string;

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { CardBank } from '../../../generated/prisma/client';
+import { CardBank } from '../../../generated/prisma/client.js';
 import {
     CardStatementFormatError,
     CardStatementParseInput,
@@ -13,7 +13,7 @@ import {
     parseSignedAmountCents,
     StatementMonth,
     toIsoDate
-} from './card-statement.parser';
+} from './card-statement.parser.js';
 
 type PdfJs = typeof import('pdfjs-dist/legacy/build/pdf.mjs');
 

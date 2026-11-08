@@ -1,7 +1,7 @@
-import type { LoggerService } from '../../provider/logger.service';
+import type { LoggerService } from '../../provider/logger.service.js';
 import { jest } from '@jest/globals';
 
-import { NestLoggerAdapter } from '../../logging/nest-logger.adapter';
+import { NestLoggerAdapter } from '../../logging/nest-logger.adapter.js';
 
 const fakeLogger = () => ({
     debug: jest.fn<LoggerService['debug']>(),

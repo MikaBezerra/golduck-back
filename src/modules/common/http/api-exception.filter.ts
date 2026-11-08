@@ -1,10 +1,10 @@
-import type { ApiErrorResponse } from './response.types';
+import type { ApiErrorResponse } from './response.types.js';
 import { ArgumentsHost, Catch, ExceptionFilter, HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
-import { AppError } from '../errors/app-error';
-import { RequestLogContext } from '../logging/request-log.context';
-import { ValidationError } from '../validation/validation-error';
+import { AppError } from '../errors/app-error.js';
+import { RequestLogContext } from '../logging/request-log.context.js';
+import { ValidationError } from '../validation/validation-error.js';
 
 /**
  * Código e mensagem para exceções HTTP que não nasceram de um AppError

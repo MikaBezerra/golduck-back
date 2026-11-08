@@ -1,9 +1,9 @@
-import type { TestResponse } from '../../../testing/http-test-app';
+import type { TestResponse } from '../../../testing/http-test-app.js';
 
-import { dataOf, errorOf, HttpTestApp } from '../../../testing/http-test-app';
-import { IncomesModule } from '../incomes.module';
-import { IncomeRepository } from '../repository/income.repository';
-import { InMemoryIncomeRepository } from './in-memory-income.repository';
+import { dataOf, errorOf, HttpTestApp } from '../../../testing/http-test-app.js';
+import { IncomesModule } from '../incomes.module.js';
+import { IncomeRepository } from '../repository/income.repository.js';
+import { InMemoryIncomeRepository } from './in-memory-income.repository.js';
 
 const AMOUNT_MESSAGE = 'O valor deve estar em reais, por exemplo 10000.00';
 const MONTH_MESSAGE = 'O mês deve estar no formato AAAA-MM';

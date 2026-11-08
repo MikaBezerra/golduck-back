@@ -1,7 +1,7 @@
-import type { Category } from '../../../generated/prisma/client';
+import type { Category } from '../../../generated/prisma/client.js';
 import { randomUUID } from 'node:crypto';
 
-import { Prisma } from '../../../generated/prisma/client';
+import { Prisma } from '../../../generated/prisma/client.js';
 
 /* eslint-disable @typescript-eslint/require-await -- imita a interface assíncrona do CategoryRepository */
 /** CategoryRepository em memória, com a mesma ordenação e a mesma unicidade de nome do banco. */

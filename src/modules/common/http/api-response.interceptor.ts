@@ -1,4 +1,4 @@
-import type { ApiSuccessResponse } from './response.types';
+import type { ApiSuccessResponse } from './response.types.js';
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import type { FastifyReply } from 'fastify';
 import { map, Observable } from 'rxjs';

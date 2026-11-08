@@ -1,9 +1,9 @@
-import type { ApiErrorDetail } from '../../common/http/response.types';
-import type { UploadedStatementFile } from '../service/card-import.service';
+import type { ApiErrorDetail } from '../../common/http/response.types.js';
+import type { UploadedStatementFile } from '../service/card-import.service.js';
 import type { FastifyRequest } from 'fastify';
 
-import { ValidationError } from '../../common/validation/validation-error';
-import { CARD_IMPORT_ERRORS } from '../errors/card-import.errors';
+import { ValidationError } from '../../common/validation/validation-error.js';
+import { CARD_IMPORT_ERRORS } from '../errors/card-import.errors.js';
 
 export const MAX_STATEMENT_FILE_BYTES = 2 * 1024 * 1024;
 

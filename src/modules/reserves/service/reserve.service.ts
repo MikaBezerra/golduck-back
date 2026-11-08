@@ -1,16 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { MonthlyReserve, Prisma } from '../../../generated/prisma/client';
+import { MonthlyReserve, Prisma } from '../../../generated/prisma/client.js';
 
-import { formatAmountCents, parsePositiveAmountCents } from '../../common/money/money';
+import { formatAmountCents, parsePositiveAmountCents } from '../../common/money/money.js';
 import {
     CreateReserveDto,
     ListReserveDto,
     ReserveResponse,
     ReserveTotalsResponse,
     UpdateReserveDto
-} from '../dto/reserve.dto';
-import { RESERVE_ERRORS } from '../errors/reserve.errors';
-import { ReserveRepository } from '../repository/reserve.repository';
+} from '../dto/reserve.dto.js';
+import { RESERVE_ERRORS } from '../errors/reserve.errors.js';
+import { ReserveRepository } from '../repository/reserve.repository.js';
 
 @Injectable()
 export class ReserveService {

@@ -12,23 +12,23 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiNoContentResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 
-import { Role } from '../../../generated/prisma/client';
-import { Roles } from '../../auth/security/auth.decorators';
-import { ApiDataResponse, ApiErrorResponses, MONTH_PATTERN } from '../../common/swagger/api-docs';
+import { Role } from '../../../generated/prisma/client.js';
+import { Roles } from '../../auth/security/auth.decorators.js';
+import { ApiDataResponse, ApiErrorResponses, MONTH_PATTERN } from '../../common/swagger/api-docs.js';
 import {
     CreateReserveDto,
     ListReserveDto,
     ReserveResponse,
     ReserveTotalsResponse,
     UpdateReserveDto
-} from '../dto/reserve.dto';
+} from '../dto/reserve.dto.js';
 import {
     CreateReservePipe,
     ListReservePipe,
     ReserveMonthPipe,
     UpdateReservePipe
-} from '../flow/reserve.pipe';
-import { ReserveService } from '../service/reserve.service';
+} from '../flow/reserve.pipe.js';
+import { ReserveService } from '../service/reserve.service.js';
 
 @ApiTags('reserves')
 @ApiBearerAuth()

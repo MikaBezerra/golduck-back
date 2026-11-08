@@ -1,12 +1,12 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiNoContentResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 
-import { Role } from '../../../generated/prisma/client';
-import { Roles } from '../../auth/security/auth.decorators';
-import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs';
-import { CardExpenseResponse, CardExpenseScopeDto, ListCardExpensesDto, UpdateCardExpensesDto } from '../dto/card-expense.dto';
-import { CardExpenseIdPipe, CardExpenseScopePipe, ListCardExpensesPipe, UpdateCardExpensesPipe } from '../flow/card-expense.pipe';
-import { CardExpenseService } from '../service/card-expense.service';
+import { Role } from '../../../generated/prisma/client.js';
+import { Roles } from '../../auth/security/auth.decorators.js';
+import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs.js';
+import { CardExpenseResponse, CardExpenseScopeDto, ListCardExpensesDto, UpdateCardExpensesDto } from '../dto/card-expense.dto.js';
+import { CardExpenseIdPipe, CardExpenseScopePipe, ListCardExpensesPipe, UpdateCardExpensesPipe } from '../flow/card-expense.pipe.js';
+import { CardExpenseService } from '../service/card-expense.service.js';
 
 /**
  * Despesas do cartão são criadas e removidas pelos uploads de fatura. Aqui o usuário

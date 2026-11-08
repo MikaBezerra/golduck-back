@@ -1,11 +1,11 @@
-import type { CardExpense, CardImport } from '../../../generated/prisma/client';
+import type { CardExpense, CardImport } from '../../../generated/prisma/client.js';
 import type {
     ApplyCardImportInput,
     CardImportWithCount,
     PlanningContext,
     PurchaseExclusionDecision
-} from '../repository/card-import.repository';
-import type { CardImportPlan } from '../service/card-import.planner';
+} from '../repository/card-import.repository.js';
+import type { CardImportPlan } from '../service/card-import.planner.js';
 import { randomUUID } from 'node:crypto';
 
 /*

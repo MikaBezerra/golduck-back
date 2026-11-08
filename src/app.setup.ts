@@ -4,13 +4,13 @@ import fastifyMultipart from '@fastify/multipart';
 import { NestFastifyApplication } from '@nestjs/platform-fastify';
 import type { Server } from 'node:http';
 
-import { MAX_STATEMENT_FILE_BYTES } from './modules/card-imports/flow/multipart-upload';
-import { CommonModule, Config, LoggerService } from './modules/common';
-import { APP_VERSION_HEADER, REQUEST_ID_HEADER } from './modules/common/logging/request-id';
-import { RequestLogContext } from './modules/common/logging/request-log.context';
-import { registerRequestLogging } from './modules/common/logging/request-logging';
-import { setupSwagger } from './modules/common/swagger/swagger.setup';
-import { Service } from './modules/tokens';
+import { MAX_STATEMENT_FILE_BYTES } from './modules/card-imports/flow/multipart-upload.js';
+import { CommonModule, Config, LoggerService } from './modules/common/index.js';
+import { APP_VERSION_HEADER, REQUEST_ID_HEADER } from './modules/common/logging/request-id.js';
+import { RequestLogContext } from './modules/common/logging/request-log.context.js';
+import { registerRequestLogging } from './modules/common/logging/request-logging.js';
+import { setupSwagger } from './modules/common/swagger/swagger.setup.js';
+import { Service } from './modules/tokens.js';
 
 /** Usado quando API_PREFIX não vem do ambiente (veja o .env.example). */
 const API_DEFAULT_PREFIX = '/api';

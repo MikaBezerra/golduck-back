@@ -1,16 +1,16 @@
-import type { Category, Person } from '../../../generated/prisma/client';
+import type { Category, Person } from '../../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 
-import { addMonths, formatMonth, parseMonth } from '../../common/date/month';
-import { formatAmountCents } from '../../common/money/money';
+import { addMonths, formatMonth, parseMonth } from '../../common/date/month.js';
+import { formatAmountCents } from '../../common/money/money.js';
 import {
     AnnualSummaryQueryDto,
     AnnualSummaryResponse,
     SummaryQueryDto,
     SummaryResponse,
     SummaryTotalsDto
-} from '../dto/summary.dto';
-import { SummaryRepository } from '../repository/summary.repository';
+} from '../dto/summary.dto.js';
+import { SummaryRepository } from '../repository/summary.repository.js';
 import {
     combinePeriods,
     compareByAmountThenName,
@@ -18,7 +18,7 @@ import {
     MonthGroups,
     Participant,
     PeriodTotals
-} from './summary.calculator';
+} from './summary.calculator.js';
 
 type Lookups = {
     categoryById: ReadonlyMap<string, Category>;

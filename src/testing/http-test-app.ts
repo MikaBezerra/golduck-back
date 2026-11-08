@@ -1,16 +1,16 @@
-import type { AuthSession, User } from '../generated/prisma/client';
+import type { AuthSession, User } from '../generated/prisma/client.js';
 import type { ModuleMetadata } from '@nestjs/common';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { Test } from '@nestjs/testing';
 import type { AddressInfo } from 'node:net';
 
-import { configureApp } from '../app.setup';
-import { Role } from '../generated/prisma/enums';
-import { AuthModule } from '../modules/auth/auth.module';
-import { AuthRepository } from '../modules/auth/repository/auth.repository';
-import { AccessTokenService } from '../modules/auth/security/access-token.service';
-import { PrismaService } from '../modules/common';
-import { generateRequestId } from '../modules/common/logging/request-id';
+import { configureApp } from '../app.setup.js';
+import { Role } from '../generated/prisma/enums.js';
+import { AuthModule } from '../modules/auth/auth.module.js';
+import { AuthRepository } from '../modules/auth/repository/auth.repository.js';
+import { AccessTokenService } from '../modules/auth/security/access-token.service.js';
+import { PrismaService } from '../modules/common/index.js';
+import { generateRequestId } from '../modules/common/logging/request-id.js';
 
 /*
  * API de verdade para testes HTTP: o módulo testado + o AuthModule (guards globais), montados com o

@@ -1,7 +1,7 @@
 import { LoggerService as NestLoggerService } from '@nestjs/common';
 
-import { LoggerService } from '../provider/logger.service';
-import { describeError } from './describe-error';
+import { LoggerService } from '../provider/logger.service.js';
+import { describeError } from './describe-error.js';
 
 /** Contexto que o Nest usa ao registrar um erro de inicialização. */
 const BOOTSTRAP_ERROR_CONTEXT = 'ExceptionHandler';

@@ -1,13 +1,13 @@
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 
-import { configureApp } from './app.setup';
-import { ApplicationModule } from './modules/app.module';
-import { describeError, getAppInfo, LoggerService, readLogSettings } from './modules/common';
-import { NestLoggerAdapter } from './modules/common/logging/nest-logger.adapter';
-import { registerProcessErrorLogging } from './modules/common/logging/process-logging';
-import { generateRequestId } from './modules/common/logging/request-id';
-import { fastifyTrustProxy } from './modules/common/provider/trust-proxy';
+import { configureApp } from './app.setup.js';
+import { ApplicationModule } from './modules/app.module.js';
+import { describeError, getAppInfo, LoggerService, readLogSettings } from './modules/common/index.js';
+import { NestLoggerAdapter } from './modules/common/logging/nest-logger.adapter.js';
+import { registerProcessErrorLogging } from './modules/common/logging/process-logging.js';
+import { generateRequestId } from './modules/common/logging/request-id.js';
+import { fastifyTrustProxy } from './modules/common/provider/trust-proxy.js';
 
 /** Usado quando API_PORT não vem do ambiente (veja o .env.example). */
 const API_DEFAULT_PORT = 3000;

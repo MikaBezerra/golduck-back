@@ -1,12 +1,12 @@
 import { Body, Controller, Get, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 
-import { Role } from '../../../generated/prisma/client';
-import { Roles } from '../../auth/security/auth.decorators';
-import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs';
-import { CreatePersonDto, ListPeopleDto, PersonResponse, UpdatePersonDto } from '../dto/person.dto';
-import { CreatePersonPipe, ListPeoplePipe, PersonIdPipe, UpdatePersonPipe } from '../flow/person.pipe';
-import { PersonService } from '../service/person.service';
+import { Role } from '../../../generated/prisma/client.js';
+import { Roles } from '../../auth/security/auth.decorators.js';
+import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs.js';
+import { CreatePersonDto, ListPeopleDto, PersonResponse, UpdatePersonDto } from '../dto/person.dto.js';
+import { CreatePersonPipe, ListPeoplePipe, PersonIdPipe, UpdatePersonPipe } from '../flow/person.pipe.js';
+import { PersonService } from '../service/person.service.js';
 
 @ApiTags('people')
 @ApiBearerAuth()

@@ -1,8 +1,8 @@
-import * as Joi from 'joi';
+import Joi from 'joi';
 
-import { JoiValidationPipePtbr } from '../../common';
-import { CardExpenseChangesDto, CardExpenseScopeDto, ListCardExpensesDto, UpdateCardExpensesDto } from '../dto/card-expense.dto';
-import { CARD_EXPENSE_SCOPES } from '../service/card-expense-scope';
+import { JoiValidationPipePtbr } from '../../common/index.js';
+import { CardExpenseChangesDto, CardExpenseScopeDto, ListCardExpensesDto, UpdateCardExpensesDto } from '../dto/card-expense.dto.js';
+import { CARD_EXPENSE_SCOPES } from '../service/card-expense-scope.js';
 
 const monthSchema = Joi.string().pattern(/^[1-9]\d{3}-(0[1-9]|1[0-2])$/).messages({
     'string.pattern.base': 'O mês deve estar no formato AAAA-MM'

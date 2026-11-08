@@ -1,4 +1,4 @@
-import type { AuthenticatedRequest } from '../security/jwt-auth.guard';
+import type { AuthenticatedRequest } from '../security/jwt-auth.guard.js';
 import {
     Body,
     Controller,
@@ -12,17 +12,17 @@ import {
 import { ApiBearerAuth, ApiCookieAuth, ApiNoContentResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
-import { Role } from '../../../generated/prisma/client';
-import { AppError } from '../../common/errors/app-error';
-import { RateLimit, TrustedOrigin } from '../../common/security';
-import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs';
-import { AuthTokensDto, AuthUserResponse, LoginDto } from '../dto/auth.dto';
-import { AUTH_ERRORS } from '../errors/auth.errors';
-import { LoginPipe } from '../flow/auth.pipe';
-import { Public, Roles } from '../security/auth.decorators';
-import { readBearerToken } from '../security/jwt-auth.guard';
-import { RefreshCookieService } from '../security/refresh-cookie.service';
-import { AuthService } from '../service/auth.service';
+import { Role } from '../../../generated/prisma/client.js';
+import { AppError } from '../../common/errors/app-error.js';
+import { RateLimit, TrustedOrigin } from '../../common/security/index.js';
+import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs.js';
+import { AuthTokensDto, AuthUserResponse, LoginDto } from '../dto/auth.dto.js';
+import { AUTH_ERRORS } from '../errors/auth.errors.js';
+import { LoginPipe } from '../flow/auth.pipe.js';
+import { Public, Roles } from '../security/auth.decorators.js';
+import { readBearerToken } from '../security/jwt-auth.guard.js';
+import { RefreshCookieService } from '../security/refresh-cookie.service.js';
+import { AuthService } from '../service/auth.service.js';
 
 const INVALID_SESSION_CODE = AUTH_ERRORS.invalidSession().code;
 

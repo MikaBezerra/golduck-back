@@ -1,9 +1,9 @@
-import type { TestResponse } from '../../../testing/http-test-app';
+import type { TestResponse } from '../../../testing/http-test-app.js';
 
-import { dataOf, errorOf, HttpTestApp } from '../../../testing/http-test-app';
-import { ReserveRepository } from '../repository/reserve.repository';
-import { ReservesModule } from '../reserves.module';
-import { InMemoryReserveRepository } from './in-memory-reserve.repository';
+import { dataOf, errorOf, HttpTestApp } from '../../../testing/http-test-app.js';
+import { ReserveRepository } from '../repository/reserve.repository.js';
+import { ReservesModule } from '../reserves.module.js';
+import { InMemoryReserveRepository } from './in-memory-reserve.repository.js';
 
 const AMOUNT_MESSAGE = 'O valor deve estar em reais, por exemplo 10000.00';
 const MONTH_MESSAGE = 'O mês deve estar no formato AAAA-MM';

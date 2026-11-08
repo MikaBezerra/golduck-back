@@ -1,8 +1,8 @@
-import * as Joi from 'joi';
+import Joi from 'joi';
 
-import { AppError } from '../../errors/app-error';
-import { JoiValidationPipePtbr } from '../../validation/joi-validation-ptbr.pipe';
-import { ValidationError } from '../../validation/validation-error';
+import { AppError } from '../../errors/app-error.js';
+import { JoiValidationPipePtbr } from '../../validation/joi-validation-ptbr.pipe.js';
+import { ValidationError } from '../../validation/validation-error.js';
 
 /** Pipe de teste: o schema vem de fora, para cada cenário montar o seu. */
 class SchemaPipe extends JoiValidationPipePtbr {

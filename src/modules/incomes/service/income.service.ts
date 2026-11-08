@@ -1,15 +1,15 @@
 import { Injectable } from '@nestjs/common';
-import { MonthlyIncome, Prisma } from '../../../generated/prisma/client';
+import { MonthlyIncome, Prisma } from '../../../generated/prisma/client.js';
 
-import { formatAmountCents, parsePositiveAmountCents } from '../../common/money/money';
+import { formatAmountCents, parsePositiveAmountCents } from '../../common/money/money.js';
 import {
     CreateIncomeDto,
     IncomeResponse,
     ListIncomeDto,
     UpdateIncomeDto
-} from '../dto/income.dto';
-import { INCOME_ERRORS } from '../errors/income.errors';
-import { IncomeRepository } from '../repository/income.repository';
+} from '../dto/income.dto.js';
+import { INCOME_ERRORS } from '../errors/income.errors.js';
+import { IncomeRepository } from '../repository/income.repository.js';
 
 @Injectable()
 export class IncomeService {

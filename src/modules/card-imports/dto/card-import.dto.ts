@@ -1,14 +1,14 @@
-import type { CardExpenseScope } from '../../card-expenses/service/card-expense-scope';
+import type { CardExpenseScope } from '../../card-expenses/service/card-expense-scope.js';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { CardExpenseResponse, CardInstallmentDto, SCOPE_PROPERTY } from '../../card-expenses/dto/card-expense.dto';
+import { CardExpenseResponse, CardInstallmentDto, SCOPE_PROPERTY } from '../../card-expenses/dto/card-expense.dto.js';
 import {
     DATE_PATTERN,
     DATE_TIME_PROPERTY,
     MONEY_PROPERTY,
     MONTH_PROPERTY,
     UUID_PROPERTY
-} from '../../common/swagger/api-docs';
+} from '../../common/swagger/api-docs.js';
 
 export class CreateCardImportDto {
     @ApiProperty(UUID_PROPERTY)

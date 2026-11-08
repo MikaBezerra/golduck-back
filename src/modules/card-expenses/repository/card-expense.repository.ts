@@ -1,8 +1,8 @@
-import type { CardExpense, Prisma } from '../../../generated/prisma/client';
+import type { CardExpense, Prisma } from '../../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 
-import { PrismaService } from '../../common';
-import { CardExpenseScope, purchaseScopeWhere } from '../service/card-expense-scope';
+import { PrismaService } from '../../common/index.js';
+import { CardExpenseScope, purchaseScopeWhere } from '../service/card-expense-scope.js';
 
 export type CardExpenseChanges = {
     nickname?: string | null;

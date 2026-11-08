@@ -1,5 +1,5 @@
-import { AppError } from '../../common/errors/app-error';
-import { AUTH_ERRORS } from '../errors/auth.errors';
+import { AppError } from '../../common/errors/app-error.js';
+import { AUTH_ERRORS } from '../errors/auth.errors.js';
 
 describe('AUTH_ERRORS', () => {
     it('cada erro tem código, status e mensagem pública fixos, e o motivo vai só para o log', () => {

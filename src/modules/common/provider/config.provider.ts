@@ -1,9 +1,9 @@
-import * as Joi from 'joi';
+import Joi from 'joi';
 
-import { Service } from '../../tokens';
-import { LOG_FORMATS, LOG_LEVELS, LOG_REQUEST_BODY_MODES } from '../logging/log-settings';
-import { AUTH_COOKIE_SAMESITE_VALUES, Config } from '../model';
-import { parseTrustProxy } from './trust-proxy';
+import { Service } from '../../tokens.js';
+import { LOG_FORMATS, LOG_LEVELS, LOG_REQUEST_BODY_MODES } from '../logging/log-settings.js';
+import { AUTH_COOKIE_SAMESITE_VALUES, Config } from '../model/index.js';
+import { parseTrustProxy } from './trust-proxy.js';
 
 /** Tamanho mínimo do segredo do JWT (HS256 pede pelo menos 256 bits). */
 const JWT_SECRET_MIN_LENGTH = 32;

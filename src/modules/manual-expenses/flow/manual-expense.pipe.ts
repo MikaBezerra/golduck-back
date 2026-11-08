@@ -1,13 +1,13 @@
-import * as Joi from 'joi';
+import Joi from 'joi';
 
-import { JoiValidationPipePtbr } from '../../common';
+import { JoiValidationPipePtbr } from '../../common/index.js';
 import {
     CreateManualExpenseDto,
     DeleteManualExpensesDto,
     ListManualExpensesDto,
     ManualExpenseChangesDto,
     UpdateManualExpensesDto
-} from '../dto/manual-expense.dto';
+} from '../dto/manual-expense.dto.js';
 
 const monthSchema = Joi.string().pattern(/^[1-9]\d{3}-(0[1-9]|1[0-2])$/).messages({
     'string.pattern.base': 'O mês deve estar no formato AAAA-MM'

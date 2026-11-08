@@ -1,6 +1,6 @@
-import type { CardExpense } from '../../../generated/prisma/client';
+import type { CardExpense } from '../../../generated/prisma/client.js';
 
-import { toCardExpenseResponse } from '../service/card-expense.mapper';
+import { toCardExpenseResponse } from '../service/card-expense.mapper.js';
 
 const CREATED_AT = new Date('2026-10-02T13:45:00.000Z');
 const UPDATED_AT = new Date('2026-10-03T08:00:00.000Z');

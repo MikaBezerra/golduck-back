@@ -1,12 +1,12 @@
 import { Controller, Get, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 
-import { Role } from '../../../generated/prisma/client';
-import { Roles } from '../../auth/security/auth.decorators';
-import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs';
-import { AnnualSummaryQueryDto, AnnualSummaryResponse, SummaryQueryDto, SummaryResponse } from '../dto/summary.dto';
-import { AnnualSummaryQueryPipe, SummaryQueryPipe } from '../flow/summary.pipe';
-import { SummaryService } from '../service/summary.service';
+import { Role } from '../../../generated/prisma/client.js';
+import { Roles } from '../../auth/security/auth.decorators.js';
+import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs.js';
+import { AnnualSummaryQueryDto, AnnualSummaryResponse, SummaryQueryDto, SummaryResponse } from '../dto/summary.dto.js';
+import { AnnualSummaryQueryPipe, SummaryQueryPipe } from '../flow/summary.pipe.js';
+import { SummaryService } from '../service/summary.service.js';
 
 const RULES = 'Despesas do cartão entram pelo mês da fatura, sem as excluídas. '
     + 'A reserva do mês fica fora de expensesTotal, mas entra no saldo e na divisão como gasto compartilhado. '

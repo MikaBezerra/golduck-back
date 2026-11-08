@@ -1,9 +1,9 @@
-import type { Category, Person } from '../../../generated/prisma/client';
+import type { Category, Person } from '../../../generated/prisma/client.js';
 import { jest } from '@jest/globals';
 
-import { SummaryRepository } from '../repository/summary.repository';
-import { SummaryService } from '../service/summary.service';
-import { InMemorySummaryRepository } from './in-memory-summary.repository';
+import { SummaryRepository } from '../repository/summary.repository.js';
+import { SummaryService } from '../service/summary.service.js';
+import { InMemorySummaryRepository } from './in-memory-summary.repository.js';
 
 /**
  * Resumo do mês e do ano com o repositório em memória: confere os valores formatados (texto em

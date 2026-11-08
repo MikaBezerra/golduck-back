@@ -1,5 +1,5 @@
-import { ValidationError } from '../../common/validation/validation-error';
-import { AnnualSummaryQueryPipe, SummaryQueryPipe } from '../flow/summary.pipe';
+import { ValidationError } from '../../common/validation/validation-error.js';
+import { AnnualSummaryQueryPipe, SummaryQueryPipe } from '../flow/summary.pipe.js';
 
 /** Os detalhes do erro de validação lançado pelo pipe (falha o teste se não lançar). */
 function validationDetails(run: () => unknown): ValidationError['details'] {

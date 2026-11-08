@@ -1,7 +1,7 @@
-import type { PrismaService } from '../../common';
+import type { PrismaService } from '../../common/index.js';
 import { jest } from '@jest/globals';
 
-import { AuthRepository } from '../repository/auth.repository';
+import { AuthRepository } from '../repository/auth.repository.js';
 
 const NOW = Date.UTC(2026, 10, 7, 12, 0, 0);
 

@@ -1,6 +1,6 @@
 import { HttpStatus } from '@nestjs/common';
 
-import { AppError } from '../../common/errors/app-error';
+import { AppError } from '../../common/errors/app-error.js';
 
 export const INCOME_ERRORS = {
     notFound: (reason?: string): AppError =>

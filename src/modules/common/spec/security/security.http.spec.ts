@@ -1,10 +1,10 @@
 import { Controller, Get, HttpCode, Module, Param, Post } from '@nestjs/common';
 import type { AddressInfo } from 'node:net';
 
-import { dataOf, errorOf, HttpTestApp } from '../../../../testing/http-test-app';
-import { Public } from '../../../auth/security/auth.decorators';
-import { CommonModule } from '../../common.module';
-import { RateLimit, TrustedOrigin } from '../../security';
+import { dataOf, errorOf, HttpTestApp } from '../../../../testing/http-test-app.js';
+import { Public } from '../../../auth/security/auth.decorators.js';
+import { CommonModule } from '../../common.module.js';
+import { RateLimit, TrustedOrigin } from '../../security/index.js';
 
 /* Rotas só de teste, montadas na API de verdade (configureApp), para ver os headers chegando ao cliente. */
 @Controller('teste-seguranca')

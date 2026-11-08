@@ -1,9 +1,9 @@
-import type { Config } from '../../common';
+import type { Config } from '../../common/index.js';
 import type { CookieSerializeOptions } from '@fastify/cookie';
 import { jest } from '@jest/globals';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
-import { RefreshCookieService } from '../security/refresh-cookie.service';
+import { RefreshCookieService } from '../security/refresh-cookie.service.js';
 
 const NOW = Date.UTC(2026, 10, 7, 12, 0, 0);
 

@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import * as Joi from 'joi';
+import Joi from 'joi';
 
 import {
     buildPage,
@@ -11,8 +11,8 @@ import {
     PageQueryPipe,
     pageQueryKeys,
     toSkipTake
-} from '../../pagination/pagination';
-import { ValidationError } from '../../validation/validation-error';
+} from '../../pagination/pagination.js';
+import { ValidationError } from '../../validation/validation-error.js';
 
 /** Os detalhes do erro de validação lançado pelo pipe (falha o teste se não lançar). */
 function validationDetails(run: () => unknown): ValidationError['details'] {

@@ -1,9 +1,9 @@
-import type { TestResponse } from '../../../testing/http-test-app';
+import type { TestResponse } from '../../../testing/http-test-app.js';
 
-import { dataOf, errorOf, HttpTestApp } from '../../../testing/http-test-app';
-import { CreditCardsModule } from '../credit-cards.module';
-import { CreditCardRepository } from '../repository/credit-card.repository';
-import { InMemoryCreditCardRepository } from './in-memory-credit-card.repository';
+import { dataOf, errorOf, HttpTestApp } from '../../../testing/http-test-app.js';
+import { CreditCardsModule } from '../credit-cards.module.js';
+import { CreditCardRepository } from '../repository/credit-card.repository.js';
+import { InMemoryCreditCardRepository } from './in-memory-credit-card.repository.js';
 
 const MISSING_ID = '3f2a9c1e-8b7d-4c2a-9e1f-5a6b7c8d9e0f';
 /** UUID válido, mas da versão 1 (a rota só aceita v4). */

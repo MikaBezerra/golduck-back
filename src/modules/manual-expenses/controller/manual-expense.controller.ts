@@ -12,24 +12,24 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiNoContentResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 
-import { Role } from '../../../generated/prisma/client';
-import { Roles } from '../../auth/security/auth.decorators';
-import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs';
+import { Role } from '../../../generated/prisma/client.js';
+import { Roles } from '../../auth/security/auth.decorators.js';
+import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs.js';
 import {
     CreateManualExpenseDto,
     DeleteManualExpensesDto,
     ListManualExpensesDto,
     ManualExpenseResponse,
     UpdateManualExpensesDto
-} from '../dto/manual-expense.dto';
+} from '../dto/manual-expense.dto.js';
 import {
     CreateManualExpensePipe,
     DeleteManualExpensesPipe,
     ListManualExpensesPipe,
     ManualExpenseIdPipe,
     UpdateManualExpensesPipe
-} from '../flow/manual-expense.pipe';
-import { ManualExpenseService } from '../service/manual-expense.service';
+} from '../flow/manual-expense.pipe.js';
+import { ManualExpenseService } from '../service/manual-expense.service.js';
 
 @ApiTags('manual-expenses')
 @ApiBearerAuth()

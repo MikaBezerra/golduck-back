@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 
-import { AuthUserResponse } from '../dto/auth.dto';
-import { AUTH_ERRORS } from '../errors/auth.errors';
-import { AuthRepository } from '../repository/auth.repository';
-import { AccessTokenService } from '../security/access-token.service';
-import { LoginAttemptsService } from '../security/login-attempts.service';
-import { PasswordService } from '../security/password.service';
-import { REFRESH_TOKEN_TTL_MS, RefreshTokenService, SESSION_MAX_AGE_MS } from '../security/refresh-token.service';
+import { AuthUserResponse } from '../dto/auth.dto.js';
+import { AUTH_ERRORS } from '../errors/auth.errors.js';
+import { AuthRepository } from '../repository/auth.repository.js';
+import { AccessTokenService } from '../security/access-token.service.js';
+import { LoginAttemptsService } from '../security/login-attempts.service.js';
+import { PasswordService } from '../security/password.service.js';
+import { REFRESH_TOKEN_TTL_MS, RefreshTokenService, SESSION_MAX_AGE_MS } from '../security/refresh-token.service.js';
 
 export interface AuthTokens {
     readonly accessToken: string;

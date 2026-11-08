@@ -1,7 +1,7 @@
-import type { PrismaService } from '../../common';
+import type { PrismaService } from '../../common/index.js';
 import { jest } from '@jest/globals';
 
-import { CreditCardRepository } from '../repository/credit-card.repository';
+import { CreditCardRepository } from '../repository/credit-card.repository.js';
 
 /*
  * O repositório só monta consultas do Prisma; o teste confere o filtro e a ordenação pedidos

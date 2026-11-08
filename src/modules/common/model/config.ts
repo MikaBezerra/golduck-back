@@ -1,4 +1,4 @@
-import type { LogFormat, LogLevel, LogRequestBodyMode } from '../logging/log-settings';
+import type { LogFormat, LogLevel, LogRequestBodyMode } from '../logging/log-settings.js';
 
 export const AUTH_COOKIE_SAMESITE_VALUES = ['strict', 'lax', 'none'] as const;
 export type AuthCookieSameSite = typeof AUTH_COOKIE_SAMESITE_VALUES[number];

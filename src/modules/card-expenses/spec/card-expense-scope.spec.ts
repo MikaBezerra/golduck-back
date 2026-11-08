@@ -1,4 +1,4 @@
-import { CARD_EXPENSE_SCOPES, purchaseScopeWhere } from '../service/card-expense-scope';
+import { CARD_EXPENSE_SCOPES, purchaseScopeWhere } from '../service/card-expense-scope.js';
 
 const PURCHASE = { cardId: 'cartao-1', purchaseKey: 'P|2026-09|4|TV' };
 const OCTOBER = new Date('2026-10-01T00:00:00.000Z');

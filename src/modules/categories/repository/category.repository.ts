@@ -1,7 +1,7 @@
-import type { Category } from '../../../generated/prisma/client';
+import type { Category } from '../../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 
-import { PrismaService } from '../../common';
+import { PrismaService } from '../../common/index.js';
 
 @Injectable()
 export class CategoryRepository {

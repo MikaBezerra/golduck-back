@@ -1,10 +1,10 @@
-import type { AppError } from '../../common/errors/app-error';
+import type { AppError } from '../../common/errors/app-error.js';
 import { jest } from '@jest/globals';
 
-import { Prisma } from '../../../generated/prisma/client';
-import { ReserveRepository } from '../repository/reserve.repository';
-import { ReserveService } from '../service/reserve.service';
-import { InMemoryReserveRepository } from './in-memory-reserve.repository';
+import { Prisma } from '../../../generated/prisma/client.js';
+import { ReserveRepository } from '../repository/reserve.repository.js';
+import { ReserveService } from '../service/reserve.service.js';
+import { InMemoryReserveRepository } from './in-memory-reserve.repository.js';
 
 const CREATED_AT = new Date('2026-03-01T12:00:00.000Z');
 const UPDATED_AT = new Date('2026-03-02T08:30:00.000Z');

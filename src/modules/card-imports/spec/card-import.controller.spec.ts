@@ -1,19 +1,19 @@
-import type { CreditCard } from '../../../generated/prisma/client';
-import type { TestResponse } from '../../../testing/http-test-app';
+import type { CreditCard } from '../../../generated/prisma/client.js';
+import type { TestResponse } from '../../../testing/http-test-app.js';
 import { jest } from '@jest/globals';
 import type { AddressInfo } from 'node:net';
 
-import { CardBank } from '../../../generated/prisma/client';
-import { dataOf, errorOf, HttpTestApp } from '../../../testing/http-test-app';
-import { CARD_EXPENSE_SCOPES } from '../../card-expenses/service/card-expense-scope';
-import { CategoryRepository } from '../../categories/repository/category.repository';
-import { InMemoryCategoryRepository } from '../../categories/spec/in-memory-category.repository';
-import { CreditCardRepository } from '../../credit-cards/repository/credit-card.repository';
-import { PersonRepository } from '../../people/repository/person.repository';
-import { CardImportRepository } from '../repository/card-import.repository';
-import { InMemoryCreditCardRepository, InMemoryPersonRepository } from './in-memory-card-import-dependencies';
-import { InMemoryCardImportRepository } from './in-memory-card-import.repository';
-import { buildNeonPdf, NEON_HEADER } from './neon-pdf.fixture';
+import { CardBank } from '../../../generated/prisma/client.js';
+import { dataOf, errorOf, HttpTestApp } from '../../../testing/http-test-app.js';
+import { CARD_EXPENSE_SCOPES } from '../../card-expenses/service/card-expense-scope.js';
+import { CategoryRepository } from '../../categories/repository/category.repository.js';
+import { InMemoryCategoryRepository } from '../../categories/spec/in-memory-category.repository.js';
+import { CreditCardRepository } from '../../credit-cards/repository/credit-card.repository.js';
+import { PersonRepository } from '../../people/repository/person.repository.js';
+import { CardImportRepository } from '../repository/card-import.repository.js';
+import { InMemoryCreditCardRepository, InMemoryPersonRepository } from './in-memory-card-import-dependencies.js';
+import { InMemoryCardImportRepository } from './in-memory-card-import.repository.js';
+import { buildNeonPdf, NEON_HEADER } from './neon-pdf.fixture.js';
 
 /*
  * Rotas /card-imports por HTTP: o formulário multipart de verdade (com FormData, como o front
@@ -78,7 +78,7 @@ function rawMultipart(boundary: string, parts: Array<{ name: string; contentType
  * 'CardExpenseScope'"). As classes de lá só servem à documentação (Swagger, desligado nos testes),
  * então o teste as troca por versões vazias e carrega o módulo depois disso.
  */
-jest.unstable_mockModule('../../card-expenses/dto/card-expense.dto', () => ({
+jest.unstable_mockModule('../../card-expenses/dto/card-expense.dto.js', () => ({
     CardExpenseResponse: class CardExpenseResponse { },
     CardInstallmentDto: class CardInstallmentDto { },
     SCOPE_PROPERTY: { type: String, enum: CARD_EXPENSE_SCOPES }
@@ -95,7 +95,7 @@ describe('rotas /card-imports', () => {
     // Uma API para o arquivo todo (subir o Nest a cada teste deixaria a suíte lenta); os dados
     // em memória recomeçam a cada teste.
     beforeAll(async () => {
-        const cardImportsModule = (await import('../card-imports.module')).CardImportsModule;
+        const cardImportsModule = (await import('../card-imports.module.js')).CardImportsModule;
 
         api = await HttpTestApp.create({
             imports: [cardImportsModule],

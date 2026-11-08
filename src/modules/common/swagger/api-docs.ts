@@ -9,7 +9,7 @@ import {
     getSchemaPath
 } from '@nestjs/swagger';
 
-import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '../pagination/pagination';
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from '../pagination/pagination.js';
 
 /*
  * Peças comuns da documentação OpenAPI (Swagger):

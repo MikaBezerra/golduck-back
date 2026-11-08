@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { CardBank } from '../../../generated/prisma/client';
-import { DATE_TIME_PROPERTY, UUID_PROPERTY } from '../../common/swagger/api-docs';
+import { CardBank } from '../../../generated/prisma/client.js';
+import { DATE_TIME_PROPERTY, UUID_PROPERTY } from '../../common/swagger/api-docs.js';
 
 const BANK_PROPERTY = {
     enum: CardBank,

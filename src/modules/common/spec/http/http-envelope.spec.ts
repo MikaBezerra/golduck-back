@@ -1,10 +1,10 @@
 import { Body, Controller, Delete, ForbiddenException, Get, HttpCode, Module, Post, Query } from '@nestjs/common';
-import * as Joi from 'joi';
+import Joi from 'joi';
 
-import { dataOf, errorOf, HttpTestApp } from '../../../../testing/http-test-app';
-import { Public } from '../../../auth/security/auth.decorators';
-import { ERRORS } from '../../errors/error-catalog';
-import { JoiValidationPipePtbr } from '../../validation/joi-validation-ptbr.pipe';
+import { dataOf, errorOf, HttpTestApp } from '../../../../testing/http-test-app.js';
+import { Public } from '../../../auth/security/auth.decorators.js';
+import { ERRORS } from '../../errors/error-catalog.js';
+import { JoiValidationPipePtbr } from '../../validation/joi-validation-ptbr.pipe.js';
 
 class ProbeQueryPipe extends JoiValidationPipePtbr {
     public buildSchema(): Joi.Schema {

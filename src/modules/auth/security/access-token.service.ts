@@ -1,8 +1,8 @@
-import type { Config } from '../../common';
+import type { Config } from '../../common/index.js';
 import { Inject, Injectable } from '@nestjs/common';
-import * as jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 
-import { Service } from '../../tokens';
+import { Service } from '../../tokens.js';
 
 const ACCESS_TOKEN_AUDIENCE = 'financas-api';
 

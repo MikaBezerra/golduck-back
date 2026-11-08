@@ -1,5 +1,5 @@
-import { AppError } from '../../errors/app-error';
-import { ERRORS } from '../../errors/error-catalog';
+import { AppError } from '../../errors/app-error.js';
+import { ERRORS } from '../../errors/error-catalog.js';
 
 /** Erro de negócio da API: código e status para o cliente, motivo para o log e headers extras. */
 describe('AppError', () => {

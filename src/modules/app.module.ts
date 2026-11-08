@@ -1,16 +1,16 @@
 import { Module } from '@nestjs/common';
 
-import { AuthModule } from './auth/auth.module';
-import { CardExpensesModule } from './card-expenses/card-expenses.module';
-import { CardImportsModule } from './card-imports/card-imports.module';
-import { CategoriesModule } from './categories/categories.module';
-import { CommonModule } from './common';
-import { CreditCardsModule } from './credit-cards/credit-cards.module';
-import { IncomesModule } from './incomes/incomes.module';
-import { ManualExpensesModule } from './manual-expenses/manual-expenses.module';
-import { PeopleModule } from './people/people.module';
-import { ReservesModule } from './reserves/reserves.module';
-import { SummaryModule } from './summary/summary.module';
+import { AuthModule } from './auth/auth.module.js';
+import { CardExpensesModule } from './card-expenses/card-expenses.module.js';
+import { CardImportsModule } from './card-imports/card-imports.module.js';
+import { CategoriesModule } from './categories/categories.module.js';
+import { CommonModule } from './common/index.js';
+import { CreditCardsModule } from './credit-cards/credit-cards.module.js';
+import { IncomesModule } from './incomes/incomes.module.js';
+import { ManualExpensesModule } from './manual-expenses/manual-expenses.module.js';
+import { PeopleModule } from './people/people.module.js';
+import { ReservesModule } from './reserves/reserves.module.js';
+import { SummaryModule } from './summary/summary.module.js';
 
 @Module({
     imports: [

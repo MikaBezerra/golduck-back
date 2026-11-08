@@ -1,7 +1,7 @@
-import type { MonthlyIncome } from '../../../generated/prisma/client';
+import type { MonthlyIncome } from '../../../generated/prisma/client.js';
 import { randomUUID } from 'node:crypto';
 
-import { Prisma } from '../../../generated/prisma/client';
+import { Prisma } from '../../../generated/prisma/client.js';
 
 type IncomeEntry = { month: Date; amountCents: bigint };
 

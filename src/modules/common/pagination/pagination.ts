@@ -1,6 +1,6 @@
-import * as Joi from 'joi';
+import Joi from 'joi';
 
-import { JoiValidationPipePtbr } from '../validation/joi-validation-ptbr.pipe';
+import { JoiValidationPipePtbr } from '../validation/joi-validation-ptbr.pipe.js';
 
 export const DEFAULT_PAGE_SIZE = 20;
 export const MAX_PAGE_SIZE = 100;

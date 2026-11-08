@@ -1,6 +1,6 @@
 import type * as winston from 'winston';
 
-import { formatPretty } from '../../logging/pretty-format';
+import { formatPretty } from '../../logging/pretty-format.js';
 
 type LogInfo = winston.Logform.TransformableInfo;
 

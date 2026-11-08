@@ -1,16 +1,16 @@
-import type { Category, Person } from '../../../generated/prisma/client';
-import type { TestResponse } from '../../../testing/http-test-app';
-import type { CardExpensesModule } from '../card-expenses.module';
+import type { Category, Person } from '../../../generated/prisma/client.js';
+import type { TestResponse } from '../../../testing/http-test-app.js';
+import type { CardExpensesModule } from '../card-expenses.module.js';
 import { jest } from '@jest/globals';
 
-import { dataOf, errorOf, HttpTestApp } from '../../../testing/http-test-app';
-import { CategoryRepository } from '../../categories/repository/category.repository';
-import { InMemoryCategoryRepository } from '../../categories/spec/in-memory-category.repository';
-import { FakePersonRepository } from '../../manual-expenses/spec/fake-person.repository';
-import { PersonRepository } from '../../people/repository/person.repository';
-import { CardExpenseRepository } from '../repository/card-expense.repository';
-import * as cardExpenseScope from '../service/card-expense-scope';
-import { CARD_ID, InMemoryCardExpenseRepository } from './in-memory-card-expense.repository';
+import { dataOf, errorOf, HttpTestApp } from '../../../testing/http-test-app.js';
+import { CategoryRepository } from '../../categories/repository/category.repository.js';
+import { InMemoryCategoryRepository } from '../../categories/spec/in-memory-category.repository.js';
+import { FakePersonRepository } from '../../manual-expenses/spec/fake-person.repository.js';
+import { PersonRepository } from '../../people/repository/person.repository.js';
+import { CardExpenseRepository } from '../repository/card-expense.repository.js';
+import * as cardExpenseScope from '../service/card-expense-scope.js';
+import { CARD_ID, InMemoryCardExpenseRepository } from './in-memory-card-expense.repository.js';
 
 /*
  * Contorno: dto/card-expense.dto.ts importa o tipo CardExpenseScope sem `import type`. No Jest
@@ -19,7 +19,7 @@ import { CARD_ID, InMemoryCardExpenseRepository } from './in-memory-card-expense
  * produção mudar, o teste acrescenta esse export (vazio) ao módulo de escopo, sem mudar o resto,
  * e só então carrega o módulo testado.
  */
-jest.unstable_mockModule('../service/card-expense-scope', () => ({ ...cardExpenseScope, CardExpenseScope: undefined }));
+jest.unstable_mockModule('../service/card-expense-scope.js', () => ({ ...cardExpenseScope, CardExpenseScope: undefined }));
 
 const MISSING_ID = '3f2a9c1e-8b7d-4c2a-9e1f-5a6b7c8d9e0f';
 const OTHER_CARD_ID = '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d';
@@ -63,7 +63,7 @@ describe('rotas /card-expenses', () => {
     let cardExpensesModule: typeof CardExpensesModule;
 
     beforeAll(async () => {
-        cardExpensesModule = (await import('../card-expenses.module')).CardExpensesModule;
+        cardExpensesModule = (await import('../card-expenses.module.js')).CardExpensesModule;
     });
 
     beforeEach(async () => {

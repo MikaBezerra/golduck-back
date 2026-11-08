@@ -1,8 +1,8 @@
-import type { LoggerService } from '../../provider/logger.service';
+import type { LoggerService } from '../../provider/logger.service.js';
 import { jest } from '@jest/globals';
 
-import { PrismaClient } from '../../../../generated/prisma/client';
-import { databaseSchema, PrismaService } from '../../provider/prisma.provider';
+import { PrismaClient } from '../../../../generated/prisma/client.js';
+import { databaseSchema, PrismaService } from '../../provider/prisma.provider.js';
 
 type EventName = 'query' | 'warn' | 'error';
 type Listener = (event: Record<string, unknown>) => void;

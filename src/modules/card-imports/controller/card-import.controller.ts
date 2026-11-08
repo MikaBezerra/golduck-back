@@ -22,9 +22,9 @@ import {
 } from '@nestjs/swagger';
 import type { FastifyRequest } from 'fastify';
 
-import { Role } from '../../../generated/prisma/client';
-import { Roles } from '../../auth/security/auth.decorators';
-import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs';
+import { Role } from '../../../generated/prisma/client.js';
+import { Roles } from '../../auth/security/auth.decorators.js';
+import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs.js';
 import {
     CardImportExclusionDto,
     CardImportOverrideDto,
@@ -36,7 +36,7 @@ import {
     CreateCardImportDto,
     CreateManualCardImportDto,
     ListCardImportsDto
-} from '../dto/card-import.dto';
+} from '../dto/card-import.dto.js';
 import {
     CardImportExclusionsPipe,
     CardImportIdPipe,
@@ -44,9 +44,9 @@ import {
     CreateCardImportPipe,
     CreateManualCardImportPipe,
     ListCardImportsPipe
-} from '../flow/card-import.pipe';
-import { readStatementUpload } from '../flow/multipart-upload';
-import { CardImportService } from '../service/card-import.service';
+} from '../flow/card-import.pipe.js';
+import { readStatementUpload } from '../flow/multipart-upload.js';
+import { CardImportService } from '../service/card-import.service.js';
 
 const ABSOLUTE_MONTH_NOTE = 'O resultado é absoluto para o mês da fatura: substitui o que havia no cartão naquele mês.';
 

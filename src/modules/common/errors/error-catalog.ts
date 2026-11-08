@@ -1,6 +1,6 @@
 import { HttpStatus } from '@nestjs/common';
 
-import { AppError } from './app-error';
+import { AppError } from './app-error.js';
 
 export const ERRORS = {
     badRequest: (reason?: string): AppError => new AppError('BAD_REQUEST', HttpStatus.BAD_REQUEST, 'Requisição inválida', reason),

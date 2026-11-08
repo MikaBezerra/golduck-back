@@ -1,12 +1,12 @@
-import type { ControllerClass } from './http-execution-context';
-import type { AppError } from '../../common/errors/app-error';
-import type { AuthenticatedIdentity } from '../security/jwt-auth.guard';
+import type { ControllerClass } from './http-execution-context.js';
+import type { AppError } from '../../common/errors/app-error.js';
+import type { AuthenticatedIdentity } from '../security/jwt-auth.guard.js';
 import { Reflector } from '@nestjs/core';
 
-import { Role } from '../../../generated/prisma/enums';
-import { Public, Roles } from '../security/auth.decorators';
-import { RolesGuard } from '../security/roles.guard';
-import { httpContext } from './http-execution-context';
+import { Role } from '../../../generated/prisma/enums.js';
+import { Public, Roles } from '../security/auth.decorators.js';
+import { RolesGuard } from '../security/roles.guard.js';
+import { httpContext } from './http-execution-context.js';
 
 /* Rotas de mentira: o guard só lê os metadados (@Public, @Roles) do método e da classe. */
 class MixedController {

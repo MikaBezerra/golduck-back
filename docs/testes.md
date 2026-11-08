@@ -42,6 +42,9 @@ node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.json 
 - Prove o que **não** aconteceu quando importa (`jest.spyOn(repo, 'create')` + `not.toHaveBeenCalled()`).
 - Datas fixas; para "agora", `jest.useFakeTimers({ now })` ou o parâmetro `now` que o código aceitar.
 - `import { jest } from '@jest/globals'` (em ESM o objeto `jest` não é global).
+- Imports relativos com `.js`, como no código ([arquitetura.md](arquitetura.md#módulos-esm)); o
+  `moduleNameMapper` do `jest.json` tira a extensão para o Jest achar o `.ts`. Vale também para
+  `jest.unstable_mockModule('../x.js', ...)` e `await import('../x.js')`.
 - Arquivos de exemplo (faturas) sempre anonimizados.
 
 ## Cobertura

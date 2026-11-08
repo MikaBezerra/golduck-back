@@ -1,4 +1,4 @@
-import type { CardBank } from '../../../generated/prisma/client';
+import type { CardBank } from '../../../generated/prisma/client.js';
 
 export type StatementMonth = {
     year: number;

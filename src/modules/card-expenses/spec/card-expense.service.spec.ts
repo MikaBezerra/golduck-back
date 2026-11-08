@@ -1,17 +1,17 @@
-import type { Category, Person } from '../../../generated/prisma/client';
-import type { CategoryRepository } from '../../categories/repository/category.repository';
-import type { AppError } from '../../common/errors/app-error';
-import type { PersonRepository } from '../../people/repository/person.repository';
-import type { CardExpenseRepository } from '../repository/card-expense.repository';
-import type { CardExpenseScope } from '../service/card-expense-scope';
+import type { Category, Person } from '../../../generated/prisma/client.js';
+import type { CategoryRepository } from '../../categories/repository/category.repository.js';
+import type { AppError } from '../../common/errors/app-error.js';
+import type { PersonRepository } from '../../people/repository/person.repository.js';
+import type { CardExpenseRepository } from '../repository/card-expense.repository.js';
+import type { CardExpenseScope } from '../service/card-expense-scope.js';
 import { jest } from '@jest/globals';
 
-import { CategoryService } from '../../categories/service/category.service';
-import { InMemoryCategoryRepository } from '../../categories/spec/in-memory-category.repository';
-import { FakePersonRepository } from '../../manual-expenses/spec/fake-person.repository';
-import { PersonService } from '../../people/service/person.service';
-import { CardExpenseService } from '../service/card-expense.service';
-import { InMemoryCardExpenseRepository } from './in-memory-card-expense.repository';
+import { CategoryService } from '../../categories/service/category.service.js';
+import { InMemoryCategoryRepository } from '../../categories/spec/in-memory-category.repository.js';
+import { FakePersonRepository } from '../../manual-expenses/spec/fake-person.repository.js';
+import { PersonService } from '../../people/service/person.service.js';
+import { CardExpenseService } from '../service/card-expense.service.js';
+import { InMemoryCardExpenseRepository } from './in-memory-card-expense.repository.js';
 
 const MISSING_ID = '3f2a9c1e-8b7d-4c2a-9e1f-5a6b7c8d9e0f';
 const OTHER_CARD_ID = '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d';

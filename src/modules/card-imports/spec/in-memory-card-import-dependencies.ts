@@ -1,7 +1,7 @@
-import type { CreditCard, Person } from '../../../generated/prisma/client';
+import type { CreditCard, Person } from '../../../generated/prisma/client.js';
 import { randomUUID } from 'node:crypto';
 
-import { CardBank } from '../../../generated/prisma/client';
+import { CardBank } from '../../../generated/prisma/client.js';
 
 /*
  * Repositórios mínimos dos módulos de que o upload de faturas depende (cartões e pessoas). O

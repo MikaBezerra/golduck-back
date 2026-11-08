@@ -1,14 +1,14 @@
-import type { Category, Person } from '../../../generated/prisma/client';
-import type { TestResponse } from '../../../testing/http-test-app';
+import type { Category, Person } from '../../../generated/prisma/client.js';
+import type { TestResponse } from '../../../testing/http-test-app.js';
 
-import { dataOf, errorOf, HttpTestApp } from '../../../testing/http-test-app';
-import { CategoryRepository } from '../../categories/repository/category.repository';
-import { InMemoryCategoryRepository } from '../../categories/spec/in-memory-category.repository';
-import { PersonRepository } from '../../people/repository/person.repository';
-import { ManualExpensesModule } from '../manual-expenses.module';
-import { ManualExpenseRepository } from '../repository/manual-expense.repository';
-import { FakePersonRepository } from './fake-person.repository';
-import { InMemoryManualExpenseRepository } from './in-memory-manual-expense.repository';
+import { dataOf, errorOf, HttpTestApp } from '../../../testing/http-test-app.js';
+import { CategoryRepository } from '../../categories/repository/category.repository.js';
+import { InMemoryCategoryRepository } from '../../categories/spec/in-memory-category.repository.js';
+import { PersonRepository } from '../../people/repository/person.repository.js';
+import { ManualExpensesModule } from '../manual-expenses.module.js';
+import { ManualExpenseRepository } from '../repository/manual-expense.repository.js';
+import { FakePersonRepository } from './fake-person.repository.js';
+import { InMemoryManualExpenseRepository } from './in-memory-manual-expense.repository.js';
 
 const MISSING_ID = '3f2a9c1e-8b7d-4c2a-9e1f-5a6b7c8d9e0f';
 /** UUID válido, mas versão 1: os ids da API são v4. */

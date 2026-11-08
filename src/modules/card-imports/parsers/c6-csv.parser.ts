@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { CardBank } from '../../../generated/prisma/client';
+import { CardBank } from '../../../generated/prisma/client.js';
 import {
     CardStatementFormatError,
     CardStatementParseInput,
@@ -11,8 +11,8 @@ import {
     parseInstallment,
     parseSignedAmountCents,
     toIsoDate
-} from './card-statement.parser';
-import { readCsvRows } from './csv-rows';
+} from './card-statement.parser.js';
+import { readCsvRows } from './csv-rows.js';
 
 const HEADER = [
     'Data de Compra',

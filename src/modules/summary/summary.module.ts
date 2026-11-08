@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
 
-import { CommonModule } from '../common';
-import { SummaryController } from './controller/summary.controller';
-import { SummaryRepository } from './repository/summary.repository';
-import { SummaryService } from './service/summary.service';
+import { CommonModule } from '../common/index.js';
+import { SummaryController } from './controller/summary.controller.js';
+import { SummaryRepository } from './repository/summary.repository.js';
+import { SummaryService } from './service/summary.service.js';
 
 @Module({
     imports: [CommonModule],

@@ -1,16 +1,16 @@
-import type { LogSettings } from '../../logging/log-settings';
-import type { RequestFailure } from '../../logging/request-log.context';
-import type { LoggerService } from '../../provider/logger.service';
+import type { LogSettings } from '../../logging/log-settings.js';
+import type { RequestFailure } from '../../logging/request-log.context.js';
+import type { LoggerService } from '../../provider/logger.service.js';
 import { jest } from '@jest/globals';
 import type { FastifyInstance } from 'fastify';
 import { fastify } from 'fastify';
 import type { AddressInfo } from 'node:net';
 import { Readable } from 'node:stream';
 
-import { getAppInfo } from '../../logging/app-info';
-import { generateRequestId } from '../../logging/request-id';
-import { RequestLogContext } from '../../logging/request-log.context';
-import { registerRequestLogging } from '../../logging/request-logging';
+import { getAppInfo } from '../../logging/app-info.js';
+import { generateRequestId } from '../../logging/request-id.js';
+import { RequestLogContext } from '../../logging/request-log.context.js';
+import { registerRequestLogging } from '../../logging/request-logging.js';
 
 type Level = 'debug' | 'info' | 'warn' | 'error';
 

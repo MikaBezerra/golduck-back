@@ -1,18 +1,18 @@
-import type { AuthSession, User } from '../../../generated/prisma/client';
-import type { TestResponse } from '../../../testing/http-test-app';
-import type { AuthenticatedRequest } from '../security/jwt-auth.guard';
+import type { AuthSession, User } from '../../../generated/prisma/client.js';
+import type { TestResponse } from '../../../testing/http-test-app.js';
+import type { AuthenticatedRequest } from '../security/jwt-auth.guard.js';
 import { jest } from '@jest/globals';
-import * as jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 
-import { Role } from '../../../generated/prisma/enums';
-import { dataOf, errorOf, HttpTestApp, TEST_ENV, TEST_SESSION_ID, TEST_USER_EMAIL, TEST_USER_ID } from '../../../testing/http-test-app';
-import { AuthController } from '../controller/auth.controller';
-import { AuthRepository } from '../repository/auth.repository';
-import { PasswordService } from '../security/password.service';
-import { RefreshCookieService } from '../security/refresh-cookie.service';
-import { RefreshTokenService } from '../security/refresh-token.service';
-import { AuthService } from '../service/auth.service';
-import { InMemoryAuthRepository } from './in-memory-auth.repository';
+import { Role } from '../../../generated/prisma/enums.js';
+import { dataOf, errorOf, HttpTestApp, TEST_ENV, TEST_SESSION_ID, TEST_USER_EMAIL, TEST_USER_ID } from '../../../testing/http-test-app.js';
+import { AuthController } from '../controller/auth.controller.js';
+import { AuthRepository } from '../repository/auth.repository.js';
+import { PasswordService } from '../security/password.service.js';
+import { RefreshCookieService } from '../security/refresh-cookie.service.js';
+import { RefreshTokenService } from '../security/refresh-token.service.js';
+import { AuthService } from '../service/auth.service.js';
+import { InMemoryAuthRepository } from './in-memory-auth.repository.js';
 
 const PASSWORD = 'senha-correta-123';
 const COOKIE_NAME = TEST_ENV.AUTH_COOKIE_NAME;

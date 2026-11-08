@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-import { dataOf, HttpTestApp } from '../../../../testing/http-test-app';
-import { getAppInfo } from '../../logging/app-info';
+import { dataOf, HttpTestApp } from '../../../../testing/http-test-app.js';
+import { getAppInfo } from '../../logging/app-info.js';
 
 /** GET /version: público, com nome e versão do package.json, commit e ambiente. */
 describe('rota /version', () => {

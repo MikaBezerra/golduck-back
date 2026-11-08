@@ -1,10 +1,10 @@
 import type {
     ManualExpense,
     Prisma
-} from '../../../generated/prisma/client';
+} from '../../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 
-import { PrismaService } from '../../common';
+import { PrismaService } from '../../common/index.js';
 
 type NewManualExpense = {
     month: Date;

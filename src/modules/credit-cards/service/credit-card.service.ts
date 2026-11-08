@@ -1,9 +1,9 @@
-import type { CreditCard } from '../../../generated/prisma/client';
+import type { CreditCard } from '../../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 
-import { CreateCreditCardDto, CreditCardResponse, UpdateCreditCardDto } from '../dto/credit-card.dto';
-import { CREDIT_CARD_ERRORS } from '../errors/credit-card.errors';
-import { CreditCardRepository } from '../repository/credit-card.repository';
+import { CreateCreditCardDto, CreditCardResponse, UpdateCreditCardDto } from '../dto/credit-card.dto.js';
+import { CREDIT_CARD_ERRORS } from '../errors/credit-card.errors.js';
+import { CreditCardRepository } from '../repository/credit-card.repository.js';
 
 @Injectable()
 export class CreditCardService {

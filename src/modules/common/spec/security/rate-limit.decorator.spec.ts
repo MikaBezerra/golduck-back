@@ -1,9 +1,9 @@
-import type { AppError } from '../../errors/app-error';
+import type { AppError } from '../../errors/app-error.js';
 import { jest } from '@jest/globals';
 import type { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
-import { RateLimit, RateLimitGuard, RateLimitStore } from '../../security';
+import { RateLimit, RateLimitGuard, RateLimitStore } from '../../security/index.js';
 
 const NOW = Date.UTC(2026, 10, 7, 12, 0, 0);
 const ONE_MINUTE_MS = 60_000;

@@ -1,8 +1,8 @@
 import { jest } from '@jest/globals';
 import { EOL } from 'node:os';
 
-import { getAppInfo } from '../../logging/app-info';
-import { LoggerService } from '../../provider/logger.service';
+import { getAppInfo } from '../../logging/app-info.js';
+import { LoggerService } from '../../provider/logger.service.js';
 
 interface Written {
     readonly stream: 'stdout' | 'stderr';

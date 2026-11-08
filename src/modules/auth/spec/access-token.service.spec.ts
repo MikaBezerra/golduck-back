@@ -1,8 +1,8 @@
-import type { Config } from '../../common';
+import type { Config } from '../../common/index.js';
 import { jest } from '@jest/globals';
-import * as jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 
-import { AccessTokenService } from '../security/access-token.service';
+import { AccessTokenService } from '../security/access-token.service.js';
 
 const SECRET = 'segredo-de-teste-com-mais-de-32-caracteres';
 const ISSUER = 'testes';

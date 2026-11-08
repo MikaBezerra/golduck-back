@@ -1,7 +1,7 @@
-import type { ApiErrorDetail } from '../../common/http/response.types';
+import type { ApiErrorDetail } from '../../common/http/response.types.js';
 
-import { ValidationError } from '../../common/validation/validation-error';
-import { LoginPipe } from '../flow/auth.pipe';
+import { ValidationError } from '../../common/validation/validation-error.js';
+import { LoginPipe } from '../flow/auth.pipe.js';
 
 const PASSWORD = 'senha-correta-123';
 

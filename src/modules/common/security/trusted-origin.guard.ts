@@ -1,10 +1,10 @@
-import type { Config } from '../model';
+import type { Config } from '../model/index.js';
 import { applyDecorators, CanActivate, ExecutionContext, Inject, Injectable, UseGuards } from '@nestjs/common';
 import { ApiForbiddenResponse } from '@nestjs/swagger';
 import type { FastifyRequest } from 'fastify';
 
-import { Service } from '../../tokens';
-import { ERRORS } from '../errors/error-catalog';
+import { Service } from '../../tokens.js';
+import { ERRORS } from '../errors/error-catalog.js';
 
 /** Origem normalizada (protocolo + domínio + porta, sem a porta padrão) ou null se não for http(s). */
 function normalizeOrigin(value: string): string | null {

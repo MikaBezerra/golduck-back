@@ -1,6 +1,6 @@
-import { C6CsvParser } from '../parsers/c6-csv.parser';
-import { CardStatementFormatError, parseSignedAmountCents } from '../parsers/card-statement.parser';
-import { NubankCsvParser } from '../parsers/nubank-csv.parser';
+import { C6CsvParser } from '../parsers/c6-csv.parser.js';
+import { CardStatementFormatError, parseSignedAmountCents } from '../parsers/card-statement.parser.js';
+import { NubankCsvParser } from '../parsers/nubank-csv.parser.js';
 
 const MONTH = { year: 2026, month: 11 };
 

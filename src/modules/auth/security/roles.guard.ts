@@ -1,4 +1,4 @@
-import type { AuthenticatedRequest } from './jwt-auth.guard';
+import type { AuthenticatedRequest } from './jwt-auth.guard.js';
 import {
     CanActivate,
     ExecutionContext,
@@ -6,9 +6,9 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 
-import { Role } from '../../../generated/prisma/client';
-import { AUTH_ERRORS } from '../errors/auth.errors';
-import { IS_PUBLIC_KEY, ROLES_KEY } from './auth.decorators';
+import { Role } from '../../../generated/prisma/client.js';
+import { AUTH_ERRORS } from '../errors/auth.errors.js';
+import { IS_PUBLIC_KEY, ROLES_KEY } from './auth.decorators.js';
 
 @Injectable()
 export class RolesGuard implements CanActivate {

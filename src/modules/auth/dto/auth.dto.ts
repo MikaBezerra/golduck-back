@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-import { Role } from '../../../generated/prisma/client';
-import { UUID_PROPERTY } from '../../common/swagger/api-docs';
+import { Role } from '../../../generated/prisma/client.js';
+import { UUID_PROPERTY } from '../../common/swagger/api-docs.js';
 
 export class LoginDto {
     @ApiProperty({ type: String, format: 'email', example: 'admin@exemplo.com' })

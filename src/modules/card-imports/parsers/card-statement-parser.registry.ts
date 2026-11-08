@@ -1,10 +1,10 @@
-import type { CardStatementParser } from './card-statement.parser';
-import type { CardBank } from '../../../generated/prisma/client';
+import type { CardStatementParser } from './card-statement.parser.js';
+import type { CardBank } from '../../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 
-import { C6CsvParser } from './c6-csv.parser';
-import { NeonPdfParser } from './neon-pdf.parser';
-import { NubankCsvParser } from './nubank-csv.parser';
+import { C6CsvParser } from './c6-csv.parser.js';
+import { NeonPdfParser } from './neon-pdf.parser.js';
+import { NubankCsvParser } from './nubank-csv.parser.js';
 
 /** Escolhe o parser de fatura de acordo com o banco do cartão. */
 @Injectable()

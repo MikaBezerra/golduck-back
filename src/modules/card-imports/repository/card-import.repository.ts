@@ -1,9 +1,9 @@
-import type { CardExpense, CardImport, Prisma } from '../../../generated/prisma/client';
+import type { CardExpense, CardImport, Prisma } from '../../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 
-import { CardExpenseScope, purchaseScopeWhere } from '../../card-expenses/service/card-expense-scope';
-import { PrismaService } from '../../common';
-import { CardImportPlan } from '../service/card-import.planner';
+import { CardExpenseScope, purchaseScopeWhere } from '../../card-expenses/service/card-expense-scope.js';
+import { PrismaService } from '../../common/index.js';
+import { CardImportPlan } from '../service/card-import.planner.js';
 
 export type CardImportWithCount = CardImport & {
     /** Despesas cuja última gravação veio deste upload. */

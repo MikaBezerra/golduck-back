@@ -1,8 +1,8 @@
-import type { Config } from '../model';
+import type { Config } from '../model/index.js';
 import type { INestApplication } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
-import { ApiErrorResponseDto } from './api-docs';
+import { ApiErrorResponseDto } from './api-docs.js';
 
 export const SWAGGER_PATH = 'docs';
 

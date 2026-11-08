@@ -1,8 +1,8 @@
-import type { Person } from '../../../generated/prisma/client';
+import type { Person } from '../../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
-import { CreatePersonDto, PersonResponse, UpdatePersonDto } from '../dto/person.dto';
-import { PERSON_ERRORS } from '../errors/person.errors';
-import { PersonRepository } from '../repository/person.repository';
+import { CreatePersonDto, PersonResponse, UpdatePersonDto } from '../dto/person.dto.js';
+import { PERSON_ERRORS } from '../errors/person.errors.js';
+import { PersonRepository } from '../repository/person.repository.js';
 
 @Injectable()
 export class PersonService {

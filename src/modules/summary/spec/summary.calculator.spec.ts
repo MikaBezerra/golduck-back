@@ -6,7 +6,7 @@ import {
     MonthGroups,
     netByParticipant,
     splitEvenly
-} from '../service/summary.calculator';
+} from '../service/summary.calculator.js';
 
 describe('computeMonth e combinePeriods', () => {
     const people = [{ id: 'b', name: 'Mikaell' }, { id: 'a', name: 'Ayanne' }];

@@ -1,7 +1,7 @@
-import type { ManualExpense } from '../../../generated/prisma/client';
+import type { ManualExpense } from '../../../generated/prisma/client.js';
 import { randomUUID } from 'node:crypto';
 
-import { Prisma } from '../../../generated/prisma/client';
+import { Prisma } from '../../../generated/prisma/client.js';
 
 type NewManualExpense = Pick<ManualExpense, 'month' | 'title' | 'amountCents' | 'categoryId' | 'personId'>;
 type ManualExpenseChanges = Partial<Pick<ManualExpense, 'title' | 'amountCents' | 'categoryId' | 'personId'>>;

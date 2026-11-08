@@ -1,9 +1,9 @@
-import type { AppError } from '../../common/errors/app-error';
+import type { AppError } from '../../common/errors/app-error.js';
 import { jest } from '@jest/globals';
 
-import { PersonRepository } from '../repository/person.repository';
-import { PersonService } from '../service/person.service';
-import { InMemoryPersonRepository } from './in-memory-person.repository';
+import { PersonRepository } from '../repository/person.repository.js';
+import { PersonService } from '../service/person.service.js';
+import { InMemoryPersonRepository } from './in-memory-person.repository.js';
 
 const MISSING_ID = '3f2a9c1e-8b7d-4c2a-9e1f-5a6b7c8d9e0f';
 const CREATED_AT = new Date('2026-03-01T12:00:00.000Z');

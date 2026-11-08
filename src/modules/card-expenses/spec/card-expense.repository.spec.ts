@@ -1,8 +1,8 @@
-import type { CardExpense } from '../../../generated/prisma/client';
-import type { PrismaService } from '../../common';
+import type { CardExpense } from '../../../generated/prisma/client.js';
+import type { PrismaService } from '../../common/index.js';
 import { jest } from '@jest/globals';
 
-import { CardExpenseRepository } from '../repository/card-expense.repository';
+import { CardExpenseRepository } from '../repository/card-expense.repository.js';
 
 const OCTOBER = new Date('2026-10-01T00:00:00.000Z');
 const NOVEMBER = new Date('2026-11-01T00:00:00.000Z');

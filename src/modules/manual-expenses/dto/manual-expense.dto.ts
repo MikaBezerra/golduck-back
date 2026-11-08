@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional, ApiPropertyOptions } from '@nestjs/swagger';
 
-import { DATE_TIME_PROPERTY, MONEY_PROPERTY, MONTH_PROPERTY, UUID_PROPERTY } from '../../common/swagger/api-docs';
+import { DATE_TIME_PROPERTY, MONEY_PROPERTY, MONTH_PROPERTY, UUID_PROPERTY } from '../../common/swagger/api-docs.js';
 
 const IDS_PROPERTY: ApiPropertyOptions = { type: [String], format: 'uuid', minItems: 1, uniqueItems: true };
 

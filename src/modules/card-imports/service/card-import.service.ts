@@ -1,14 +1,14 @@
-import type { CreditCard } from '../../../generated/prisma/client';
+import type { CreditCard } from '../../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { extname } from 'path';
 
-import { toCardExpenseResponse } from '../../card-expenses/service/card-expense.mapper';
-import { CategoryService } from '../../categories/service/category.service';
-import { formatMonth, parseMonth } from '../../common/date/month';
-import { formatAmountCents, parsePositiveAmountCents } from '../../common/money/money';
-import { CreditCardService } from '../../credit-cards/service/credit-card.service';
-import { PersonService } from '../../people/service/person.service';
+import { toCardExpenseResponse } from '../../card-expenses/service/card-expense.mapper.js';
+import { CategoryService } from '../../categories/service/category.service.js';
+import { formatMonth, parseMonth } from '../../common/date/month.js';
+import { formatAmountCents, parsePositiveAmountCents } from '../../common/money/money.js';
+import { CreditCardService } from '../../credit-cards/service/credit-card.service.js';
+import { PersonService } from '../../people/service/person.service.js';
 import {
     CardImportExclusionDto,
     CardImportOverrideDto,
@@ -18,9 +18,9 @@ import {
     CreateCardImportDto,
     CreateManualCardImportDto,
     ListCardImportsDto
-} from '../dto/card-import.dto';
-import { CARD_IMPORT_ERRORS } from '../errors/card-import.errors';
-import { CardStatementParserRegistry } from '../parsers/card-statement-parser.registry';
+} from '../dto/card-import.dto.js';
+import { CARD_IMPORT_ERRORS } from '../errors/card-import.errors.js';
+import { CardStatementParserRegistry } from '../parsers/card-statement-parser.registry.js';
 import {
     CardStatementFormatError,
     CardStatementParseResult,
@@ -29,9 +29,9 @@ import {
     CardStatementPasswordError,
     normalizeDescription,
     ParsedCardTransaction
-} from '../parsers/card-statement.parser';
-import { CardImportRepository, CardImportWithCount, PurchaseExclusionDecision } from '../repository/card-import.repository';
-import { assignPurchaseKeys, CardExpensePersonalization, KeyedTransaction, planCardImport } from './card-import.planner';
+} from '../parsers/card-statement.parser.js';
+import { CardImportRepository, CardImportWithCount, PurchaseExclusionDecision } from '../repository/card-import.repository.js';
+import { assignPurchaseKeys, CardExpensePersonalization, KeyedTransaction, planCardImport } from './card-import.planner.js';
 
 export type UploadedStatementFile = {
     fileName: string;

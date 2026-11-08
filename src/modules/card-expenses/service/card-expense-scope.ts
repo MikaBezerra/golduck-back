@@ -1,4 +1,4 @@
-import type { Prisma } from '../../../generated/prisma/client';
+import type { Prisma } from '../../../generated/prisma/client.js';
 
 /** Parcelas de uma compra afetadas por excluir ou restaurar, a partir de um mês. */
 export const CARD_EXPENSE_SCOPES = ['month', 'forward', 'backward', 'all'] as const;

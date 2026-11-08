@@ -12,22 +12,22 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiNoContentResponse, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 
-import { Role } from '../../../generated/prisma/client';
-import { Roles } from '../../auth/security/auth.decorators';
-import { ApiDataResponse, ApiErrorResponses, MONTH_PATTERN } from '../../common/swagger/api-docs';
+import { Role } from '../../../generated/prisma/client.js';
+import { Roles } from '../../auth/security/auth.decorators.js';
+import { ApiDataResponse, ApiErrorResponses, MONTH_PATTERN } from '../../common/swagger/api-docs.js';
 import {
     CreateIncomeDto,
     IncomeResponse,
     ListIncomeDto,
     UpdateIncomeDto
-} from '../dto/income.dto';
+} from '../dto/income.dto.js';
 import {
     CreateIncomePipe,
     IncomeMonthPipe,
     ListIncomePipe,
     UpdateIncomePipe
-} from '../flow/income.pipe';
-import { IncomeService } from '../service/income.service';
+} from '../flow/income.pipe.js';
+import { IncomeService } from '../service/income.service.js';
 
 @ApiTags('incomes')
 @ApiBearerAuth()

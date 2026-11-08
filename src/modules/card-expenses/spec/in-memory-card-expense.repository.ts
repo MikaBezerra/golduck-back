@@ -1,9 +1,9 @@
-import type { CardExpense } from '../../../generated/prisma/client';
-import type { CardExpenseChanges } from '../repository/card-expense.repository';
-import type { CardExpenseScope } from '../service/card-expense-scope';
+import type { CardExpense } from '../../../generated/prisma/client.js';
+import type { CardExpenseChanges } from '../repository/card-expense.repository.js';
+import type { CardExpenseScope } from '../service/card-expense-scope.js';
 import { randomUUID } from 'node:crypto';
 
-import { addMonths } from '../../common/date/month';
+import { addMonths } from '../../common/date/month.js';
 
 export const CARD_ID = '6c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f';
 export const IMPORT_ID = '8e9f0a1b-2c3d-4e5f-9a6b-7c8d9e0f1a2b';

@@ -3,6 +3,17 @@
 API REST em [NestJS 12](https://nestjs.com) sobre [Fastify 5](https://fastify.dev), com
 [Prisma 7](https://www.prisma.io) e PostgreSQL 18. Cada assunto do domínio é um módulo do Nest.
 
+## Módulos ESM
+
+O projeto é ESM (`"type": "module"`, `module: nodenext`), como o NestJS 12, que só existe em ESM. A
+Vercel não carrega pacotes ESM a partir de código CommonJS, então essa escolha não é opcional.
+
+- Imports relativos levam a extensão `.js`, mesmo vindo de um `.ts`: `import { X } from './x.js'`
+  (pasta com `index.ts`: `'./pasta/index.js'`). O TypeScript confere.
+- Pacotes CommonJS sem exports nomeados entram pelo default: `import Joi from 'joi'` (o mesmo para
+  `jsonwebtoken`, `argon2` e `winston`). `import * as Joi` compila, mas quebra ao rodar.
+- O client do Prisma é gerado em ESM (`moduleFormat = "esm"` no `schema.prisma`).
+
 ## Pastas
 
 ```text

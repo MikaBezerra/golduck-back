@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { DATE_TIME_PROPERTY, UUID_PROPERTY } from '../../common/swagger/api-docs';
+import { DATE_TIME_PROPERTY, UUID_PROPERTY } from '../../common/swagger/api-docs.js';
 
 const EMAIL_PROPERTY = { type: String, format: 'email', nullable: true, maxLength: 254 } as const;
 const PHONE_PROPERTY = {

@@ -1,7 +1,7 @@
-import type { AuthSession, User } from '../../../generated/prisma/client';
+import type { AuthSession, User } from '../../../generated/prisma/client.js';
 import { randomUUID } from 'node:crypto';
 
-import { Role } from '../../../generated/prisma/enums';
+import { Role } from '../../../generated/prisma/enums.js';
 
 /* eslint-disable @typescript-eslint/require-await -- imita a interface assíncrona do AuthRepository */
 /**

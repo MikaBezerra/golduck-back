@@ -2,11 +2,11 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
 import { HealthCheckService, PrismaHealthIndicator } from '@nestjs/terminus';
 
-import { Role } from '../../../generated/prisma/enums';
-import { Public, Roles } from '../../auth/security/auth.decorators';
-import { QuietRequestLog } from '../logging/quiet-request-log.decorator';
-import { PrismaService } from '../provider';
-import { ApiDataResponse, ApiErrorResponses } from '../swagger/api-docs';
+import { Role } from '../../../generated/prisma/enums.js';
+import { Public, Roles } from '../../auth/security/auth.decorators.js';
+import { QuietRequestLog } from '../logging/quiet-request-log.decorator.js';
+import { PrismaService } from '../provider/index.js';
+import { ApiDataResponse, ApiErrorResponses } from '../swagger/api-docs.js';
 
 const INDICATORS = {
     type: 'object',

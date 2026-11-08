@@ -1,4 +1,4 @@
-import { fastifyTrustProxy, parseTrustProxy } from '../../provider/trust-proxy';
+import { fastifyTrustProxy, parseTrustProxy } from '../../provider/trust-proxy.js';
 
 const INVALID = 'TRUST_PROXY must be true, false, a number of hops or a list of IPs/CIDRs:';
 
