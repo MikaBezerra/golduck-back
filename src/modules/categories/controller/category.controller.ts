@@ -1,10 +1,10 @@
-import { Body, Controller, Get, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 
 import { Role } from '../../../generated/prisma/client.js';
 import { Roles } from '../../auth/security/auth.decorators.js';
 import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs.js';
-import { CategoryResponse, CreateCategoryDto, ListCategoriesDto, UpdateCategoryDto } from '../dto/category.dto.js';
+import { CategoryResponse, CreateCategoryDto, DeleteCategoryResponse, ListCategoriesDto, UpdateCategoryDto } from '../dto/category.dto.js';
 import { CategoryIdPipe, CreateCategoryPipe, ListCategoriesPipe, UpdateCategoryPipe } from '../flow/category.pipe.js';
 import { CategoryService } from '../service/category.service.js';
 
@@ -49,5 +49,17 @@ export class CategoryController {
         @Body(UpdateCategoryPipe) body: UpdateCategoryDto
     ): Promise<CategoryResponse> {
         return this.categoryService.update(id, body);
+    }
+
+    @Delete(':id')
+    @ApiOperation({
+        summary: 'Exclui a categoria e passa as despesas dela para a padrão',
+        description: 'Despesas fora do cartão e compras do cartão (inclusive as excluídas) vão para "Outros". '
+            + 'A categoria padrão não pode ser excluída (409 CATEGORY_DEFAULT_PROTECTED).'
+    })
+    @ApiParam({ name: 'id', format: 'uuid' })
+    @ApiDataResponse(DeleteCategoryResponse)
+    public async delete(@Param('id', CategoryIdPipe) id: string): Promise<DeleteCategoryResponse> {
+        return this.categoryService.delete(id);
     }
 }

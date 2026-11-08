@@ -8,5 +8,5 @@ export const CATEGORY_ERRORS = {
     nameConflict: (reason?: string): AppError =>
         new AppError('CATEGORY_NAME_CONFLICT', HttpStatus.CONFLICT, 'Já existe uma categoria com esse nome', reason),
     defaultProtected: (reason?: string): AppError =>
-        new AppError('CATEGORY_DEFAULT_PROTECTED', HttpStatus.CONFLICT, 'A categoria padrão não pode ser alterada', reason)
+        new AppError('CATEGORY_DEFAULT_PROTECTED', HttpStatus.CONFLICT, 'A categoria padrão não pode ser alterada nem excluída', reason)
 };

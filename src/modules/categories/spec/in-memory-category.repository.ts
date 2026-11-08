@@ -1,4 +1,5 @@
 import type { Category } from '../../../generated/prisma/client.js';
+import type { MovedExpenses } from '../repository/category.repository.js';
 import { randomUUID } from 'node:crypto';
 
 import { Prisma } from '../../../generated/prisma/client.js';
@@ -7,6 +8,8 @@ import { Prisma } from '../../../generated/prisma/client.js';
 /** CategoryRepository em memória, com a mesma ordenação e a mesma unicidade de nome do banco. */
 export class InMemoryCategoryRepository {
     public readonly categories = new Map<string, Category>();
+    /** Despesas que apontam para cada categoria (o que o banco moveria na exclusão), por id da categoria. */
+    public readonly expenseCounts = new Map<string, MovedExpenses>();
 
     /** Cadastra direto, sem passar pelo serviço (monta o cenário do teste). */
     public seed(data: Partial<Category> & Pick<Category, 'name'>): Category {
@@ -67,6 +70,19 @@ export class InMemoryCategoryRepository {
         };
         this.categories.set(id, updated);
         return updated;
+    }
+
+    public async deleteMovingExpenses(id: string, targetId: string): Promise<MovedExpenses> {
+        const moved = this.expenseCounts.get(id) ?? { manualExpenses: 0, cardExpenses: 0 };
+        const target = this.expenseCounts.get(targetId) ?? { manualExpenses: 0, cardExpenses: 0 };
+
+        this.expenseCounts.set(targetId, {
+            manualExpenses: target.manualExpenses + moved.manualExpenses,
+            cardExpenses: target.cardExpenses + moved.cardExpenses
+        });
+        this.expenseCounts.delete(id);
+        this.categories.delete(id);
+        return moved;
     }
 
     /** Como o índice único do banco: o Prisma lança P2002. */

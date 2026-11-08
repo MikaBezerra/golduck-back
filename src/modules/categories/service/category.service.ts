@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Category, Prisma } from '../../../generated/prisma/client.js';
 
-import { CategoryResponse, CreateCategoryDto, UpdateCategoryDto } from '../dto/category.dto.js';
+import { CategoryResponse, CreateCategoryDto, DeleteCategoryResponse, UpdateCategoryDto } from '../dto/category.dto.js';
 import { CATEGORY_ERRORS } from '../errors/category.errors.js';
 import { CategoryRepository } from '../repository/category.repository.js';
 
@@ -63,6 +63,24 @@ export class CategoryService {
         } catch (error: unknown) {
             this.rethrowNameConflict(error);
         }
+    }
+
+    /** Exclui a categoria; as despesas dela vão para a padrão ("Outros"), que não pode ser excluída. */
+    public async delete(id: string): Promise<DeleteCategoryResponse> {
+        const category = await this.getById(id);
+
+        if (category.isDefault) {
+            throw CATEGORY_ERRORS.defaultProtected('default_category_delete');
+        }
+
+        const target = await this.findDefault();
+        const moved = await this.categoryRepository.deleteMovingExpenses(category.id, target.id);
+
+        return {
+            movedTo: this.toResponse(target),
+            movedManualExpenses: moved.manualExpenses,
+            movedCardExpenses: moved.cardExpenses
+        };
     }
 
     private async getById(id: string): Promise<Category> {

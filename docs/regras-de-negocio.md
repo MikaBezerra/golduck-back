@@ -16,7 +16,7 @@ O Golduck organiza as contas de uma casa em que várias pessoas dividem as despe
 | Cadastro | Regras |
 | --- | --- |
 | **Pessoas** | não são apagadas, só desativadas (o histórico de despesas continua apontando para elas). Inativas não entram em despesas novas nem na divisão do resumo. |
-| **Categorias** | nome único sem diferenciar maiúsculas (espaços repetidos são removidos). "Outros" é a padrão: recebe despesas sem categoria e não pode ser renomeada nem desativada. Também são desativadas, não apagadas. |
+| **Categorias** | nome único sem diferenciar maiúsculas (espaços repetidos são removidos). "Outros" é a padrão: recebe despesas sem categoria e não pode ser renomeada, desativada nem excluída (`409 CATEGORY_DEFAULT_PROTECTED`). Desativar tira a categoria das escolhas e mantém o histórico; **excluir** (`DELETE /categories/{id}`) passa todas as despesas dela (fora do cartão e do cartão, inclusive as excluídas) para "Outros" e apaga a categoria, numa transação. A resposta diz quantas despesas mudaram (`movedManualExpenses`, `movedCardExpenses`). |
 | **Cartões** | um cartão = uma fatura de um banco (`NUBANK`, `C6`, `NEON`). O banco não muda depois do cadastro. Cartão inativo não recebe upload (`409 CREDIT_CARD_INACTIVE`). |
 
 ## Entrada e reserva do mês

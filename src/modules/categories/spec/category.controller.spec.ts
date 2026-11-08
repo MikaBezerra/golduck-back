@@ -116,8 +116,25 @@ describe('rotas /categories', () => {
         expect(protectedDefault.status).toBe(409);
         expect(errorOf(protectedDefault)).toMatchObject({
             code: 'CATEGORY_DEFAULT_PROTECTED',
-            message: 'A categoria padrão não pode ser alterada'
+            message: 'A categoria padrão não pode ser alterada nem excluída'
         });
+    });
+
+    it('DELETE exclui e diz para onde foram as despesas; a padrão é protegida (409) e id inexistente é 404', async () => {
+        const category = repository.seed({ name: 'Feira' });
+        const outros = repository.seed({ name: 'Outros', isDefault: true });
+        repository.expenseCounts.set(category.id, { manualExpenses: 3, cardExpenses: 5 });
+
+        const deleted = await api.request('DELETE', `/categories/${category.id}`);
+        const protectedDefault = await api.request('DELETE', `/categories/${outros.id}`);
+        const missing = await api.request('DELETE', `/categories/${category.id}`);
+
+        expect(deleted.status).toBe(200);
+        expect(dataOf(deleted)).toMatchObject({ movedTo: { id: outros.id, name: 'Outros' }, movedManualExpenses: 3, movedCardExpenses: 5 });
+        expect(protectedDefault.status).toBe(409);
+        expect(errorOf(protectedDefault).code).toBe('CATEGORY_DEFAULT_PROTECTED');
+        expect(missing.status).toBe(404);
+        expect((await api.request('DELETE', '/categories/123')).status).toBe(400);
     });
 
     it('todo erro traz o requestId, igual ao header x-request-id', async () => {

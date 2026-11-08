@@ -174,4 +174,42 @@ describe('CategoryService', () => {
             await expect(service.update(category.id, { name: 'Hortifruti' })).rejects.toBe(failure);
         });
     });
+
+    describe('delete', () => {
+        it('apaga a categoria e passa as despesas dela para a padrão', async () => {
+            const feira = repository.seed({ name: 'Feira', active: false });
+            const outros = repository.seed({ name: 'Outros', isDefault: true });
+            repository.expenseCounts.set(feira.id, { manualExpenses: 2, cardExpenses: 7 });
+            repository.expenseCounts.set(outros.id, { manualExpenses: 1, cardExpenses: 0 });
+
+            await expect(service.delete(feira.id)).resolves.toMatchObject({
+                movedTo: { id: outros.id, name: 'Outros', isDefault: true },
+                movedManualExpenses: 2,
+                movedCardExpenses: 7
+            });
+            expect(repository.categories.has(feira.id)).toBe(false);
+            expect(repository.expenseCounts.get(outros.id)).toEqual({ manualExpenses: 3, cardExpenses: 7 });
+        });
+
+        it('categoria sem despesas: só apaga', async () => {
+            const feira = repository.seed({ name: 'Feira' });
+            repository.seed({ name: 'Outros', isDefault: true });
+
+            await expect(service.delete(feira.id)).resolves.toMatchObject({ movedManualExpenses: 0, movedCardExpenses: 0 });
+        });
+
+        it('a categoria padrão não pode ser excluída (409), sem apagar nada', async () => {
+            const outros = repository.seed({ name: 'Outros', isDefault: true });
+            const remove = jest.spyOn(repository, 'deleteMovingExpenses');
+
+            await expectAppError(service.delete(outros.id), {
+                code: 'CATEGORY_DEFAULT_PROTECTED', statusCode: 409, reason: 'default_category_delete'
+            });
+            expect(remove).not.toHaveBeenCalled();
+        });
+
+        it('id inexistente: 404', async () => {
+            await expectAppError(service.delete(MISSING_ID), { code: 'CATEGORY_NOT_FOUND', statusCode: 404, reason: 'category_id_not_found' });
+        });
+    });
 });

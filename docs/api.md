@@ -47,7 +47,7 @@ Login exigido em todas, salvo as marcadas como públicas. ADMIN acessa tudo.
 | status (públicas) | `GET /health/live`, `GET /version`; `GET /health` (só ADMIN; consulta o banco) |
 | `auth` | `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout` (públicas, com checagem de origem); `GET /auth/me` |
 | `people` | `POST /people`, `GET /people[?includeInactive]`, `GET /people/{id}`, `PATCH /people/{id}` |
-| `categories` | `POST /categories`, `GET /categories[?includeInactive]`, `GET /categories/{id}`, `PATCH /categories/{id}` |
+| `categories` | `POST /categories`, `GET /categories[?includeInactive]`, `GET /categories/{id}`, `PATCH /categories/{id}`, `DELETE /categories/{id}` (as despesas vão para a padrão) |
 | `incomes` | `POST /incomes` (mesmo valor em vários meses), `GET /incomes[?year]`, `GET/PATCH/DELETE /incomes/{month}` |
 | `reserves` | `POST /reserves`, `GET /reserves[?year]`, `GET /reserves/totals`, `GET/PATCH/DELETE /reserves/{month}` |
 | `manual-expenses` | `POST /manual-expenses`, `GET /manual-expenses?month`, `GET /manual-expenses/{id}`, `PATCH` e `DELETE /manual-expenses` (vários IDs, em transação; `changes.paid` marca/desmarca como paga) |
