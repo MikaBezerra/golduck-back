@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module.js';
 import { CardExpensesModule } from './card-expenses/card-expenses.module.js';
 import { CardImportsModule } from './card-imports/card-imports.module.js';
+import { CardSyncModule } from './card-sync/card-sync.module.js';
 import { CategoriesModule } from './categories/categories.module.js';
 import { CommonModule } from './common/index.js';
 import { CreditCardsModule } from './credit-cards/credit-cards.module.js';
@@ -19,6 +20,7 @@ import { SummaryDispatchModule } from './summary-dispatch/summary-dispatch.modul
         AuthModule,
         CardExpensesModule,
         CardImportsModule,
+        CardSyncModule,
         CategoriesModule,
         CreditCardsModule,
         IncomesModule,

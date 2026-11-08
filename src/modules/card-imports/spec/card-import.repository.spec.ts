@@ -90,7 +90,7 @@ describe('CardImportRepository', () => {
             const context = await repository.loadPlanningContext('card-1', MONTH, ['A', 'B']);
 
             expect(prisma.cardExpense.findMany).toHaveBeenNthCalledWith(1, {
-                where: { cardId: 'card-1', month: MONTH },
+                where: { cardId: 'card-1', month: MONTH, origin: { not: 'MANUAL' } },
                 select: { purchaseKey: true }
             });
             expect(prisma.cardExpense.findMany).toHaveBeenNthCalledWith(2, {
@@ -147,10 +147,10 @@ describe('CardImportRepository', () => {
             });
             expect(plan).toHaveBeenCalledTimes(1);
             expect(tx.cardExpense.deleteMany).toHaveBeenCalledWith({ where: { id: { in: ['velha-1', 'velha-2'] } } });
-            expect(tx.cardExpense.update).toHaveBeenNthCalledWith(1, { where: { id: 'u1' }, data: { amountCents: 100n, importId: 'import-novo' } });
+            expect(tx.cardExpense.update).toHaveBeenNthCalledWith(1, { where: { id: 'u1' }, data: { amountCents: 100n, importId: 'import-novo', origin: 'UPLOAD' } });
             expect(tx.cardExpense.update).toHaveBeenNthCalledWith(2, {
                 where: { id: 'u2' },
-                data: { amountCents: 200n, nickname: 'Apelido', importId: 'import-novo' }
+                data: { amountCents: 200n, nickname: 'Apelido', importId: 'import-novo', origin: 'UPLOAD' }
             });
             expect(tx.cardExpense.createMany).toHaveBeenCalledWith({
                 data: [

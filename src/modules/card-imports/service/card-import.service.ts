@@ -6,7 +6,7 @@ import { extname } from 'path';
 import { toCardExpenseResponse } from '../../card-expenses/service/card-expense.mapper.js';
 import { CategoryService } from '../../categories/service/category.service.js';
 import { formatMonth, parseMonth } from '../../common/date/month.js';
-import { formatAmountCents, parsePositiveAmountCents } from '../../common/money/money.js';
+import { formatAmountCents } from '../../common/money/money.js';
 import { CreditCardService } from '../../credit-cards/service/credit-card.service.js';
 import { PersonService } from '../../people/service/person.service.js';
 import {
@@ -16,7 +16,6 @@ import {
     CardImportResponse,
     CardImportResultResponse,
     CreateCardImportDto,
-    CreateManualCardImportDto,
     ListCardImportsDto
 } from '../dto/card-import.dto.js';
 import { CARD_IMPORT_ERRORS } from '../errors/card-import.errors.js';
@@ -26,9 +25,7 @@ import {
     CardStatementParseResult,
     CardStatementParser,
     CardStatementParseInput,
-    CardStatementPasswordError,
-    normalizeDescription,
-    ParsedCardTransaction
+    CardStatementPasswordError
 } from '../parsers/card-statement.parser.js';
 import { CardImportRepository, CardImportWithCount, PurchaseExclusionDecision } from '../repository/card-import.repository.js';
 import { assignPurchaseKeys, CardExpensePersonalization, KeyedTransaction, planCardImport } from './card-import.planner.js';
@@ -52,8 +49,6 @@ type PreparedUpload = {
 };
 
 const MAX_FILE_NAME_LENGTH = 255;
-const MANUAL_FILE_NAME = 'Lançamento manual';
-const MANUAL_VERSION = 'manual@1';
 
 @Injectable()
 export class CardImportService {
@@ -143,39 +138,6 @@ export class CardImportService {
                 ignored: parsed.ignoredCount
             }
         };
-    }
-
-    /**
-     * Fatura digitada pelo usuário, para bancos sem arquivo compatível. Segue as
-     * mesmas regras do upload: é absoluta para o mês e pode ser excluída depois.
-     */
-    public async createManual(data: CreateManualCardImportDto): Promise<CardImportResultResponse> {
-        const card = await this.creditCardService.getActiveById(data.cardId);
-        const transactions = data.transactions.map((transaction, index): ParsedCardTransaction => {
-            const amountCents = parsePositiveAmountCents(transaction.amount);
-
-            if (amountCents === null) {
-                throw CARD_IMPORT_ERRORS.invalidManualAmount(`transactions[${index}].amount`);
-            }
-
-            return {
-                transactionDate: transaction.date,
-                description: normalizeDescription(transaction.description),
-                amountCents,
-                installmentNumber: transaction.installment?.number ?? null,
-                installmentTotal: transaction.installment?.total ?? null,
-                holderName: null,
-                cardLastDigits: transaction.cardLastDigits ?? null
-            };
-        });
-
-        const month = parseMonth(data.month);
-
-        return this.applyImport(card, month, assignPurchaseKeys(transactions, month), 0, {
-            fileName: MANUAL_FILE_NAME,
-            fileHash: this.hash(Buffer.from(JSON.stringify(data.transactions))),
-            parserVersion: MANUAL_VERSION
-        });
     }
 
     public async findAll(query: ListCardImportsDto): Promise<CardImportResponse[]> {

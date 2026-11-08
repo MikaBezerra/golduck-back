@@ -10,6 +10,16 @@ export type CardExpenseChanges = {
     personId?: string | null;
 };
 
+/** Uma linha nova de despesa do cartão, com todos os campos que o banco não preenche sozinho. */
+export type NewCardExpenseRow = Omit<CardExpense, 'id' | 'createdAt' | 'updatedAt'>;
+
+/** A parcela installmentNumber fica em month (as outras seguem a partir dela). */
+export type PurchaseCorrectionData = {
+    installmentNumber: number;
+    installmentTotal: number | null;
+    month: Date;
+};
+
 const ORDER_BY = [
     { month: 'asc' },
     { transactionDate: 'asc' },
@@ -39,6 +49,53 @@ export class CardExpenseRepository {
 
     public async findByIds(ids: string[]): Promise<CardExpense[]> {
         return this.prisma.cardExpense.findMany({ where: { id: { in: ids } } });
+    }
+
+    /** Todas as linhas de uma compra (as parcelas, em qualquer mês). */
+    public async findPurchase(cardId: string, purchaseKey: string): Promise<CardExpense[]> {
+        return this.prisma.cardExpense.findMany({ where: { cardId, purchaseKey }, orderBy: ORDER_BY });
+    }
+
+    /** Grava as linhas de uma compra nova ("Adicionar compra") e as devolve. */
+    public async createPurchase(rows: NewCardExpenseRow[]): Promise<CardExpense[]> {
+        return this.prisma.$transaction(async tx => {
+            await tx.cardExpense.createMany({ data: rows });
+
+            return tx.cardExpense.findMany({
+                where: { cardId: rows[0].cardId, purchaseKey: rows[0].purchaseKey },
+                orderBy: ORDER_BY
+            });
+        });
+    }
+
+    /**
+     * Troca todas as linhas da compra pelas novas (correção de mês ou parcela). Com correction, ela
+     * é gravada para a sincronização respeitar a escolha do usuário daqui em diante.
+     */
+    public async replacePurchase(
+        purchase: { cardId: string; purchaseKey: string },
+        rows: NewCardExpenseRow[],
+        correction: PurchaseCorrectionData | null
+    ): Promise<CardExpense[]> {
+        const where = { cardId: purchase.cardId, purchaseKey: purchase.purchaseKey };
+
+        return this.prisma.$transaction(async tx => {
+            await tx.cardExpense.deleteMany({ where });
+
+            if (rows.length > 0) {
+                await tx.cardExpense.createMany({ data: rows });
+            }
+
+            if (correction) {
+                await tx.cardPurchaseCorrection.upsert({
+                    where: { cardId_purchaseKey: where },
+                    create: { ...where, ...correction },
+                    update: correction
+                });
+            }
+
+            return tx.cardExpense.findMany({ where, orderBy: ORDER_BY });
+        });
     }
 
     /**

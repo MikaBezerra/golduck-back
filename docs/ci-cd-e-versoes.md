@@ -48,6 +48,12 @@ Branch da feature → PR (squash) para `develop` → PR de `develop` para `main`
   arquivos continuam valendo para as migrações e o `admin:create:*`. Mudou um valor usado pelos dois
   lados (como a `DATABASE_URL`)? Atualize nos dois. `DATABASE_DIRECT_URL` não vai para a Vercel. O envio do resumo
   por e-mail (`MAIL_*`) só existe no painel da Vercel ([envio-de-resumos.md](envio-de-resumos.md)).
+- **Rotina diária**: o `crons` do `vercel.json` chama `GET /api/card-sync/cron` todo dia às 17h UTC
+  (14h em Brasília), para sincronizar os cartões com o Meu Pluggy. A Vercel manda o `CRON_SECRET` do
+  projeto no header `Authorization`; sem ele no painel, a rota responde 401. Rotinas só rodam nos deploys
+  de produção (por isso cada ambiente tem o seu projeto publicado com `--prod`) e, no plano Hobby, no
+  máximo 1 vez por dia. `PLUGGY_CLIENT_ID`, `PLUGGY_CLIENT_SECRET` e `CRON_SECRET` ficam no painel
+  ([sincronizacao-de-cartoes.md](sincronizacao-de-cartoes.md)).
 - O front chama a API pelo próprio domínio (rewrite de `/api` no projeto do front), então o cookie de
   sessão é do mesmo site; a `API_CORS_ORIGINS` da API leva o endereço do front, porque o rewrite repassa
   o `Origin` dele ([autenticacao-e-seguranca.md](autenticacao-e-seguranca.md)).

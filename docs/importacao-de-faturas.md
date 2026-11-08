@@ -1,7 +1,12 @@
 # Importação de faturas
 
-O usuário envia o arquivo que o banco do cartão exporta (ou digita a fatura) para um **mês de fatura**.
-O back lê as compras, concilia com o que já existe e grava as despesas do cartão (`CardExpense`).
+O usuário envia o arquivo que o banco do cartão exporta para um **mês de fatura**. O back lê as compras,
+concilia com o que já existe e grava as despesas do cartão (`CardExpense`).
+
+No dia a dia as faturas vêm da **sincronização com o Meu Pluggy**
+([sincronizacao-de-cartoes.md](sincronizacao-de-cartoes.md)); o upload fica como plano B (Pluggy fora do
+ar, autorização vencida). Num mês controlado pela sincronização, a próxima sincronização substitui o que o
+upload gravou.
 
 ## Fluxo
 
@@ -14,8 +19,7 @@ O back lê as compras, concilia com o que já existe e grava as despesas do cart
      → lê o arquivo de novo (ele é a fonte da verdade) e grava tudo numa transação
 ```
 
-- `POST /card-imports/manual`: fatura digitada, para bancos sem arquivo compatível. Segue as mesmas
-  regras do upload.
+- Compras que faltam entram por "Adicionar compra" (`POST /card-expenses`): o upload não as apaga.
 - `GET /card-imports`: histórico de uploads (mais recentes primeiro). `DELETE /card-imports/{id}` apaga o
   upload e as despesas que ele gravou (não restaura o estado anterior).
 - Arquivo de até 2 MB (`IMPORT_FILE_TOO_LARGE`), um por requisição; o tipo precisa ser o do banco do
@@ -27,7 +31,7 @@ O back lê as compras, concilia com o que já existe e grava as despesas do cart
 Implementadas como funções puras em `card-imports/service/card-import.planner.ts` (o mesmo plano serve
 para a pré-visualização e para o salvamento). Para um upload do mês **M**:
 
-1. **O upload é absoluto para M:** compras de M que não vieram no arquivo são removidas, junto com as
+1. **O upload é absoluto para M** (menos as compras de "Adicionar compra"): compras de M que não vieram no arquivo são removidas, junto com as
    parcelas futuras que elas projetaram.
 2. Compras do arquivo são **atualizadas** em M (mantendo apelido, categoria e pessoa) ou **criadas**.
 3. Uma parcela `n/N` **projeta** as parcelas seguintes nos meses M+1 até M+(N−n), mas para antes do

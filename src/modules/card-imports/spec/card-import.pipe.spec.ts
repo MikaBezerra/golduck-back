@@ -6,7 +6,6 @@ import {
     CardImportIdPipe,
     CardImportOverridesPipe,
     CreateCardImportPipe,
-    CreateManualCardImportPipe,
     ListCardImportsPipe
 } from '../flow/card-import.pipe.js';
 
@@ -204,129 +203,6 @@ describe('CardImportExclusionsPipe (decisões de excluir/restaurar, em JSON)', (
         ]);
         expect(detailsOf(() => transform([exclusion, { ...exclusion, action: 'restore' }]))).toEqual([
             expect.objectContaining({ field: 'exclusions[1]', code: 'array.unique' })
-        ]);
-    });
-});
-
-describe('CreateManualCardImportPipe (fatura digitada)', () => {
-    const pipe = new CreateManualCardImportPipe();
-    const transaction = { date: '2026-10-18', description: 'AMAZON BR', amount: '100.00' };
-    const body = (...transactions: unknown[]) => ({ cardId: CARD_ID, month: '2026-11', transactions });
-    const fieldErrors = (...transactions: unknown[]) =>
-        detailsOf(() => pipe.transform(body(...transactions))).map(detail => [detail.field, detail.code, detail.message]);
-
-    it('aceita lançamentos à vista e parcelados, tirando espaços da descrição', () => {
-        const parsed = pipe.transform(body(
-            { ...transaction, description: '  AMAZON BR  ' },
-            { ...transaction, installment: { number: 2, total: 10 }, cardLastDigits: '0192' },
-            { ...transaction, installment: null, cardLastDigits: null }
-        ));
-
-        expect(parsed).toEqual(body(
-            transaction,
-            { ...transaction, installment: { number: 2, total: 10 }, cardLastDigits: '0192' },
-            { ...transaction, installment: null, cardLastDigits: null }
-        ));
-        // Lista vazia é válida: a fatura do mês não tem lançamentos.
-        expect(pipe.transform(body())).toEqual(body());
-    });
-
-    it('exige cartão, mês e a lista; recusa campos extras', () => {
-        expect(detailsOf(() => pipe.transform({ total: '10.00' })).map(detail => [detail.field, detail.code])).toEqual([
-            ['cardId', 'any.required'],
-            ['month', 'any.required'],
-            ['transactions', 'any.required'],
-            ['total', 'object.unknown']
-        ]);
-        expect(fieldErrors({ ...transaction, category: 'x' })).toEqual([
-            ['transactions[0].category', 'object.unknown', 'transactions[0].category não é permitido']
-        ]);
-        expect(fieldErrors({}).map(([field]) => field)).toEqual([
-            'transactions[0].date',
-            'transactions[0].description',
-            'transactions[0].amount'
-        ]);
-    });
-
-    it('data: AAAA-MM-DD de um dia que existe', () => {
-        expect(pipe.transform(body({ ...transaction, date: '2024-02-29' }))).toMatchObject(body({ ...transaction, date: '2024-02-29' }));
-
-        // Fora do formato, a conferência do dia também falha: o cliente recebe as duas mensagens.
-        for (const date of ['18/10/2026', '2026-10-1', '2026-10-180', 'x2026-10-18', '2026-10-18x']) {
-            expect(fieldErrors({ ...transaction, date })).toEqual([
-                ['transactions[0].date', 'string.pattern.base', 'A data deve estar no formato AAAA-MM-DD'],
-                ['transactions[0].date', 'any.invalid', 'A data informada não existe']
-            ]);
-        }
-
-        for (const date of ['2026-02-29', '2026-02-30', '2026-13-01', '2026-04-31', '2026-10-00']) {
-            expect(fieldErrors({ ...transaction, date })).toEqual([
-                ['transactions[0].date', 'any.invalid', 'A data informada não existe']
-            ]);
-        }
-    });
-
-    it('descrição: de 1 a 200 caracteres sem contar espaços nas pontas', () => {
-        expect(pipe.transform(body({ ...transaction, description: `  ${'d'.repeat(200)}  ` }))).toMatchObject(
-            body({ ...transaction, description: 'd'.repeat(200) })
-        );
-        expect(fieldErrors({ ...transaction, description: 'd'.repeat(201) })).toEqual([
-            ['transactions[0].description', 'string.max', 'transactions[0].description deve ter no máximo 200 caracteres']
-        ]);
-        expect(fieldErrors({ ...transaction, description: '   ' })).toEqual([
-            ['transactions[0].description', 'string.empty', 'transactions[0].description não pode estar vazio']
-        ]);
-    });
-
-    it('valor: reais com até 2 casas, ponto decimal e no máximo 20 caracteres', () => {
-        for (const amount of ['0', '1', '100.5', '100.55', '12345678901234567.00']) {
-            expect(pipe.transform(body({ ...transaction, amount }))).toMatchObject(body({ ...transaction, amount }));
-        }
-
-        for (const amount of ['01.00', '100.555', '1,00', '-1.00', '.50', '100.', 'R$ 10', 'x100', '100x']) {
-            expect(fieldErrors({ ...transaction, amount })).toEqual([
-                ['transactions[0].amount', 'string.pattern.base', 'O valor deve estar em reais, por exemplo 100.00']
-            ]);
-        }
-
-        expect(fieldErrors({ ...transaction, amount: '123456789012345678.00' })).toEqual([
-            ['transactions[0].amount', 'string.max', 'transactions[0].amount deve ter no máximo 20 caracteres']
-        ]);
-    });
-
-    it('parcela: número e total de 1 a 99, número não maior que o total', () => {
-        const withInstallment = (installment: unknown) => ({ ...transaction, installment });
-
-        expect(pipe.transform(body(withInstallment({ number: 99, total: 99 })))).toMatchObject(body(withInstallment({ number: 99, total: 99 })));
-        expect(pipe.transform(body(withInstallment({ number: 1, total: 1 })))).toMatchObject(body(withInstallment({ number: 1, total: 1 })));
-        expect(fieldErrors(withInstallment({ number: 5, total: 4 }))).toEqual([
-            ['transactions[0].installment.number', 'number.max', 'A parcela não pode ser maior que o total de parcelas']
-        ]);
-        expect(fieldErrors(withInstallment({ number: 0, total: 100 })).map(([field, code]) => [field, code])).toEqual([
-            ['transactions[0].installment.total', 'number.max'],
-            ['transactions[0].installment.number', 'number.min']
-        ]);
-        expect(fieldErrors(withInstallment({ number: 1.5, total: 2 })).map(([field, code]) => [field, code])).toEqual([
-            ['transactions[0].installment.number', 'number.integer']
-        ]);
-        expect(fieldErrors(withInstallment({ number: 1 })).map(([field, code]) => [field, code])).toEqual([
-            ['transactions[0].installment.total', 'any.required'],
-            ['transactions[0].installment.number', 'any.ref']
-        ]);
-    });
-
-    it('final do cartão: exatamente 4 dígitos', () => {
-        for (const cardLastDigits of ['123', '12345', 'a123', '12 3']) {
-            expect(fieldErrors({ ...transaction, cardLastDigits })).toEqual([
-                ['transactions[0].cardLastDigits', 'string.pattern.base', 'O final do cartão deve ter 4 dígitos']
-            ]);
-        }
-    });
-
-    it('até 500 lançamentos', () => {
-        expect((pipe.transform(body(...Array.from({ length: 500 }, () => transaction))) as { transactions: unknown[] }).transactions).toHaveLength(500);
-        expect(fieldErrors(...Array.from({ length: 501 }, () => transaction))).toEqual([
-            ['transactions', 'array.max', 'transactions deve conter no máximo 500 itens']
         ]);
     });
 });

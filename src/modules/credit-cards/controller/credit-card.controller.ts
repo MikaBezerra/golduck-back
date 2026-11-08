@@ -1,11 +1,25 @@
-import { Body, Controller, Get, HttpStatus, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Get, HttpStatus, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 
 import { Role } from '../../../generated/prisma/client.js';
 import { Roles } from '../../auth/security/auth.decorators.js';
 import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs.js';
-import { CreateCreditCardDto, CreditCardResponse, UpdateCreditCardDto } from '../dto/credit-card.dto.js';
-import { CreateCreditCardPipe, CreditCardIdPipe, UpdateCreditCardPipe } from '../flow/credit-card.pipe.js';
+import {
+    CreateCreditCardDto,
+    CreditCardBillResponse,
+    CreditCardResponse,
+    ListCreditCardBillsDto,
+    UpdateCreditCardBillDto,
+    UpdateCreditCardDto
+} from '../dto/credit-card.dto.js';
+import {
+    CreateCreditCardPipe,
+    CreditCardBillMonthPipe,
+    CreditCardIdPipe,
+    ListCreditCardBillsPipe,
+    UpdateCreditCardBillPipe,
+    UpdateCreditCardPipe
+} from '../flow/credit-card.pipe.js';
 import { CreditCardService } from '../service/credit-card.service.js';
 
 @ApiTags('credit-cards')
@@ -39,7 +53,9 @@ export class CreditCardController {
     }
 
     @Patch(':id')
-    @ApiOperation({ summary: 'Altera nome ou estado ativo (o banco não muda)' })
+    @ApiOperation({
+        summary: 'Altera nome, estado ativo, ciclo da fatura ou a ligação com o Meu Pluggy (o banco não muda)'
+    })
     @ApiParam({ name: 'id', format: 'uuid' })
     @ApiDataResponse(CreditCardResponse)
     public async update(
@@ -47,5 +63,35 @@ export class CreditCardController {
         @Body(UpdateCreditCardPipe) body: UpdateCreditCardDto
     ): Promise<CreditCardResponse> {
         return this.creditCardService.update(id, body);
+    }
+
+    @Get(':id/bills')
+    @ApiOperation({
+        summary: 'Lista as faturas do cartão: início, fechamento, melhor dia e vencimento',
+        description: 'Exige o dia do vencimento e o melhor dia de compra configurados (409 CREDIT_CARD_BILLING_NOT_CONFIGURED).'
+    })
+    @ApiParam({ name: 'id', format: 'uuid' })
+    @ApiDataResponse(CreditCardBillResponse, { isArray: true })
+    public async listBills(
+        @Param('id', CreditCardIdPipe) id: string,
+        @Query(ListCreditCardBillsPipe) query: ListCreditCardBillsDto
+    ): Promise<CreditCardBillResponse[]> {
+        return this.creditCardService.listBills(id, query);
+    }
+
+    @Put(':id/bills/:month')
+    @ApiOperation({
+        summary: 'Ajusta o melhor dia de compra de uma fatura',
+        description: 'Vale até o banco informar o fechamento. Para reorganizar as compras já gravadas, sincronize o cartão depois.'
+    })
+    @ApiParam({ name: 'id', format: 'uuid' })
+    @ApiParam({ name: 'month', example: '2026-12', description: 'Mês da fatura, AAAA-MM' })
+    @ApiDataResponse(CreditCardBillResponse)
+    public async updateBill(
+        @Param('id', CreditCardIdPipe) id: string,
+        @Param('month', CreditCardBillMonthPipe) month: string,
+        @Body(UpdateCreditCardBillPipe) body: UpdateCreditCardBillDto
+    ): Promise<CreditCardBillResponse> {
+        return this.creditCardService.updateBill(id, month, body);
     }
 }

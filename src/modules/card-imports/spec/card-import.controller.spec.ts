@@ -158,7 +158,6 @@ describe('rotas /card-imports', () => {
         const responses = [
             await postMultipart('/card-imports', nubankForm(), { auth: false }),
             await postMultipart('/card-imports/preview', nubankForm(), { auth: false }),
-            await api.post('/card-imports/manual', { cardId: card.id, month: '2026-11', transactions: [] }, { auth: false }),
             await api.get('/card-imports', { auth: false }),
             await api.get(`/card-imports/${MISSING_ID}`, { auth: false }),
             await api.delete(`/card-imports/${MISSING_ID}`, { auth: false })
@@ -372,43 +371,6 @@ describe('rotas /card-imports', () => {
             ]), { contentType: `multipart/form-data; boundary=${boundary}` });
 
             expect(response.status).toBe(201);
-        });
-    });
-
-    describe('POST /card-imports/manual', () => {
-        it('registra a fatura digitada (201) e valida o corpo (400)', async () => {
-            const created = await api.post('/card-imports/manual', {
-                cardId: card.id,
-                month: '2026-11',
-                transactions: [{ date: '2026-11-02', description: ' PADARIA ', amount: '7.50' }]
-            });
-            const invalid = await api.post('/card-imports/manual', {
-                cardId: card.id,
-                month: '2026-11',
-                transactions: [{ date: '2026-02-30', description: 'X', amount: '7,50' }]
-            });
-
-            expect(created.status).toBe(201);
-            expect(dataOf(created)).toMatchObject({
-                import: { fileName: 'Lançamento manual', parserVersion: 'manual@1', rowCount: 1, expenseCount: 1 },
-                summary: { created: 1, ignored: 0 }
-            });
-            expect(imports.expensesOf(card.id)).toEqual([expect.objectContaining({ originalDescription: 'PADARIA', amountCents: 750n })]);
-            expectError(invalid, 400, 'VALIDATION_ERROR');
-            expect(errorOf(invalid).details).toEqual([
-                expect.objectContaining({ field: 'transactions[0].date', code: 'any.invalid' }),
-                expect.objectContaining({ field: 'transactions[0].amount', code: 'string.pattern.base' })
-            ]);
-        });
-
-        it('valor zero é 400 IMPORT_INVALID_AMOUNT', async () => {
-            const response = await api.post('/card-imports/manual', {
-                cardId: card.id,
-                month: '2026-11',
-                transactions: [{ date: '2026-11-02', description: 'BRINDE', amount: '0' }]
-            });
-
-            expectError(response, 400, 'IMPORT_INVALID_AMOUNT', 'O valor de cada lançamento deve ser maior que zero e caber em centavos');
         });
     });
 

@@ -1,6 +1,7 @@
-import type { Category, Person } from '../../../generated/prisma/client.js';
+import type { Category, CreditCard, Person } from '../../../generated/prisma/client.js';
 import type { CategoryRepository } from '../../categories/repository/category.repository.js';
 import type { AppError } from '../../common/errors/app-error.js';
+import type { CreditCardRepository } from '../../credit-cards/repository/credit-card.repository.js';
 import type { PersonRepository } from '../../people/repository/person.repository.js';
 import type { CardExpenseRepository } from '../repository/card-expense.repository.js';
 import type { CardExpenseScope } from '../service/card-expense-scope.js';
@@ -8,10 +9,12 @@ import { jest } from '@jest/globals';
 
 import { CategoryService } from '../../categories/service/category.service.js';
 import { InMemoryCategoryRepository } from '../../categories/spec/in-memory-category.repository.js';
+import { CreditCardService } from '../../credit-cards/service/credit-card.service.js';
+import { InMemoryCreditCardRepository } from '../../credit-cards/spec/in-memory-credit-card.repository.js';
 import { FakePersonRepository } from '../../manual-expenses/spec/fake-person.repository.js';
 import { PersonService } from '../../people/service/person.service.js';
 import { CardExpenseService } from '../service/card-expense.service.js';
-import { InMemoryCardExpenseRepository } from './in-memory-card-expense.repository.js';
+import { CARD_ID, InMemoryCardExpenseRepository } from './in-memory-card-expense.repository.js';
 
 const MISSING_ID = '3f2a9c1e-8b7d-4c2a-9e1f-5a6b7c8d9e0f';
 const OTHER_CARD_ID = '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d';
@@ -29,6 +32,8 @@ describe('CardExpenseService', () => {
     let people: FakePersonRepository;
     let repository: InMemoryCardExpenseRepository;
     let service: CardExpenseService;
+    let cards: InMemoryCreditCardRepository;
+    let card: CreditCard;
     let outros: Category;
     let mercado: Category;
     let ana: Person;
@@ -37,10 +42,13 @@ describe('CardExpenseService', () => {
         categories = new InMemoryCategoryRepository();
         people = new FakePersonRepository();
         repository = new InMemoryCardExpenseRepository();
+        cards = new InMemoryCreditCardRepository();
+        card = cards.seed({ id: CARD_ID, name: 'C6', bank: 'C6', syncFromMonth: OCTOBER });
         service = new CardExpenseService(
             repository as unknown as CardExpenseRepository,
             new CategoryService(categories as unknown as CategoryRepository),
-            new PersonService(people as unknown as PersonRepository)
+            new PersonService(people as unknown as PersonRepository),
+            new CreditCardService(cards as unknown as CreditCardRepository)
         );
         outros = categories.seed({ name: 'Outros', isDefault: true });
         mercado = categories.seed({ name: 'Mercado' });
@@ -305,6 +313,177 @@ describe('CardExpenseService', () => {
             });
             expect(restore).not.toHaveBeenCalled();
             expect(repository.get(expense.id).excludedAt).toEqual(NOW);
+        });
+    });
+
+    describe('create ("Adicionar compra")', () => {
+        const DECEMBER = new Date('2026-12-01T00:00:00.000Z');
+
+        it('à vista: uma linha MANUAL no mês, com a categoria padrão e a descrição sem espaços sobrando', async () => {
+            const created = await service.create({
+                cardId: card.id, month: '2026-12', date: '2026-11-06', description: '  Padaria   do  bairro ', amount: '12.50'
+            });
+
+            expect(created).toEqual([expect.objectContaining({
+                cardId: card.id,
+                importId: null,
+                origin: 'MANUAL',
+                month: '2026-12',
+                transactionDate: '2026-11-06',
+                description: 'Padaria do bairro',
+                amount: '12.50',
+                installment: null,
+                categoryId: outros.id,
+                personId: null,
+                excluded: false
+            })]);
+            expect(repository.get(created[0].id).purchaseKey).toMatch(/^M\|/);
+            expect(repository.get(created[0].id).sourceMonth).toEqual(DECEMBER);
+        });
+
+        it('parcelada: a parcela informada no mês e as seguintes nos meses seguintes, com apelido, categoria e pessoa', async () => {
+            const created = await service.create({
+                cardId: card.id,
+                month: '2026-12',
+                date: '2026-10-03',
+                description: 'Loja',
+                amount: '100.00',
+                installment: { number: 3, total: 5 },
+                nickname: 'Cadeira',
+                categoryId: mercado.id,
+                personId: ana.id
+            });
+
+            expect(created.map(row => [row.month, row.installment])).toEqual([
+                ['2026-12', { number: 3, total: 5 }],
+                ['2027-01', { number: 4, total: 5 }],
+                ['2027-02', { number: 5, total: 5 }]
+            ]);
+            expect(created.every(row => row.nickname === 'Cadeira' && row.categoryId === mercado.id && row.personId === ana.id)).toBe(true);
+            expect(new Set(created.map(row => repository.get(row.id).purchaseKey)).size).toBe(1);
+            expect(repository.get(created[0].id).sourceMonth).toEqual(OCTOBER);
+        });
+
+        it('personId null é compartilhada; cartão inativo e categoria inativa são 409', async () => {
+            const inactiveCard = cards.seed({ name: 'Antigo', active: false });
+            const antiga = categories.seed({ name: 'Antiga', active: false });
+            const base = { cardId: card.id, month: '2026-12', date: '2026-11-06', description: 'X', amount: '1.00' };
+
+            await expect(service.create({ ...base, personId: null })).resolves.toEqual([expect.objectContaining({ personId: null })]);
+            await expectAppError(service.create({ ...base, cardId: inactiveCard.id }), {
+                code: 'CREDIT_CARD_INACTIVE', statusCode: 409, reason: 'credit_card_inactive'
+            });
+            await expectAppError(service.create({ ...base, categoryId: antiga.id }), {
+                code: 'CARD_EXPENSE_INACTIVE_CATEGORY', statusCode: 409, reason: 'category_inactive'
+            });
+        });
+    });
+
+    describe('move (corrigir a fatura da compra)', () => {
+        const DECEMBER = new Date('2026-12-01T00:00:00.000Z');
+        const KEY = 'P|2026-09-10|5|LOJA';
+
+        /** Compra sincronizada em 5 vezes: 3/5 em novembro, 4/5 em dezembro e 5/5 em janeiro. */
+        const seedSynced = () => [3, 4, 5].map(number => repository.seed({
+            month: new Date(Date.UTC(2026, 7 + number, 1)),
+            categoryId: mercado.id,
+            nickname: 'Cadeira',
+            personId: ana.id,
+            origin: 'SYNC',
+            importId: null,
+            purchaseKey: KEY,
+            installmentNumber: number,
+            installmentTotal: 5,
+            amountCents: 10000n
+        }));
+        const layout = () => [...repository.expenses.values()]
+            .filter(row => row.purchaseKey === KEY)
+            .sort((a, b) => a.month.getTime() - b.month.getTime())
+            .map(row => [row.month.toISOString().slice(0, 7), row.installmentNumber]);
+
+        it('3/5 de novembro vira 1/5 em dezembro: a compra inteira muda e a correção fica gravada', async () => {
+            const [november] = seedSynced();
+
+            const moved = await service.move(november.id, { month: '2026-12', installmentNumber: 1 });
+
+            expect(layout()).toEqual([['2026-12', 1], ['2027-01', 2], ['2027-02', 3], ['2027-03', 4], ['2027-04', 5]]);
+            expect(moved).toHaveLength(5);
+            expect(moved.every(row => row.nickname === 'Cadeira' && row.categoryId === mercado.id && row.origin === 'SYNC')).toBe(true);
+            expect(repository.corrections.get(`${card.id}|${KEY}`)).toEqual({ installmentNumber: 1, installmentTotal: 5, month: DECEMBER });
+            expect(repository.get(moved[0].id).sourceMonth).toEqual(DECEMBER);
+        });
+
+        it('sincronizada: só os meses a partir da primeira fatura sincronizada recebem linhas', async () => {
+            const [november] = seedSynced();
+
+            await service.move(november.id, { month: '2026-10' });
+
+            // 1/5 e 2/5 cairiam em agosto e setembro, antes de outubro.
+            expect(layout()).toEqual([['2026-10', 3], ['2026-11', 4], ['2026-12', 5]]);
+        });
+
+        it('trocar o total de parcelas refaz a compra com o novo total', async () => {
+            const [november] = seedSynced();
+
+            await service.move(november.id, { month: '2026-11', installmentTotal: 6 });
+
+            expect(layout()).toEqual([['2026-10', 2], ['2026-11', 3], ['2026-12', 4], ['2027-01', 5], ['2027-02', 6]]);
+            expect(repository.corrections.get(`${card.id}|${KEY}`)).toMatchObject({ installmentNumber: 3, installmentTotal: 6 });
+        });
+
+        it('compra à vista sincronizada muda só de mês (o número de parcela é ignorado)', async () => {
+            const single = repository.seed({ month: NOVEMBER, categoryId: outros.id, origin: 'SYNC', importId: null, purchaseKey: 'S|2026-10-23|1099|POSTO' });
+
+            const moved = await service.move(single.id, { month: '2026-12', installmentNumber: 2 });
+
+            expect(moved).toEqual([expect.objectContaining({ month: '2026-12', installment: null })]);
+            expect(repository.corrections.get(`${card.id}|S|2026-10-23|1099|POSTO`)).toEqual({ installmentNumber: 1, installmentTotal: null, month: DECEMBER });
+        });
+
+        it('lançada à mão: muda sem gravar correção, a partir da primeira parcela que a compra tinha', async () => {
+            const created = await service.create({
+                cardId: card.id, month: '2026-12', date: '2026-10-03', description: 'Loja', amount: '50.00', installment: { number: 3, total: 5 }
+            });
+            const key = repository.get(created[0].id).purchaseKey;
+
+            await service.move(created[0].id, { month: '2027-01' });
+            const later = [...repository.expenses.values()].filter(row => row.purchaseKey === key).map(row => [row.month.toISOString().slice(0, 7), row.installmentNumber]);
+
+            await service.move([...repository.expenses.values()].find(row => row.purchaseKey === key && row.installmentNumber === 3)?.id as string, {
+                month: '2027-01', installmentNumber: 2
+            });
+            const renumbered = [...repository.expenses.values()].filter(row => row.purchaseKey === key).map(row => row.installmentNumber).sort();
+
+            expect(later.sort()).toEqual([['2027-01', 3], ['2027-02', 4], ['2027-03', 5]]);
+            expect(renumbered).toEqual([2, 3, 4, 5]);
+            expect(repository.corrections.size).toBe(0);
+        });
+
+        it('compra de upload não muda (409); parcela maior que o total é 422; id inexistente é 404', async () => {
+            const uploaded = repository.seed({ month: NOVEMBER, categoryId: outros.id });
+            const [november] = seedSynced();
+
+            await expectAppError(service.move(uploaded.id, { month: '2026-12' }), {
+                code: 'CARD_EXPENSE_MOVE_NOT_ALLOWED', statusCode: 409, reason: 'card_expense_from_upload'
+            });
+            await expectAppError(service.move(november.id, { month: '2026-12', installmentNumber: 6 }), {
+                code: 'CARD_EXPENSE_INSTALLMENT_INVALID', statusCode: 422, reason: 'installment_6_of_5'
+            });
+            await expectAppError(service.move(november.id, { month: '2026-12', installmentTotal: 2 }), {
+                code: 'CARD_EXPENSE_INSTALLMENT_INVALID', statusCode: 422, reason: 'installment_3_of_2'
+            });
+            await expectAppError(service.move(MISSING_ID, { month: '2026-12' }), {
+                code: 'CARD_EXPENSE_NOT_FOUND', statusCode: 404, reason: 'card_expense_id_not_found'
+            });
+        });
+
+        it('cartão sem primeira fatura sincronizada: a compra sincronizada recebe todas as parcelas', async () => {
+            cards.cards.set(card.id, { ...card, syncFromMonth: null });
+            const [november] = seedSynced();
+
+            await service.move(november.id, { month: '2026-11' });
+
+            expect(layout().map(([month]) => month)).toEqual(['2026-09', '2026-10', '2026-11', '2026-12', '2027-01']);
         });
     });
 });

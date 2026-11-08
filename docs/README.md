@@ -21,7 +21,8 @@ tema; este aqui é o mapa. O `README.md` da raiz do repositório tem só o resum
 | [autenticacao-e-seguranca.md](autenticacao-e-seguranca.md) | login, sessão em cookie, papéis, limites de tentativas, CSRF, CORS, Helmet | mexer em `auth`, guards, cookie, CORS ou limites |
 | [regras-de-negocio.md](regras-de-negocio.md) | dinheiro, mês, entradas, reserva, despesas, cartões, resumo e suas fórmulas | mudar qualquer regra de cálculo ou de cadastro |
 | [envio-de-resumos.md](envio-de-resumos.md) | botão de envio do resumo por e-mail: conteúdo, Gmail, duplo clique, falhas por pessoa | mexer em `summary-dispatch` ou no conteúdo do e-mail |
-| [importacao-de-faturas.md](importacao-de-faturas.md) | upload da fatura, pré-visualização, parcelas, exclusões, parsers por banco | mexer em `card-imports`/`card-expenses` ou adicionar um banco |
+| [sincronizacao-de-cartoes.md](sincronizacao-de-cartoes.md) | Meu Pluggy, ciclo da fatura (melhor dia, fechamento), regras da sincronização, "Adicionar compra" e mover compra de fatura, rotina diária | mexer em `card-sync`, no ciclo da fatura ou nas correções de compras |
+| [importacao-de-faturas.md](importacao-de-faturas.md) | upload da fatura (plano B), pré-visualização, parcelas, exclusões, parsers por banco | mexer em `card-imports`/`card-expenses` ou adicionar um banco |
 | [observabilidade.md](observabilidade.md) | logs, `x-request-id`, rotas de status e versão | mudar logs, níveis ou rotas de status |
 | [testes.md](testes.md) | tipos de teste, helpers e cobertura | mudar a forma de testar, helpers ou metas |
 | [ci-cd-e-versoes.md](ci-cd-e-versoes.md) | workflows do GitHub, releases, deploy, configuração do repositório | mudar workflows, deploy ou o fluxo de branches |
@@ -39,7 +40,8 @@ tema; este aqui é o mapa. O `README.md` da raiz do repositório tem só o resum
 | `src/modules/common/provider/config.provider.ts` | [ambiente-e-configuracao.md](ambiente-e-configuracao.md) |
 | `src/modules/summary/` | [regras-de-negocio.md](regras-de-negocio.md) |
 | `src/modules/summary-dispatch/` | [envio-de-resumos.md](envio-de-resumos.md) |
-| `src/modules/card-imports/`, `card-expenses/` | [importacao-de-faturas.md](importacao-de-faturas.md) |
+| `src/modules/card-sync/`, `credit-cards/service/billing-calendar.ts` | [sincronizacao-de-cartoes.md](sincronizacao-de-cartoes.md) |
+| `src/modules/card-imports/`, `card-expenses/` | [importacao-de-faturas.md](importacao-de-faturas.md), [sincronizacao-de-cartoes.md](sincronizacao-de-cartoes.md) |
 | `prisma/` | [banco-de-dados.md](banco-de-dados.md) |
 | `src/testing/`, `**/spec/`, `jest.json` | [testes.md](testes.md) |
 | `.github/`, `release-please-config.json`, `Dockerfile` | [ci-cd-e-versoes.md](ci-cd-e-versoes.md) |

@@ -1,4 +1,5 @@
-import type { CardBank, CreditCard } from '../../../generated/prisma/client.js';
+import type { CardBank, CardBill, CreditCard } from '../../../generated/prisma/client.js';
+import type { CreditCardChanges, CreditCardSettings, CreditCardSyncState } from '../repository/credit-card.repository.js';
 import { randomUUID } from 'node:crypto';
 
 import { Prisma } from '../../../generated/prisma/client.js';
@@ -10,6 +11,8 @@ import { Prisma } from '../../../generated/prisma/client.js';
  */
 export class InMemoryCreditCardRepository {
     public readonly cards = new Map<string, CreditCard>();
+    /** Faturas gravadas, por "cardId|mês". */
+    public readonly bills = new Map<string, CardBill>();
 
     /** Cadastra direto, sem passar pelo serviço (monta o cenário do teste). */
     public seed(data: Partial<CreditCard> & Pick<CreditCard, 'name'>): CreditCard {
@@ -18,6 +21,16 @@ export class InMemoryCreditCardRepository {
             id: randomUUID(),
             bank: 'NUBANK',
             active: true,
+            dueDay: null,
+            bestPurchaseDay: null,
+            pluggyItemId: null,
+            pluggyAccountId: null,
+            syncFromMonth: null,
+            syncedAt: null,
+            syncDataUpdatedAt: null,
+            syncStatus: null,
+            syncError: null,
+            syncConsentExpiresAt: null,
             createdAt: now,
             updatedAt: now,
             ...data
@@ -26,8 +39,19 @@ export class InMemoryCreditCardRepository {
         return card;
     }
 
-    public async create(data: { name: string; bank: CardBank }): Promise<CreditCard> {
-        return this.seed({ name: data.name, bank: data.bank });
+    /** O cartão gravado (falha o teste se não existir). */
+    public get(id: string): CreditCard {
+        const card = this.cards.get(id);
+
+        if (!card) {
+            throw new Error(`cartão ${id} não existe`);
+        }
+
+        return card;
+    }
+
+    public async create(data: CreditCardSettings & { name: string; bank: CardBank }): Promise<CreditCard> {
+        return this.seed(definedOnly(data) as Partial<CreditCard> & Pick<CreditCard, 'name'>);
     }
 
     public async findAll(): Promise<CreditCard[]> {
@@ -40,7 +64,7 @@ export class InMemoryCreditCardRepository {
         return this.cards.get(id) ?? null;
     }
 
-    public async update(id: string, data: { name?: string; active?: boolean }): Promise<CreditCard> {
+    public async update(id: string, data: CreditCardChanges): Promise<CreditCard> {
         const card = this.cards.get(id);
 
         if (!card) {
@@ -48,17 +72,57 @@ export class InMemoryCreditCardRepository {
             throw new Prisma.PrismaClientKnownRequestError('Record to update not found', { code: 'P2025', clientVersion: 'teste' });
         }
 
-        const updated: CreditCard = {
-            ...card,
-            ...(data.name === undefined ? {} : { name: data.name }),
-            ...(data.active === undefined ? {} : { active: data.active }),
-            updatedAt: new Date()
-        };
+        const updated: CreditCard = { ...card, ...definedOnly(data), updatedAt: new Date() };
         this.cards.set(id, updated);
         return updated;
     }
+
+    public async updateSyncState(id: string, data: CreditCardSyncState): Promise<CreditCard> {
+        return this.update(id, data);
+    }
+
+    public async findBills(cardId: string): Promise<CardBill[]> {
+        return [...this.bills.values()]
+            .filter(bill => bill.cardId === cardId)
+            .sort((a, b) => a.month.getTime() - b.month.getTime());
+    }
+
+    public async saveBestPurchaseDate(cardId: string, month: Date, bestPurchaseDate: Date | null): Promise<CardBill> {
+        return this.upsertBill(cardId, month, { bestPurchaseDate });
+    }
+
+    public async saveBankDates(cardId: string, bills: { month: Date; closingDate: Date; dueDate: Date }[]): Promise<void> {
+        for (const bill of bills) {
+            this.upsertBill(cardId, bill.month, { bankClosingDate: bill.closingDate, bankDueDate: bill.dueDate });
+        }
+    }
+
+    private upsertBill(cardId: string, month: Date, data: Partial<CardBill>): CardBill {
+        const key = `${cardId}|${month.toISOString()}`;
+        const now = new Date();
+        const bill: CardBill = {
+            id: randomUUID(),
+            cardId,
+            month,
+            bestPurchaseDate: null,
+            bankClosingDate: null,
+            bankDueDate: null,
+            createdAt: now,
+            ...this.bills.get(key),
+            ...data,
+            updatedAt: now
+        };
+
+        this.bills.set(key, bill);
+        return bill;
+    }
 }
 /* eslint-enable @typescript-eslint/require-await */
+
+/** Como no Prisma: campo undefined não muda nada. */
+function definedOnly<T extends object>(data: T): Partial<T> {
+    return Object.fromEntries(Object.entries(data).filter(([, value]) => value !== undefined)) as Partial<T>;
+}
 
 /** Ordem de texto simples, como o ORDER BY por código do banco. */
 function compareText(a: string, b: string): number {

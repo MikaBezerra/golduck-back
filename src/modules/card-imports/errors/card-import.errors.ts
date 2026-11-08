@@ -11,8 +11,6 @@ export const CARD_IMPORT_ERRORS = {
         new AppError('IMPORT_FILE_TOO_LARGE', HttpStatus.PAYLOAD_TOO_LARGE, 'O arquivo da fatura deve ter no máximo 2 MB', reason),
     invalidFileType: (reason?: string): AppError =>
         new AppError('IMPORT_INVALID_FILE_TYPE', HttpStatus.BAD_REQUEST, 'O tipo de arquivo não é aceito para o banco deste cartão', reason),
-    invalidManualAmount: (reason?: string): AppError =>
-        new AppError('IMPORT_INVALID_AMOUNT', HttpStatus.BAD_REQUEST, 'O valor de cada lançamento deve ser maior que zero e caber em centavos', reason),
     overrideUnknownKey: (reason?: string): AppError =>
         new AppError('IMPORT_OVERRIDE_UNKNOWN_KEY', HttpStatus.BAD_REQUEST, 'A fatura mudou desde a pré-visualização; pré-visualize de novo', reason),
     // Mesmos códigos das despesas do cartão, para o front tratar os dois casos igual.

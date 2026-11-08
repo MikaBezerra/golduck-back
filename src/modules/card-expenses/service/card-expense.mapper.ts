@@ -9,6 +9,7 @@ export function toCardExpenseResponse(expense: CardExpense): CardExpenseResponse
         id: expense.id,
         cardId: expense.cardId,
         importId: expense.importId,
+        origin: expense.origin,
         month: formatMonth(expense.month),
         transactionDate: formatDate(expense.transactionDate),
         description: expense.nickname ?? expense.originalDescription,

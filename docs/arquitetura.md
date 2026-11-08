@@ -42,7 +42,8 @@ docs/                       esta documentação
 ```
 
 Módulos: `auth`, `people`, `categories`, `incomes`, `reserves`, `manual-expenses`, `credit-cards`,
-`card-imports`, `card-expenses`, `summary`, `summary-dispatch` (envio do resumo por e-mail) e `common`. As rotas de cada um estão em [api.md](api.md).
+`card-imports`, `card-expenses`, `card-sync` (sincronização com o Meu Pluggy), `summary`, `summary-dispatch`
+(envio do resumo por e-mail) e `common`. As rotas de cada um estão em [api.md](api.md).
 
 ### `common/`
 

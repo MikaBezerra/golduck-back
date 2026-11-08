@@ -1,6 +1,6 @@
 import type { CardExpense, Category, CreditCard } from '../../../generated/prisma/client.js';
 import type { AppError } from '../../common/errors/app-error.js';
-import type { CardImportExclusionDto, CardImportOverrideDto, CreateManualCardImportDto } from '../dto/card-import.dto.js';
+import type { CardImportExclusionDto, CardImportOverrideDto } from '../dto/card-import.dto.js';
 import type { ApplyCardImportInput, CardImportRepository } from '../repository/card-import.repository.js';
 import type { UploadedStatementFile } from '../service/card-import.service.js';
 import { jest } from '@jest/globals';
@@ -89,6 +89,21 @@ describe('CardImportService', () => {
     const lastApplied = (apply: ReturnType<typeof spyApply>): ApplyCardImportInput => apply.mock.calls[apply.mock.calls.length - 1][0];
 
     describe('create (upload do arquivo)', () => {
+        it('as compras de "Adicionar compra" do mês ficam: o upload não as apaga', async () => {
+            const manual = imports.seedExpense({
+                cardId: nubankCard.id, importId: null, origin: 'MANUAL', month: NOVEMBER, purchaseKey: 'M|lancada-a-mao', categoryId: outros.id
+            });
+            const fromUpload = imports.seedExpense({
+                cardId: nubankCard.id, importId: null, origin: 'SYNC', month: NOVEMBER, purchaseKey: 'S|2026-11-01|500|OUTRA', categoryId: outros.id
+            });
+
+            const result = await createNubank();
+
+            expect(imports.expenses.has(manual.id)).toBe(true);
+            expect(imports.expenses.has(fromUpload.id)).toBe(false);
+            expect(result.summary.removed).toBe(1);
+        });
+
         it('grava o upload e as despesas e devolve o histórico com o resumo', async () => {
             const result = await createNubank();
             const [stored] = [...imports.imports.values()];
@@ -465,6 +480,7 @@ describe('CardImportService', () => {
                 id: z.id,
                 cardId: c6Card.id,
                 importId: previous.id,
+                origin: 'UPLOAD',
                 month: '2026-11',
                 transactionDate: '2026-11-02',
                 description: 'Z LOJA',
@@ -495,84 +511,6 @@ describe('CardImportService', () => {
             await expectAppError(service.preview({ cardId: nubankCard.id, month: '2026-11' }, upload('fatura.pdf', NUBANK_NOVEMBER)), {
                 code: 'IMPORT_INVALID_FILE_TYPE', statusCode: 400, reason: 'expected_csv_for_nubank'
             });
-        });
-    });
-
-    describe('createManual (fatura digitada)', () => {
-        const manual = (cardId: string, transactions: CreateManualCardImportDto['transactions']): CreateManualCardImportDto => ({
-            cardId, month: '2026-11', transactions
-        });
-
-        it('grava como um upload "Lançamento manual", com as mesmas regras do arquivo', async () => {
-            const data = manual(nubankCard.id, [
-                { date: '2026-10-18', description: '  AMAZON   BR ', amount: '100.50', installment: { number: 2, total: 3 }, cardLastDigits: '0192' },
-                { date: '2026-11-02', description: 'PADARIA', amount: '7.5' },
-                { date: '2026-11-03', description: 'FEIRA', amount: '20', installment: null, cardLastDigits: null }
-            ]);
-
-            const result = await service.createManual(data);
-            const [stored] = [...imports.imports.values()];
-
-            expect(result).toEqual({
-                import: {
-                    id: stored.id,
-                    cardId: nubankCard.id,
-                    month: '2026-11',
-                    fileName: 'Lançamento manual',
-                    parserVersion: 'manual@1',
-                    rowCount: 3,
-                    ignoredCount: 0,
-                    expenseCount: 4,
-                    createdAt: stored.createdAt
-                },
-                summary: { created: 3, updated: 0, removed: 0, projected: 1, ignored: 0 }
-            });
-            expect(stored.fileHash).toBe(sha256(JSON.stringify(data.transactions)));
-            expect(imports.expensesOf(nubankCard.id).map(row => ({
-                month: row.month.toISOString().slice(0, 7),
-                description: row.originalDescription,
-                amountCents: row.amountCents,
-                installment: [row.installmentNumber, row.installmentTotal],
-                cardLastDigits: row.cardLastDigits,
-                holderName: row.holderName
-            }))).toEqual([
-                { month: '2026-11', description: 'AMAZON BR', amountCents: 10050n, installment: [2, 3], cardLastDigits: '0192', holderName: null },
-                { month: '2026-11', description: 'PADARIA', amountCents: 750n, installment: [null, null], cardLastDigits: null, holderName: null },
-                { month: '2026-11', description: 'FEIRA', amountCents: 2000n, installment: [null, null], cardLastDigits: null, holderName: null },
-                { month: '2026-12', description: 'AMAZON BR', amountCents: 10050n, installment: [3, 3], cardLastDigits: '0192', holderName: null }
-            ]);
-        });
-
-        it('valor zero ou grande demais para centavos é 400, apontando o lançamento; nada é gravado', async () => {
-            const apply = spyApply();
-
-            await expectAppError(service.createManual(manual(nubankCard.id, [
-                { date: '2026-11-02', description: 'PADARIA', amount: '7.50' },
-                { date: '2026-11-02', description: 'BRINDE', amount: '0.00' }
-            ])), { code: 'IMPORT_INVALID_AMOUNT', statusCode: 400, reason: 'transactions[1].amount' });
-            await expectAppError(service.createManual(manual(nubankCard.id, [
-                { date: '2026-11-02', description: 'ENORME', amount: '99999999999999999.99' }
-            ])), { code: 'IMPORT_INVALID_AMOUNT', statusCode: 400, reason: 'transactions[0].amount' });
-            expect(apply).not.toHaveBeenCalled();
-        });
-
-        it('cartão inativo é 409, sem gravar nada', async () => {
-            const inactive = cards.seed({ active: false });
-            const apply = spyApply();
-
-            await expectAppError(service.createManual(manual(inactive.id, [])), {
-                code: 'CREDIT_CARD_INACTIVE', statusCode: 409, reason: 'credit_card_inactive'
-            });
-            expect(apply).not.toHaveBeenCalled();
-        });
-
-        it('lista vazia também é absoluta: apaga as despesas do mês', async () => {
-            await createNubank();
-
-            const result = await service.createManual(manual(nubankCard.id, []));
-
-            expect(result.summary).toEqual({ created: 0, updated: 0, removed: 6, projected: 0, ignored: 0 });
-            expect(imports.expensesOf(nubankCard.id)).toEqual([]);
         });
     });
 

@@ -91,34 +91,6 @@ export class CardImportSaveUploadDto extends CardImportUploadDto {
     public exclusions?: string;
 }
 
-export class ManualCardTransactionDto {
-    @ApiProperty({ type: String, format: 'date', pattern: DATE_PATTERN, example: '2026-10-18', description: 'Data da compra' })
-    public date!: string;
-
-    @ApiProperty({ type: String, maxLength: 200, example: 'AMAZON BR' })
-    public description!: string;
-
-    @ApiProperty({ ...MONEY_PROPERTY, description: 'Valor da parcela deste mês em reais' })
-    public amount!: string;
-
-    @ApiPropertyOptional({ type: () => CardInstallmentDto, nullable: true, description: 'Parcela deste mês; omitido ou null para compra à vista' })
-    public installment?: CardInstallmentDto | null;
-
-    @ApiPropertyOptional({ type: String, pattern: '^\\d{4}$', nullable: true, example: '0192' })
-    public cardLastDigits?: string | null;
-}
-
-export class CreateManualCardImportDto {
-    @ApiProperty(UUID_PROPERTY)
-    public cardId!: string;
-
-    @ApiProperty({ ...MONTH_PROPERTY, description: 'Mês da fatura, AAAA-MM' })
-    public month!: string;
-
-    @ApiProperty({ type: () => [ManualCardTransactionDto], maxItems: 500 })
-    public transactions!: ManualCardTransactionDto[];
-}
-
 export class ListCardImportsDto {
     @ApiPropertyOptional(UUID_PROPERTY)
     public cardId?: string;

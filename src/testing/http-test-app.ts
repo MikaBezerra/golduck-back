@@ -132,7 +132,7 @@ export class HttpTestApp {
         return new HttpTestApp(app, authRepository, accessToken, `http://127.0.0.1:${port}`);
     }
 
-    public async request(method: 'GET' | 'POST' | 'PATCH' | 'DELETE', path: string, options: TestRequestOptions = {}): Promise<TestResponse> {
+    public async request(method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', path: string, options: TestRequestOptions = {}): Promise<TestResponse> {
         const auth = options.auth ?? true;
         const token = typeof auth === 'string' ? auth : auth ? this.accessToken : undefined;
         const query = options.query

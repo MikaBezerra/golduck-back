@@ -53,4 +53,12 @@ export interface Config {
     readonly MAIL_SMTP_PASS?: string;
     /** Remetente, como "Golduck <voce@gmail.com>"; vazio = "Golduck <MAIL_SMTP_USER>". */
     readonly MAIL_FROM?: string;
+    /** Client ID da aplicação no Pluggy Dashboard. Sem ele (ou sem o secret), a sincronização responde 503 PLUGGY_DISABLED. */
+    readonly PLUGGY_CLIENT_ID?: string;
+    /** Client Secret da aplicação no Pluggy Dashboard (segredo). */
+    readonly PLUGGY_CLIENT_SECRET?: string;
+    /** Endereço da API da Pluggy (padrão https://api.pluggy.ai). */
+    readonly PLUGGY_API_URL: string;
+    /** Chave da rotina diária da Vercel (header Authorization: Bearer). Sem ela, GET /card-sync/cron responde 401. */
+    readonly CRON_SECRET?: string;
 }

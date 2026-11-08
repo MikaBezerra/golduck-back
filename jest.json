@@ -68,6 +68,18 @@
     "./src/modules/card-imports/parsers/card-statement.parser.ts": {
       "lines": 80,
       "branches": 85
+    },
+    "./src/modules/card-sync/service/card-sync.planner.ts": {
+      "lines": 95,
+      "branches": 90
+    },
+    "./src/modules/card-sync/service/pluggy-transaction.normalizer.ts": {
+      "lines": 95,
+      "branches": 90
+    },
+    "./src/modules/credit-cards/service/billing-calendar.ts": {
+      "lines": 95,
+      "branches": 90
     }
   }
 }

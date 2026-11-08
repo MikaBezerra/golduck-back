@@ -7,6 +7,8 @@ import { parseTrustProxy } from './trust-proxy.js';
 
 /** Tamanho mínimo do segredo do JWT (HS256 pede pelo menos 256 bits). */
 const JWT_SECRET_MIN_LENGTH = 32;
+/** A Vercel recomenda um segredo aleatório de pelo menos 16 caracteres para o CRON_SECRET. */
+const CRON_SECRET_MIN_LENGTH = 16;
 
 /**
  * Converte "https://app.exemplo.com, http://localhost:4200" em uma lista de origens.
@@ -62,7 +64,12 @@ export const configProvider = {
             MAIL_SMTP_PORT: Joi.number().empty('').default(465).integer().min(1).max(65535),
             MAIL_SMTP_USER: Joi.string().empty('').when('MAIL_ENABLED', { is: '1', then: Joi.required(), otherwise: Joi.optional() }),
             MAIL_SMTP_PASS: Joi.string().empty('').when('MAIL_ENABLED', { is: '1', then: Joi.required(), otherwise: Joi.optional() }),
-            MAIL_FROM: Joi.string().empty('').max(254).optional()
+            MAIL_FROM: Joi.string().empty('').max(254).optional(),
+            PLUGGY_CLIENT_ID: Joi.string().empty('').max(100).optional(),
+            PLUGGY_CLIENT_SECRET: Joi.string().empty('').max(500).optional(),
+            PLUGGY_API_URL: Joi.string().empty('').default('https://api.pluggy.ai').uri({ scheme: ['https', 'http'] })
+                .pattern(/[^/]$/, 'no trailing slash'),
+            CRON_SECRET: Joi.string().empty('').min(CRON_SECRET_MIN_LENGTH).optional()
         });
 
         const result = validationSchema.validate(env);

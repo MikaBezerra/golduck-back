@@ -1,5 +1,5 @@
 import type { CardExpense } from '../../../generated/prisma/client.js';
-import type { CardExpenseChanges } from '../repository/card-expense.repository.js';
+import type { CardExpenseChanges, NewCardExpenseRow, PurchaseCorrectionData } from '../repository/card-expense.repository.js';
 import type { CardExpenseScope } from '../service/card-expense-scope.js';
 import { randomUUID } from 'node:crypto';
 
@@ -35,6 +35,8 @@ const monthInScope = (rowMonth: Date, month: Date, scope: CardExpenseScope): boo
  */
 export class InMemoryCardExpenseRepository {
     public readonly expenses = new Map<string, CardExpense>();
+    /** Correções de mês/parcela gravadas, por "cardId|purchaseKey". */
+    public readonly corrections = new Map<string, PurchaseCorrectionData>();
 
     /** Cadastra direto (como um upload de fatura faria), para montar o cenário do teste. */
     public seed(data: Partial<CardExpense> & Pick<CardExpense, 'month' | 'categoryId'>): CardExpense {
@@ -44,6 +46,8 @@ export class InMemoryCardExpenseRepository {
             id,
             cardId: CARD_ID,
             importId: IMPORT_ID,
+            origin: 'UPLOAD',
+            externalId: null,
             sourceMonth: data.month,
             purchaseKey: `S|${id}`,
             transactionDate: new Date('2026-09-15T00:00:00.000Z'),
@@ -106,6 +110,40 @@ export class InMemoryCardExpenseRepository {
         return [...this.expenses.values()].filter(expense => ids.includes(expense.id));
     }
 
+    public async findPurchase(cardId: string, purchaseKey: string): Promise<CardExpense[]> {
+        return [...this.expenses.values()]
+            .filter(expense => expense.cardId === cardId && expense.purchaseKey === purchaseKey)
+            .sort(compareRows);
+    }
+
+    public async createPurchase(rows: NewCardExpenseRow[]): Promise<CardExpense[]> {
+        for (const row of rows) {
+            this.insert(row);
+        }
+
+        return this.findPurchase(rows[0].cardId, rows[0].purchaseKey);
+    }
+
+    public async replacePurchase(
+        purchase: { cardId: string; purchaseKey: string },
+        rows: NewCardExpenseRow[],
+        correction: PurchaseCorrectionData | null
+    ): Promise<CardExpense[]> {
+        for (const row of await this.findPurchase(purchase.cardId, purchase.purchaseKey)) {
+            this.expenses.delete(row.id);
+        }
+
+        for (const row of rows) {
+            this.insert(row);
+        }
+
+        if (correction) {
+            this.corrections.set(`${purchase.cardId}|${purchase.purchaseKey}`, correction);
+        }
+
+        return this.findPurchase(purchase.cardId, purchase.purchaseKey);
+    }
+
     public async updateWithFollowingInstallments(expenses: CardExpense[], changes: CardExpenseChanges): Promise<CardExpense[]> {
         const defined = Object.fromEntries(
             Object.entries(changes).filter(([, value]) => value !== undefined)
@@ -136,6 +174,14 @@ export class InMemoryCardExpenseRepository {
         }
 
         return restored.map(row => this.get(row.id)).sort(compareRows);
+    }
+
+    private insert(row: NewCardExpenseRow): CardExpense {
+        const now = new Date();
+        const expense: CardExpense = { ...row, id: randomUUID(), createdAt: now, updatedAt: now };
+
+        this.expenses.set(expense.id, expense);
+        return expense;
     }
 
     private rowsInScope(expenses: CardExpense[], scope: CardExpenseScope): CardExpense[] {

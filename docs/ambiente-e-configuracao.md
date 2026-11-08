@@ -90,6 +90,9 @@ de 32 caracteres, a API nem sobe.
 | `MAIL_SMTP_HOST`, `MAIL_SMTP_PORT` | servidor SMTP (padrão `smtp.gmail.com` e `465`, com TLS direto; `587` usa STARTTLS) |
 | `MAIL_SMTP_USER`, `MAIL_SMTP_PASS` | usuário e senha SMTP (no Gmail, o endereço e a **senha de app**); obrigatórios com `MAIL_ENABLED=1` |
 | `MAIL_FROM` | remetente, como `Golduck <voce@gmail.com>`; vazio = `Golduck <MAIL_SMTP_USER>` |
+| `PLUGGY_CLIENT_ID`, `PLUGGY_CLIENT_SECRET` | credenciais da aplicação no Pluggy Dashboard (o secret é segredo); sem elas, a sincronização responde `503 PLUGGY_DISABLED` ([sincronizacao-de-cartoes.md](sincronizacao-de-cartoes.md)) |
+| `PLUGGY_API_URL` | endereço da API da Pluggy (padrão `https://api.pluggy.ai`, sem barra no fim) |
+| `CRON_SECRET` | chave da rotina diária da Vercel (mínimo de 16 caracteres); a Vercel manda `Authorization: Bearer <CRON_SECRET>`. Sem ela, `GET /card-sync/cron` responde 401 |
 | `GIT_COMMIT_SHA` | commit publicado (o deploy preenche; na Vercel também vem em `VERCEL_GIT_COMMIT_SHA`) |
 
 Criou ou mudou uma variável? Atualize o `config.provider.ts` (validação), o tipo `Config`, o

@@ -4,13 +4,28 @@ import { ApiBearerAuth, ApiNoContentResponse, ApiOperation, ApiParam, ApiTags } 
 import { Role } from '../../../generated/prisma/client.js';
 import { Roles } from '../../auth/security/auth.decorators.js';
 import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs.js';
-import { CardExpenseResponse, CardExpenseScopeDto, ListCardExpensesDto, UpdateCardExpensesDto } from '../dto/card-expense.dto.js';
-import { CardExpenseIdPipe, CardExpenseScopePipe, ListCardExpensesPipe, UpdateCardExpensesPipe } from '../flow/card-expense.pipe.js';
+import {
+    CardExpenseResponse,
+    CardExpenseScopeDto,
+    CreateCardExpenseDto,
+    ListCardExpensesDto,
+    MoveCardExpenseDto,
+    UpdateCardExpensesDto
+} from '../dto/card-expense.dto.js';
+import {
+    CardExpenseIdPipe,
+    CardExpenseScopePipe,
+    CreateCardExpensePipe,
+    ListCardExpensesPipe,
+    MoveCardExpensePipe,
+    UpdateCardExpensesPipe
+} from '../flow/card-expense.pipe.js';
 import { CardExpenseService } from '../service/card-expense.service.js';
 
 /**
- * Despesas do cartão são criadas e removidas pelos uploads de fatura. Aqui o usuário
- * personaliza, exclui (exclusão suave, mantida pelos próximos uploads) e restaura.
+ * Despesas do cartão vêm da sincronização com o Meu Pluggy, de uploads de fatura ou de "Adicionar compra". Aqui o usuário
+ * lança compras, muda a compra de fatura, personaliza, exclui (exclusão suave, mantida pelas próximas
+ * sincronizações e uploads) e restaura.
  */
 @ApiTags('card-expenses')
 @ApiBearerAuth()
@@ -35,6 +50,35 @@ export class CardExpenseController {
     @ApiDataResponse(CardExpenseResponse)
     public async findById(@Param('id', CardExpenseIdPipe) id: string): Promise<CardExpenseResponse> {
         return this.cardExpenseService.findById(id);
+    }
+
+    @Post()
+    @ApiOperation({
+        summary: 'Adicionar compra: lança uma compra que está faltando na fatura',
+        description: 'Parcelada, lança também as parcelas seguintes. A sincronização não apaga estas linhas; quando o banco '
+            + 'trouxer a mesma compra (mesmo valor, até 3 dias de diferença), ela substitui a lançada à mão e herda apelido, '
+            + 'categoria e pessoa. Devolve as linhas criadas.'
+    })
+    @ApiDataResponse(CardExpenseResponse, { isArray: true, status: HttpStatus.CREATED })
+    public async create(@Body(CreateCardExpensePipe) body: CreateCardExpenseDto): Promise<CardExpenseResponse[]> {
+        return this.cardExpenseService.create(body);
+    }
+
+    @Post(':id/move')
+    @HttpCode(HttpStatus.OK)
+    @ApiOperation({
+        summary: 'Muda a compra de fatura (e, se quiser, de parcela)',
+        description: 'Esta linha passa a ser a parcela informada no mês informado e as outras seguem a partir dela: a compra '
+            + 'inteira muda e os meses que ficaram sem ela deixam de tê-la. Em compras sincronizadas, a sincronização passa a '
+            + 'respeitar a correção. Compras de upload não mudam (409 CARD_EXPENSE_MOVE_NOT_ALLOWED). Devolve as linhas da compra.'
+    })
+    @ApiParam({ name: 'id', format: 'uuid' })
+    @ApiDataResponse(CardExpenseResponse, { isArray: true })
+    public async move(
+        @Param('id', CardExpenseIdPipe) id: string,
+        @Body(MoveCardExpensePipe) body: MoveCardExpenseDto
+    ): Promise<CardExpenseResponse[]> {
+        return this.cardExpenseService.move(id, body);
     }
 
     @Patch()

@@ -56,7 +56,8 @@ describe('configProvider', () => {
         expect(String(config.TRUST_PROXY)).toBe('false');
 
         for (const key of ['API_CORS_ORIGINS', 'SWAGGER_ENABLE', 'AUTH_COOKIE_DOMAIN', 'LOG_LEVEL', 'LOG_FORMAT', 'LOG_REQUEST_BODY',
-            'SLOW_REQUEST_MS', 'SLOW_QUERY_MS', 'GIT_COMMIT_SHA', 'MAIL_SMTP_USER', 'MAIL_SMTP_PASS', 'MAIL_FROM'] as const) {
+            'SLOW_REQUEST_MS', 'SLOW_QUERY_MS', 'GIT_COMMIT_SHA', 'MAIL_SMTP_USER', 'MAIL_SMTP_PASS', 'MAIL_FROM', 'PLUGGY_CLIENT_ID',
+            'PLUGGY_CLIENT_SECRET', 'CRON_SECRET'] as const) {
             expect(config[key]).toBeUndefined();
         }
     });

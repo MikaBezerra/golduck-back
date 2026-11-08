@@ -43,11 +43,14 @@ export class InMemoryCardImportRepository {
 
     /** Cadastra uma despesa do cartão direto (monta o cenário do teste). */
     public seedExpense(
-        data: Partial<CardExpense> & Pick<CardExpense, 'cardId' | 'importId' | 'month' | 'purchaseKey' | 'categoryId'>
+        data: Partial<CardExpense> & Pick<CardExpense, 'cardId' | 'month' | 'purchaseKey' | 'categoryId'>
     ): CardExpense {
         const now = new Date();
         const expense: CardExpense = {
             id: randomUUID(),
+            importId: null,
+            origin: 'UPLOAD',
+            externalId: null,
             sourceMonth: data.month,
             transactionDate: data.month,
             originalDescription: 'Compra',
@@ -93,12 +96,12 @@ export class InMemoryCardImportRepository {
                 throw new Error(`despesa ${update.id} não existe`);
             }
 
-            store.expenses.set(update.id, { ...current, ...update.data, importId: cardImport.id, updatedAt: now });
+            store.expenses.set(update.id, { ...current, ...update.data, importId: cardImport.id, origin: 'UPLOAD', updatedAt: now });
         }
 
         for (const row of plan.creates) {
             const id = randomUUID();
-            store.expenses.set(id, { ...row, id, importId: cardImport.id, createdAt: now, updatedAt: now });
+            store.expenses.set(id, { ...row, id, importId: cardImport.id, origin: 'UPLOAD', externalId: null, createdAt: now, updatedAt: now });
         }
 
         for (const decision of input.exclusions ?? []) {
@@ -152,7 +155,9 @@ export class InMemoryCardImportRepository {
 
     private readPlanningContext(store: Store, cardId: string, month: Date, purchaseKeys: string[]): PlanningContext {
         const rows = [...store.expenses.values()].filter(expense => expense.cardId === cardId);
-        const monthKeys = rows.filter(row => row.month.getTime() === month.getTime()).map(row => row.purchaseKey);
+        const monthKeys = rows
+            .filter(row => row.month.getTime() === month.getTime() && row.origin !== 'MANUAL')
+            .map(row => row.purchaseKey);
         const keys = new Set([...purchaseKeys, ...monthKeys]);
         const later = [...store.imports.values()]
             .filter(cardImport => cardImport.cardId === cardId && cardImport.month.getTime() > month.getTime())

@@ -51,14 +51,16 @@ Login exigido em todas, salvo as marcadas como públicas. ADMIN acessa tudo.
 | `incomes` | `POST /incomes` (mesmo valor em vários meses), `GET /incomes[?year]`, `GET/PATCH/DELETE /incomes/{month}` |
 | `reserves` | `POST /reserves`, `GET /reserves[?year]`, `GET /reserves/totals`, `GET/PATCH/DELETE /reserves/{month}` |
 | `manual-expenses` | `POST /manual-expenses`, `GET /manual-expenses?month`, `GET /manual-expenses/{id}`, `PATCH` e `DELETE /manual-expenses` (vários IDs, em transação) |
-| `credit-cards` | `POST /credit-cards`, `GET /credit-cards`, `GET /credit-cards/{id}`, `PATCH /credit-cards/{id}` |
-| `card-imports` | `POST /card-imports` (upload), `POST /card-imports/preview`, `POST /card-imports/manual`, `GET /card-imports`, `GET/DELETE /card-imports/{id}` |
-| `card-expenses` | `GET /card-expenses?month&cardId[&includeExcluded]`, `GET /card-expenses/{id}`, `PATCH /card-expenses`, `DELETE /card-expenses`, `POST /card-expenses/restore` |
+| `credit-cards` | `POST /credit-cards`, `GET /credit-cards`, `GET /credit-cards/{id}`, `PATCH /credit-cards/{id}` (ciclo da fatura e item do Meu Pluggy), `GET /credit-cards/{id}/bills[?from&to]`, `PUT /credit-cards/{id}/bills/{month}` (melhor dia da fatura) |
+| `card-sync` | `POST /credit-cards/{id}/sync` (botão "Atualizar"), `POST /card-sync` (todos os cartões), `GET /card-sync/cron` (pública, só com `Authorization: Bearer <CRON_SECRET>`: rotina diária da Vercel) |
+| `card-imports` | `POST /card-imports` (upload), `POST /card-imports/preview`, `GET /card-imports`, `GET/DELETE /card-imports/{id}` |
+| `card-expenses` | `GET /card-expenses?month&cardId[&includeExcluded]`, `GET /card-expenses/{id}`, `POST /card-expenses` ("Adicionar compra"), `POST /card-expenses/{id}/move` (mudar de fatura/parcela), `PATCH /card-expenses`, `DELETE /card-expenses`, `POST /card-expenses/restore` |
 | `summary` | `GET /summary?month`, `GET /summary/annual?year`, `GET /summary/statement?month` (tabela por pessoa) |
 | `summary-dispatch` (só ADMIN) | `POST /summary/dispatches` (envia o resumo por e-mail; header `Idempotency-Key`), `GET /summary/dispatches?month`, `GET /summary/dispatches/preview?month`, `GET /summary/dispatches/email?month&personId` |
 
 Os campos de cada rota estão no Swagger; as regras, em [regras-de-negocio.md](regras-de-negocio.md) e
-[importacao-de-faturas.md](importacao-de-faturas.md); o envio por e-mail, em [envio-de-resumos.md](envio-de-resumos.md).
+[importacao-de-faturas.md](importacao-de-faturas.md); a sincronização dos cartões, em
+[sincronizacao-de-cartoes.md](sincronizacao-de-cartoes.md); o envio por e-mail, em [envio-de-resumos.md](envio-de-resumos.md).
 
 ## Validação
 
@@ -96,9 +98,10 @@ Dos módulos (`errors/` de cada um):
 | `incomes` | `INCOME_NOT_FOUND` 404, `INCOME_MONTH_CONFLICT` 409, `INCOME_INVALID_AMOUNT` 400 |
 | `reserves` | `RESERVE_NOT_FOUND` 404, `RESERVE_MONTH_CONFLICT` 409, `RESERVE_INVALID_AMOUNT` 400 |
 | `manual-expenses` | `MANUAL_EXPENSE_NOT_FOUND` 404, `MANUAL_EXPENSE_INVALID_AMOUNT` 400, `MANUAL_EXPENSE_INACTIVE_CATEGORY` 409, `MANUAL_EXPENSE_INACTIVE_PERSON` 409 |
-| `credit-cards` | `CREDIT_CARD_NOT_FOUND` 404, `CREDIT_CARD_INACTIVE` 409 |
-| `card-imports` | `CARD_IMPORT_NOT_FOUND` 404, `IMPORT_FILE_REQUIRED` 400, `IMPORT_INVALID_FILE_TYPE` 400, `IMPORT_INVALID_AMOUNT` 400, `IMPORT_OVERRIDE_UNKNOWN_KEY` 400, `IMPORT_FILE_TOO_LARGE` 413, `IMPORT_FILE_PASSWORD_INVALID` 422, `IMPORT_UNSUPPORTED_FORMAT` 422 |
-| `card-expenses` | `CARD_EXPENSE_NOT_FOUND` 404, `CARD_EXPENSE_INACTIVE_CATEGORY` 409, `CARD_EXPENSE_INACTIVE_PERSON` 409 |
+| `credit-cards` | `CREDIT_CARD_NOT_FOUND` 404, `CREDIT_CARD_INACTIVE` 409, `CREDIT_CARD_BILLING_NOT_CONFIGURED` 409, `CREDIT_CARD_BILL_RANGE_INVALID` 400, `CREDIT_CARD_BILL_DATE_OUT_OF_RANGE` 422 |
+| `card-sync` | `CARD_SYNC_NOT_CONFIGURED` 409, `CARD_SYNC_NO_CREDIT_ACCOUNT` 422, `CARD_SYNC_ITEM_NOT_FOUND` 422, `PLUGGY_AUTH_FAILED` 502, `PLUGGY_UNAVAILABLE` 502, `PLUGGY_DISABLED` 503, `CRON_UNAUTHORIZED` 401 (em `POST /card-sync`, o erro de cada cartão vem no resultado dele, com 200) |
+| `card-imports` | `CARD_IMPORT_NOT_FOUND` 404, `IMPORT_FILE_REQUIRED` 400, `IMPORT_INVALID_FILE_TYPE` 400, `IMPORT_OVERRIDE_UNKNOWN_KEY` 400, `IMPORT_FILE_TOO_LARGE` 413, `IMPORT_FILE_PASSWORD_INVALID` 422, `IMPORT_UNSUPPORTED_FORMAT` 422 |
+| `card-expenses` | `CARD_EXPENSE_NOT_FOUND` 404, `CARD_EXPENSE_INACTIVE_CATEGORY` 409, `CARD_EXPENSE_INACTIVE_PERSON` 409, `CARD_EXPENSE_MOVE_NOT_ALLOWED` 409, `CARD_EXPENSE_INSTALLMENT_INVALID` 422 |
 | `summary-dispatch` | `SUMMARY_DISPATCH_UNKNOWN_PERSON` 400, `SUMMARY_DISPATCH_IN_PROGRESS` 409, `SUMMARY_DISPATCH_KEY_REUSED` 409, `MAIL_DISABLED` 503, `MAIL_UNAVAILABLE` 503 (falha de uma pessoa não é erro: vira item `FAILED` na resposta 200) |
 
 Criou um código? Acrescente aqui e avise o front (ele pode querer uma mensagem própria).

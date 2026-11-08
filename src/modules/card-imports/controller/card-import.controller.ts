@@ -1,5 +1,4 @@
 import {
-    Body,
     Controller,
     Delete,
     Get,
@@ -34,7 +33,6 @@ import {
     CardImportSaveUploadDto,
     CardImportUploadDto,
     CreateCardImportDto,
-    CreateManualCardImportDto,
     ListCardImportsDto
 } from '../dto/card-import.dto.js';
 import {
@@ -42,13 +40,13 @@ import {
     CardImportIdPipe,
     CardImportOverridesPipe,
     CreateCardImportPipe,
-    CreateManualCardImportPipe,
     ListCardImportsPipe
 } from '../flow/card-import.pipe.js';
 import { readStatementUpload } from '../flow/multipart-upload.js';
 import { CardImportService } from '../service/card-import.service.js';
 
-const ABSOLUTE_MONTH_NOTE = 'O resultado é absoluto para o mês da fatura: substitui o que havia no cartão naquele mês.';
+const ABSOLUTE_MONTH_NOTE = 'O resultado é absoluto para o mês da fatura: substitui o que havia no cartão naquele mês, '
+    + 'menos as compras lançadas em "Adicionar compra".';
 
 @ApiTags('card-imports')
 @ApiBearerAuth()
@@ -107,19 +105,6 @@ export class CardImportController {
         const fields = this.createPipe.transform(upload.fields) as CreateCardImportDto;
 
         return this.cardImportService.preview(fields, upload.file);
-    }
-
-    /**
-     * Fatura digitada lançamento por lançamento, sem arquivo. Como no upload,
-     * substitui tudo o que existe no cartão para o mês informado.
-     */
-    @Post('manual')
-    @ApiOperation({ summary: 'Registra uma fatura digitada, sem arquivo', description: ABSOLUTE_MONTH_NOTE })
-    @ApiDataResponse(CardImportResultResponse, { status: HttpStatus.CREATED })
-    public async createManual(
-        @Body(CreateManualCardImportPipe) body: CreateManualCardImportDto
-    ): Promise<CardImportResultResponse> {
-        return this.cardImportService.createManual(body);
     }
 
     @Get()

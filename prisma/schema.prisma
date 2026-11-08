@@ -39,13 +39,13 @@ model AuthSession {
 }
 
 model Person {
-  id             String          @id @default(uuid()) @db.Uuid
-  name           String          @db.VarChar(120)
-  email          String?         @db.VarChar(254)
-  phone          String?         @db.VarChar(16)
-  active         Boolean         @default(true)
-  createdAt      DateTime        @default(now()) @db.Timestamptz(3)
-  updatedAt      DateTime        @updatedAt @db.Timestamptz(3)
+  id             String                @id @default(uuid()) @db.Uuid
+  name           String                @db.VarChar(120)
+  email          String?               @db.VarChar(254)
+  phone          String?               @db.VarChar(16)
+  active         Boolean               @default(true)
+  createdAt      DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime              @updatedAt @db.Timestamptz(3)
   manualExpenses ManualExpense[]
   cardExpenses   CardExpense[]
   dispatchItems  SummaryDispatchItem[]
@@ -103,16 +103,72 @@ model ManualExpense {
 }
 
 model CreditCard {
-  id        String        @id @default(uuid()) @db.Uuid
-  name      String        @db.VarChar(120)
-  bank      CardBank
-  active    Boolean       @default(true)
-  createdAt DateTime      @default(now()) @db.Timestamptz(3)
-  updatedAt DateTime      @updatedAt @db.Timestamptz(3)
-  imports   CardImport[]
-  expenses  CardExpense[]
+  id                   String                   @id @default(uuid()) @db.Uuid
+  name                 String                   @db.VarChar(120)
+  bank                 CardBank
+  active               Boolean                  @default(true)
+  /// Dia do vencimento (1 a 31): a fatura recebe o nome do mês em que vence.
+  dueDay               Int?
+  /// Melhor dia de compra padrão: compras a partir dele vão para a fatura seguinte.
+  bestPurchaseDay      Int?
+  /// Item (a conexão de um banco) no Meu Pluggy.
+  pluggyItemId         String?                  @db.Uuid
+  /// Conta de cartão de crédito dentro do item, descoberta na primeira sincronização.
+  pluggyAccountId      String?                  @db.VarChar(64)
+  /// Primeira fatura (mês) controlada pela sincronização; as anteriores ficam como estão.
+  syncFromMonth        DateTime?                @db.Date
+  /// Fim da última sincronização que deu certo.
+  syncedAt             DateTime?                @db.Timestamptz(3)
+  /// Última atualização dos dados na Pluggy (lastUpdatedAt do item).
+  syncDataUpdatedAt    DateTime?                @db.Timestamptz(3)
+  /// Situação do item na Pluggy (UPDATED, LOGIN_ERROR...).
+  syncStatus           String?                  @db.VarChar(40)
+  /// Erro da última tentativa; null quando ela deu certo.
+  syncError            String?                  @db.VarChar(300)
+  /// Fim da autorização do Open Finance (renovada no Meu Pluggy).
+  syncConsentExpiresAt DateTime?                @db.Timestamptz(3)
+  createdAt            DateTime                 @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime                 @updatedAt @db.Timestamptz(3)
+  imports              CardImport[]
+  expenses             CardExpense[]
+  bills                CardBill[]
+  corrections          CardPurchaseCorrection[]
 
   @@index([active, name])
+}
+
+/// Uma fatura do cartão (mês do vencimento): o melhor dia ajustado pelo usuário e as datas informadas pelo banco.
+model CardBill {
+  id               String    @id @default(uuid()) @db.Uuid
+  cardId           String    @db.Uuid
+  month            DateTime  @db.Date
+  /// Melhor dia de compra desta fatura, informado pelo usuário (vale sobre o padrão do cartão).
+  bestPurchaseDate DateTime? @db.Date
+  /// Fechamento informado pelo banco depois que a fatura fecha (vale sobre tudo).
+  bankClosingDate  DateTime? @db.Date
+  bankDueDate      DateTime? @db.Date
+  createdAt        DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime  @updatedAt @db.Timestamptz(3)
+
+  card CreditCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@unique([cardId, month])
+}
+
+/// Correção do usuário: a parcela installmentNumber da compra fica em month, e as outras seguem a partir dela.
+model CardPurchaseCorrection {
+  id                String   @id @default(uuid()) @db.Uuid
+  cardId            String   @db.Uuid
+  purchaseKey       String   @db.VarChar(320)
+  installmentNumber Int
+  installmentTotal  Int?
+  month             DateTime @db.Date
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @db.Timestamptz(3)
+
+  card CreditCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@unique([cardId, purchaseKey])
 }
 
 model CardImport {
@@ -133,33 +189,37 @@ model CardImport {
 }
 
 model CardExpense {
-  id                  String    @id @default(uuid()) @db.Uuid
-  cardId              String    @db.Uuid
-  importId            String    @db.Uuid
-  month               DateTime  @db.Date
-  sourceMonth         DateTime  @db.Date
-  purchaseKey         String    @db.VarChar(320)
-  transactionDate     DateTime  @db.Date
-  originalDescription String    @db.VarChar(200)
-  holderName          String?   @db.VarChar(120)
-  cardLastDigits      String?   @db.VarChar(4)
-  amountCents         BigInt    @db.BigInt
+  id                  String            @id @default(uuid()) @db.Uuid
+  cardId              String            @db.Uuid
+  /// Upload que gravou a linha por último; null nas linhas sincronizadas ou lançadas à mão.
+  importId            String?           @db.Uuid
+  origin              CardExpenseOrigin @default(UPLOAD)
+  /// Id da transação na Pluggy (linhas sincronizadas).
+  externalId          String?           @db.VarChar(64)
+  month               DateTime          @db.Date
+  sourceMonth         DateTime          @db.Date
+  purchaseKey         String            @db.VarChar(320)
+  transactionDate     DateTime          @db.Date
+  originalDescription String            @db.VarChar(200)
+  holderName          String?           @db.VarChar(120)
+  cardLastDigits      String?           @db.VarChar(4)
+  amountCents         BigInt            @db.BigInt
   installmentNumber   Int?
   installmentTotal    Int?
-  nickname            String?   @db.VarChar(160)
-  categoryId          String    @db.Uuid
-  personId            String?   @db.Uuid
+  nickname            String?           @db.VarChar(160)
+  categoryId          String            @db.Uuid
+  personId            String?           @db.Uuid
   /// Exclusão suave: a linha sai das listas e dos totais, e os uploads a mantêm excluída.
-  excludedAt          DateTime? @db.Timestamptz(3)
+  excludedAt          DateTime?         @db.Timestamptz(3)
   /// "Não perguntar de novo" quando a compra excluída reaparece num upload.
-  exclusionRemembered Boolean   @default(false)
-  createdAt           DateTime  @default(now()) @db.Timestamptz(3)
-  updatedAt           DateTime  @updatedAt @db.Timestamptz(3)
+  exclusionRemembered Boolean           @default(false)
+  createdAt           DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime          @updatedAt @db.Timestamptz(3)
 
-  card     CreditCard @relation(fields: [cardId], references: [id], onDelete: Restrict)
-  import   CardImport @relation(fields: [importId], references: [id], onDelete: Cascade)
-  category Category   @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  person   Person?    @relation(fields: [personId], references: [id], onDelete: Restrict)
+  card     CreditCard  @relation(fields: [cardId], references: [id], onDelete: Restrict)
+  import   CardImport? @relation(fields: [importId], references: [id], onDelete: Cascade)
+  category Category    @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  person   Person?     @relation(fields: [personId], references: [id], onDelete: Restrict)
 
   @@unique([cardId, month, purchaseKey])
   @@index([cardId, purchaseKey])
@@ -221,6 +281,13 @@ enum SummaryDispatchItemStatus {
   SENT
   SKIPPED_NO_EMAIL
   FAILED
+}
+
+/// De onde veio a despesa do cartão: upload de fatura, sincronização com a Pluggy ou "Adicionar compra".
+enum CardExpenseOrigin {
+  UPLOAD
+  SYNC
+  MANUAL
 }
 
 enum CardBank {

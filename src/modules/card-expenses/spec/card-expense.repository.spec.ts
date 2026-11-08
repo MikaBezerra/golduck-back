@@ -2,7 +2,7 @@ import type { CardExpense } from '../../../generated/prisma/client.js';
 import type { PrismaService } from '../../common/index.js';
 import { jest } from '@jest/globals';
 
-import { CardExpenseRepository } from '../repository/card-expense.repository.js';
+import { CardExpenseRepository, NewCardExpenseRow } from '../repository/card-expense.repository.js';
 
 const OCTOBER = new Date('2026-10-01T00:00:00.000Z');
 const NOVEMBER = new Date('2026-11-01T00:00:00.000Z');
@@ -24,7 +24,12 @@ describe('CardExpenseRepository', () => {
     const tx = {
         cardExpense: {
             updateMany: jest.fn(async () => Promise.resolve({ count: 0 })),
-            findMany: jest.fn(async (): Promise<Array<{ id: string }>> => Promise.resolve([]))
+            findMany: jest.fn(async (): Promise<Array<{ id: string }>> => Promise.resolve([])),
+            createMany: jest.fn(async () => Promise.resolve({ count: 1 })),
+            deleteMany: jest.fn(async () => Promise.resolve({ count: 1 }))
+        },
+        cardPurchaseCorrection: {
+            upsert: jest.fn(async () => Promise.resolve({}))
         }
     };
     const prisma = {
@@ -169,6 +174,46 @@ describe('CardExpenseRepository', () => {
                 select: { id: true }
             });
             expect(tx.cardExpense.updateMany).toHaveBeenCalledWith({ where: { id: { in: [] } }, data: { excludedAt: null, exclusionRemembered: false } });
+        });
+    });
+
+    describe('compras inteiras ("Adicionar compra" e mover de fatura)', () => {
+        const purchase = { cardId: 'cartao-1', purchaseKey: 'P|2026-09-10|5|LOJA' };
+        const row = { ...purchase, month: NOVEMBER } as unknown as NewCardExpenseRow;
+
+        it('findPurchase busca todas as parcelas da compra, na ordem da fatura', async () => {
+            await repository.findPurchase('cartao-1', 'P|2026-09-10|5|LOJA');
+
+            expect(prisma.cardExpense.findMany).toHaveBeenCalledWith({ where: purchase, orderBy: ORDER_BY });
+        });
+
+        it('createPurchase grava as linhas e devolve as da compra, numa transação', async () => {
+            await repository.createPurchase([row]);
+
+            expect(tx.cardExpense.createMany).toHaveBeenCalledWith({ data: [row] });
+            expect(tx.cardExpense.findMany).toHaveBeenCalledWith({ where: purchase, orderBy: ORDER_BY });
+        });
+
+        it('replacePurchase troca as linhas da compra e grava a correção por upsert (cartão + compra)', async () => {
+            const correction = { installmentNumber: 1, installmentTotal: 5, month: NOVEMBER };
+
+            await repository.replacePurchase(purchase, [row], correction);
+
+            expect(tx.cardExpense.deleteMany).toHaveBeenCalledWith({ where: purchase });
+            expect(tx.cardExpense.createMany).toHaveBeenCalledWith({ data: [row] });
+            expect(tx.cardPurchaseCorrection.upsert).toHaveBeenCalledWith({
+                where: { cardId_purchaseKey: purchase },
+                create: { ...purchase, ...correction },
+                update: correction
+            });
+        });
+
+        it('replacePurchase sem linhas e sem correção só apaga', async () => {
+            await repository.replacePurchase(purchase, [], null);
+
+            expect(tx.cardExpense.deleteMany).toHaveBeenCalledWith({ where: purchase });
+            expect(tx.cardExpense.createMany).not.toHaveBeenCalled();
+            expect(tx.cardPurchaseCorrection.upsert).not.toHaveBeenCalled();
         });
     });
 });

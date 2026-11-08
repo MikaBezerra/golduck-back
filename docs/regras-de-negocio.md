@@ -39,8 +39,15 @@ O Golduck organiza as contas de uma casa em que várias pessoas dividem as despe
 
 ## Despesas do cartão (`card-expenses`)
 
-As linhas vêm das faturas importadas ([importacao-de-faturas.md](importacao-de-faturas.md)). O usuário
-pode:
+As linhas vêm da sincronização com o Meu Pluggy ([sincronizacao-de-cartoes.md](sincronizacao-de-cartoes.md)),
+de uploads de fatura ([importacao-de-faturas.md](importacao-de-faturas.md)) ou de "Adicionar compra"
+(`origin`: `SYNC`, `UPLOAD` ou `MANUAL`). A fatura recebe o nome do **mês em que vence**; o ciclo de cada
+fatura (melhor dia de compra, fechamento) está em [sincronizacao-de-cartoes.md](sincronizacao-de-cartoes.md#ciclo-da-fatura-credit-cardsservicebilling-calendarts).
+O usuário pode:
+
+- **adicionar uma compra** que está faltando numa fatura (à vista ou parcelada, lançando as parcelas seguintes);
+- **mudar a compra de fatura ou de parcela**: a compra inteira muda a partir da linha escolhida, e a
+  sincronização passa a respeitar a correção (compras de upload não mudam);
 
 - dar um **apelido** e escolher **categoria** e **pessoa**; numa compra parcelada, a mudança vale também
   para as parcelas seguintes;

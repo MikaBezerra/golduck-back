@@ -1,5 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+import { CardExpenseOrigin } from '../../../generated/prisma/client.js';
+
 import {
     DATE_PATTERN,
     DATE_TIME_PROPERTY,
@@ -63,6 +65,52 @@ export class CardExpenseScopeDto {
     public scope!: CardExpenseScope;
 }
 
+/** "Adicionar compra": uma compra que está faltando numa fatura. */
+export class CreateCardExpenseDto {
+    @ApiProperty(UUID_PROPERTY)
+    public cardId!: string;
+
+    @ApiProperty({ ...MONTH_PROPERTY, description: 'Mês da fatura (o do vencimento)' })
+    public month!: string;
+
+    @ApiProperty({ type: String, format: 'date', pattern: DATE_PATTERN, example: '2026-11-06', description: 'Data da compra' })
+    public date!: string;
+
+    @ApiProperty({ type: String, maxLength: 200, example: 'Padaria' })
+    public description!: string;
+
+    @ApiProperty({ ...MONEY_PROPERTY, description: 'Valor da parcela (ou da compra à vista) em reais' })
+    public amount!: string;
+
+    @ApiPropertyOptional({
+        type: () => CardInstallmentDto,
+        nullable: true,
+        description: 'Parcela que cai neste mês; as seguintes são lançadas nos meses seguintes. Omitido ou null = à vista.'
+    })
+    public installment?: CardInstallmentDto | null;
+
+    @ApiPropertyOptional({ type: String, maxLength: 160, nullable: true })
+    public nickname?: string | null;
+
+    @ApiPropertyOptional({ ...UUID_PROPERTY, description: 'Padrão: a categoria padrão ("Outros")' })
+    public categoryId?: string;
+
+    @ApiPropertyOptional({ ...UUID_PROPERTY, nullable: true, description: 'null ou omitido = compartilhada' })
+    public personId?: string | null;
+}
+
+/** Corrige em que fatura cai a compra (e, se quiser, qual parcela é): vale para a compra inteira. */
+export class MoveCardExpenseDto {
+    @ApiProperty({ ...MONTH_PROPERTY, description: 'Fatura em que esta linha deve ficar' })
+    public month!: string;
+
+    @ApiPropertyOptional({ type: Number, minimum: 1, maximum: 99, example: 1, description: 'Parcela que esta linha passa a ser; padrão: a atual' })
+    public installmentNumber?: number;
+
+    @ApiPropertyOptional({ type: Number, minimum: 1, maximum: 99, example: 5, description: 'Total de parcelas; padrão: o atual' })
+    public installmentTotal?: number;
+}
+
 export class CardExpenseResponse {
     @ApiProperty(UUID_PROPERTY)
     public id!: string;
@@ -70,8 +118,16 @@ export class CardExpenseResponse {
     @ApiProperty(UUID_PROPERTY)
     public cardId!: string;
 
-    @ApiProperty({ ...UUID_PROPERTY, description: 'Upload que gravou esta linha por último' })
-    public importId!: string;
+    @ApiProperty({ ...UUID_PROPERTY, nullable: true, description: 'Upload que gravou esta linha por último; null quando veio da sincronização ou de "Adicionar compra"' })
+    public importId!: string | null;
+
+    @ApiProperty({
+        type: String,
+        enum: CardExpenseOrigin,
+        enumName: 'CardExpenseOrigin',
+        description: 'UPLOAD (fatura enviada por arquivo), SYNC (Meu Pluggy) ou MANUAL ("Adicionar compra")'
+    })
+    public origin!: CardExpenseOrigin;
 
     @ApiProperty({ ...MONTH_PROPERTY, description: 'Mês da fatura' })
     public month!: string;

@@ -176,6 +176,72 @@ describe('rotas /credit-cards', () => {
         });
     });
 
+    describe('ciclo da fatura e Meu Pluggy', () => {
+        const ITEM_ID = '0b7c5a52-3d4e-4f6a-8b9c-0d1e2f3a4b5c';
+
+        it('POST e PATCH aceitam vencimento, melhor dia, item e primeira fatura; PATCH aceita null para desligar', async () => {
+            const created = await api.post('/credit-cards', {
+                name: 'C6', bank: 'C6', dueDay: 1, bestPurchaseDay: 25, pluggyItemId: ITEM_ID, syncFromMonth: '2026-11'
+            });
+            const id = dataOf<{ id: string }>(created).id;
+            const off = await api.patch(`/credit-cards/${id}`, { pluggyItemId: null, syncFromMonth: null, bestPurchaseDay: 27 });
+
+            expect(created.status).toBe(201);
+            expect(dataOf(created)).toMatchObject({ dueDay: 1, bestPurchaseDay: 25, pluggyItemId: ITEM_ID, syncFromMonth: '2026-11', sync: { configured: true } });
+            expect(dataOf(off)).toMatchObject({ pluggyItemId: null, syncFromMonth: null, bestPurchaseDay: 27, sync: { configured: false } });
+        });
+
+        it('valida dias (1 a 31, inteiros), item (UUID) e mês (AAAA-MM)', async () => {
+            const card = repository.seed({ name: 'C6', bank: 'C6' });
+
+            expectInvalid(await api.patch(`/credit-cards/${card.id}`, { dueDay: 0 }), { field: 'dueDay', code: 'number.min' });
+            expectInvalid(await api.patch(`/credit-cards/${card.id}`, { bestPurchaseDay: 32 }), { field: 'bestPurchaseDay', code: 'number.max' });
+            expectInvalid(await api.patch(`/credit-cards/${card.id}`, { dueDay: 1.5 }), { field: 'dueDay', code: 'number.integer' });
+            expectInvalid(await api.patch(`/credit-cards/${card.id}`, { pluggyItemId: 'abc' }), { field: 'pluggyItemId', code: 'string.guid' });
+            expectInvalid(await api.patch(`/credit-cards/${card.id}`, { syncFromMonth: '2026-13' }), {
+                field: 'syncFromMonth', message: 'O mês deve estar no formato AAAA-MM'
+            });
+            expectInvalid(await api.post('/credit-cards', { name: 'X', bank: 'C6', pluggyItemId: null }), { field: 'pluggyItemId', code: 'string.base' });
+        });
+
+        it('GET /:id/bills lista as faturas do período; sem ciclo configurado é 409', async () => {
+            const card = repository.seed({ name: 'C6', bank: 'C6', dueDay: 1, bestPurchaseDay: 25 });
+            const other = repository.seed({ name: 'Sem ciclo' });
+
+            const bills = await api.get(`/credit-cards/${card.id}/bills`, { query: { from: '2026-12', to: '2027-01' } });
+            const notConfigured = await api.get(`/credit-cards/${other.id}/bills`);
+
+            expect(bills.status).toBe(200);
+            expect(dataOf(bills)).toEqual([
+                expect.objectContaining({ month: '2026-12', startDate: '2026-10-25', closingDate: '2026-11-24', dueDate: '2026-12-01', source: 'default' }),
+                expect.objectContaining({ month: '2027-01', startDate: '2026-11-25' })
+            ]);
+            expect(notConfigured.status).toBe(409);
+            expect(errorOf(notConfigured).code).toBe('CREDIT_CARD_BILLING_NOT_CONFIGURED');
+            expectInvalid(await api.get(`/credit-cards/${card.id}/bills`, { query: { from: '12/2026' } }), { field: 'from' });
+            expectInvalid(await api.get(`/credit-cards/${card.id}/bills`, { query: { mes: '2026-12' } }), { field: 'mes', code: 'object.unknown' });
+        });
+
+        it('PUT /:id/bills/:month ajusta o melhor dia; valida mês da rota e data', async () => {
+            const card = repository.seed({ name: 'C6', bank: 'C6', dueDay: 1, bestPurchaseDay: 25 });
+
+            const adjusted = await api.request('PUT', `/credit-cards/${card.id}/bills/2026-12`, { body: { bestPurchaseDate: '2026-11-24' } });
+            const outOfRange = await api.request('PUT', `/credit-cards/${card.id}/bills/2026-12`, { body: { bestPurchaseDate: '2027-01-05' } });
+
+            expect(adjusted.status).toBe(200);
+            expect(dataOf(adjusted)).toMatchObject({ month: '2026-12', bestPurchaseDate: '2026-11-24', source: 'user' });
+            expect(outOfRange.status).toBe(422);
+            expect(errorOf(outOfRange).code).toBe('CREDIT_CARD_BILL_DATE_OUT_OF_RANGE');
+            expectInvalid(await api.request('PUT', `/credit-cards/${card.id}/bills/dezembro`, { body: { bestPurchaseDate: null } }), { field: '$' });
+            expectInvalid(await api.request('PUT', `/credit-cards/${card.id}/bills/2026-12`, { body: { bestPurchaseDate: '2026-02-30' } }), {
+                field: 'bestPurchaseDate', code: 'any.invalid'
+            });
+            expectInvalid(await api.request('PUT', `/credit-cards/${card.id}/bills/2026-12`, { body: {} }), {
+                field: 'bestPurchaseDate', code: 'any.required'
+            });
+        });
+    });
+
     it('todo erro traz o requestId, igual ao header x-request-id', async () => {
         const response = await api.get(`/credit-cards/${MISSING_ID}`, { headers: { 'x-request-id': 'teste-cartoes-1' } });
 

@@ -6,6 +6,8 @@ import { jest } from '@jest/globals';
 import { dataOf, errorOf, HttpTestApp } from '../../../testing/http-test-app.js';
 import { CategoryRepository } from '../../categories/repository/category.repository.js';
 import { InMemoryCategoryRepository } from '../../categories/spec/in-memory-category.repository.js';
+import { CreditCardRepository } from '../../credit-cards/repository/credit-card.repository.js';
+import { InMemoryCreditCardRepository } from '../../credit-cards/spec/in-memory-credit-card.repository.js';
 import { FakePersonRepository } from '../../manual-expenses/spec/fake-person.repository.js';
 import { PersonRepository } from '../../people/repository/person.repository.js';
 import { CardExpenseRepository } from '../repository/card-expense.repository.js';
@@ -56,6 +58,7 @@ describe('rotas /card-expenses', () => {
     let categories: InMemoryCategoryRepository;
     let people: FakePersonRepository;
     let repository: InMemoryCardExpenseRepository;
+    let cards: InMemoryCreditCardRepository;
     let api: HttpTestApp;
     let outros: Category;
     let mercado: Category;
@@ -70,6 +73,8 @@ describe('rotas /card-expenses', () => {
         categories = new InMemoryCategoryRepository();
         people = new FakePersonRepository();
         repository = new InMemoryCardExpenseRepository();
+        cards = new InMemoryCreditCardRepository();
+        cards.seed({ id: CARD_ID, name: 'C6', bank: 'C6', syncFromMonth: OCTOBER });
         outros = categories.seed({ name: 'Outros', isDefault: true });
         mercado = categories.seed({ name: 'Mercado' });
         ana = people.seed({ name: 'Ana' });
@@ -78,7 +83,8 @@ describe('rotas /card-expenses', () => {
             overrides: [
                 { provide: CardExpenseRepository, useValue: repository },
                 { provide: CategoryRepository, useValue: categories },
-                { provide: PersonRepository, useValue: people }
+                { provide: PersonRepository, useValue: people },
+                { provide: CreditCardRepository, useValue: cards }
             ]
         });
     });
@@ -334,6 +340,40 @@ describe('rotas /card-expenses', () => {
             }
 
             expect(repository.get(expense.id).excludedAt).toEqual(EXCLUDED_AT);
+        });
+    });
+
+    describe('POST /card-expenses ("Adicionar compra") e POST /card-expenses/:id/move', () => {
+        it('adiciona a compra (201) e valida o corpo (400)', async () => {
+            const created = await api.post('/card-expenses', {
+                cardId: CARD_ID, month: '2026-12', date: '2026-11-06', description: 'Padaria', amount: '12.50',
+                installment: { number: 1, total: 2 }
+            });
+            const invalid = await api.post('/card-expenses', {
+                cardId: 'x', month: '2026-13', date: '2026-02-30', description: '', amount: '12,50', installment: { number: 3, total: 2 }, extra: 1
+            });
+
+            expect(created.status).toBe(201);
+            expect(dataOf<CardExpenseBody[]>(created).map(row => [row.month, row.installment])).toEqual([
+                ['2026-12', { number: 1, total: 2 }],
+                ['2027-01', { number: 2, total: 2 }]
+            ]);
+            expectValidationError(invalid, ['cardId', 'month', 'date', 'description', 'amount', 'installment.number', 'extra']);
+        });
+
+        it('move a compra (200) e devolve as linhas; valida o corpo e recusa compra de upload (409)', async () => {
+            const synced = repository.seed({ month: OCTOBER, categoryId: outros.id, origin: 'SYNC', importId: null, purchaseKey: 'S|2026-09-30|500|X' });
+            const uploaded = repository.seed({ month: OCTOBER, categoryId: outros.id });
+
+            const moved = await api.post(`/card-expenses/${synced.id}/move`, { month: '2026-11' });
+            const fromUpload = await api.post(`/card-expenses/${uploaded.id}/move`, { month: '2026-11' });
+
+            expect(moved.status).toBe(200);
+            expect(dataOf<CardExpenseBody[]>(moved)).toEqual([expect.objectContaining({ month: '2026-11' })]);
+            expect(fromUpload.status).toBe(409);
+            expect(errorOf(fromUpload).code).toBe('CARD_EXPENSE_MOVE_NOT_ALLOWED');
+            expectValidationError(await api.post(`/card-expenses/${synced.id}/move`, { installmentNumber: 0 }), ['month', 'installmentNumber']);
+            expectValidationError(await api.post(`/card-expenses/${UUID_V1}/move`, { month: '2026-11' }), ['$']);
         });
     });
 });

@@ -1,6 +1,7 @@
 import type { CardExpense, CardImport, Prisma } from '../../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 
+import { CardExpenseOrigin } from '../../../generated/prisma/client.js';
 import { CardExpenseScope, purchaseScopeWhere } from '../../card-expenses/service/card-expense-scope.js';
 import { PrismaService } from '../../common/index.js';
 import { CardImportPlan } from '../service/card-import.planner.js';
@@ -72,7 +73,7 @@ export class CardImportRepository {
             }
 
             for (const update of plan.updates) {
-                await tx.cardExpense.update({ where: { id: update.id }, data: { ...update.data, importId } });
+                await tx.cardExpense.update({ where: { id: update.id }, data: { ...update.data, importId, origin: CardExpenseOrigin.UPLOAD } });
             }
 
             if (plan.creates.length > 0) {
@@ -138,8 +139,9 @@ export class CardImportRepository {
         month: Date,
         purchaseKeys: string[]
     ): Promise<PlanningContext> {
+        // As compras de "Adicionar compra" ficam: o upload não as conhece e não as apaga.
         const monthRows = await client.cardExpense.findMany({
-            where: { cardId, month },
+            where: { cardId, month, origin: { not: CardExpenseOrigin.MANUAL } },
             select: { purchaseKey: true }
         });
         const keys = [...new Set([...purchaseKeys, ...monthRows.map(row => row.purchaseKey)])];
