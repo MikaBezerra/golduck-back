@@ -48,7 +48,8 @@ describe('SummaryService', () => {
                 { month: '2026-10', categoryId: moradia.id, personId: null, amountCents: 50_000n }
             );
             repository.cardExpenses.push(
-                { month: '2026-11', categoryId: mercado.id, personId: null, amountCents: 19_999n },
+                // Ainda sem pessoa: conta como compartilhada e aparece em pending.
+                { month: '2026-11', categoryId: mercado.id, personId: null, amountCents: 19_999n, pending: true },
                 { month: '2026-11', categoryId: mercado.id, personId: bruno.id, amountCents: 5_001n },
                 { month: '2026-11', categoryId: moradia.id, personId: ana.id, amountCents: 99_999n, excluded: true }
             );
@@ -84,7 +85,8 @@ describe('SummaryService', () => {
                 netByPerson: [
                     { personId: ana.id, name: 'Ana', share: '3400.01', individual: '300.50', net: '3099.51' },
                     { personId: bruno.id, name: 'Bruno', share: '3400.00', individual: '50.01', net: '3349.99' }
-                ]
+                ],
+                pending: { amount: '199.99', count: 1 }
             });
         });
 
@@ -132,7 +134,8 @@ describe('SummaryService', () => {
                 netByPerson: [
                     { personId: ana.id, name: 'Ana', share: '0.00', individual: '0.00', net: '0.00' },
                     { personId: bruno.id, name: 'Bruno', share: '0.00', individual: '0.00', net: '0.00' }
-                ]
+                ],
+                pending: { amount: '0.00', count: 0 }
             });
         });
 
@@ -267,22 +270,35 @@ describe('SummaryService', () => {
 
         it('lista sempre os 12 meses do ano, com null onde não há entrada ou reserva', async () => {
             const { months } = await service.findByYear({ year: 2026 });
-            const empty = { income: null, reserve: null, expensesTotal: '0.00', expensesCount: 0, balance: '0.00' };
+            const empty = { income: null, reserve: null, expensesTotal: '0.00', expensesCount: 0, balance: '0.00', pendingCount: 0 };
 
             expect(months.map(month => month.month)).toEqual([
                 '2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06',
                 '2026-07', '2026-08', '2026-09', '2026-10', '2026-11', '2026-12'
             ]);
             expect(months[0]).toEqual({
-                month: '2026-01', income: '1000.01', reserve: null, expensesTotal: '100.00', expensesCount: 1, balance: '900.01'
+                month: '2026-01', income: '1000.01', reserve: null, expensesTotal: '100.00', expensesCount: 1, balance: '900.01', pendingCount: 0
             });
             expect(months[1]).toEqual({ month: '2026-02', ...empty });
             expect(months[2]).toEqual({
-                month: '2026-03', income: '1000.01', reserve: '50.00', expensesTotal: '20.00', expensesCount: 1, balance: '930.01'
+                month: '2026-03', income: '1000.01', reserve: '50.00', expensesTotal: '20.00', expensesCount: 1, balance: '930.01', pendingCount: 0
             });
             expect(months[11]).toEqual({
-                month: '2026-12', income: null, reserve: null, expensesTotal: '10.00', expensesCount: 1, balance: '-10.00'
+                month: '2026-12', income: null, reserve: null, expensesTotal: '10.00', expensesCount: 1, balance: '-10.00', pendingCount: 0
             });
+        });
+
+        it('conta as compras pendentes de cada mês e do ano', async () => {
+            repository.cardExpenses.push(
+                { month: '2026-02', categoryId: moradia.id, personId: null, amountCents: 300n, pending: true },
+                { month: '2026-02', categoryId: moradia.id, personId: null, amountCents: 200n, pending: true },
+                { month: '2026-07', categoryId: moradia.id, personId: null, amountCents: 50n, pending: true, excluded: true }
+            );
+
+            const summary = await service.findByYear({ year: 2026 });
+
+            expect(summary.pending).toEqual({ amount: '5.00', count: 2 });
+            expect(summary.months.map(month => month.pendingCount)).toEqual([0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
         });
 
         it('carrega os 12 meses a partir de 1º de janeiro (UTC) do ano pedido', async () => {

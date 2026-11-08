@@ -37,6 +37,7 @@ type CardExpenseBody = {
     description: string;
     nickname: string | null;
     categoryId: string;
+    split: string;
     personId: string | null;
     excluded: boolean;
     installment: { number: number; total: number } | null;
@@ -136,6 +137,19 @@ describe('rotas /card-expenses', () => {
             expect(listed(otherCard)).toEqual([['OUTRO CARTAO', false]]);
         });
 
+        it('split=PENDING lista só as compras que faltam classificar', async () => {
+            repository.seed({ month: OCTOBER, categoryId: outros.id, originalDescription: 'PENDENTE', split: 'PENDING' });
+            repository.seed({ month: OCTOBER, categoryId: outros.id, originalDescription: 'COMPARTILHADA' });
+            repository.seed({ month: OCTOBER, categoryId: outros.id, originalDescription: 'DA ANA', personId: ana.id });
+
+            const pending = await api.get('/card-expenses', { query: { month: '2026-10', split: 'PENDING' } });
+            const personal = await api.get('/card-expenses', { query: { month: '2026-10', split: 'PERSONAL' } });
+
+            expect(dataOf<CardExpenseBody[]>(pending).map(expense => [expense.description, expense.split])).toEqual([['PENDENTE', 'PENDING']]);
+            expect(dataOf<CardExpenseBody[]>(personal).map(expense => expense.description)).toEqual(['DA ANA']);
+            expectValidationError(await api.get('/card-expenses', { query: { month: '2026-10', split: 'NINGUEM' } }), ['split']);
+        });
+
         it('valida a consulta: mês AAAA-MM obrigatório, cardId UUID, includeExcluded booleano e sem filtros extras', async () => {
             const missing = await api.get('/card-expenses');
             const invalidMonth = await api.get('/card-expenses', { query: { month: '2026-13' } });
@@ -188,7 +202,7 @@ describe('rotas /card-expenses', () => {
 
             const response = await api.patch('/card-expenses', {
                 ids: [single.id, second.id],
-                changes: { nickname: '  Presente ', categoryId: mercado.id, personId: ana.id }
+                changes: { nickname: '  Presente ', categoryId: mercado.id, split: 'PERSONAL', personId: ana.id }
             });
 
             expect(response.status).toBe(200);
@@ -199,13 +213,13 @@ describe('rotas /card-expenses', () => {
             expect(repository.get(first.id)).toMatchObject({ nickname: null, categoryId: outros.id });
         });
 
-        it('nickname null remove o apelido e personId null torna compartilhada', async () => {
+        it('nickname null remove o apelido e split SHARED torna compartilhada', async () => {
             const expense = repository.seed({ month: OCTOBER, categoryId: outros.id, originalDescription: 'NETFLIX', nickname: 'Filmes', personId: ana.id });
 
-            const response = await api.patch('/card-expenses', { ids: [expense.id], changes: { nickname: null, personId: null } });
+            const response = await api.patch('/card-expenses', { ids: [expense.id], changes: { nickname: null, split: 'SHARED' } });
 
             expect(response.status).toBe(200);
-            expect(dataOf<CardExpenseBody[]>(response)[0]).toMatchObject({ nickname: null, description: 'NETFLIX', personId: null });
+            expect(dataOf<CardExpenseBody[]>(response)[0]).toMatchObject({ nickname: null, description: 'NETFLIX', split: 'SHARED', personId: null });
         });
 
         it('apelido: não vazio e até 160 caracteres (já sem os espaços das pontas)', async () => {
@@ -237,7 +251,12 @@ describe('rotas /card-expenses', () => {
             expectValidationError(await api.patch('/card-expenses', { ids, changes, scope: 'all' }), ['scope']);
             expectValidationError(await api.patch('/card-expenses', { ids, changes: { categoryId: null } }), ['changes.categoryId']);
             expectValidationError(await api.patch('/card-expenses', { ids, changes: { categoryId: UUID_V1 } }), ['changes.categoryId']);
-            expectValidationError(await api.patch('/card-expenses', { ids, changes: { personId: 'ana' } }), ['changes.personId']);
+            expectValidationError(await api.patch('/card-expenses', { ids, changes: { split: 'PERSONAL', personId: 'ana' } }), ['changes.personId']);
+            expectValidationError(await api.patch('/card-expenses', { ids, changes: { split: 'PERSONAL' } }), ['changes.personId']);
+            expectValidationError(await api.patch('/card-expenses', { ids, changes: { personId: ana.id } }), ['changes.personId']);
+            expectValidationError(await api.patch('/card-expenses', { ids, changes: { split: 'SHARED', personId: ana.id } }), ['changes.personId']);
+            // Voltar para pendente não é uma escolha.
+            expectValidationError(await api.patch('/card-expenses', { ids, changes: { split: 'PENDING' } }), ['changes.split']);
             expect(repository.get(expense.id).nickname).toBeNull();
         });
 
@@ -248,9 +267,9 @@ describe('rotas /card-expenses', () => {
             const ids = [expense.id];
 
             const inactiveCategory = await api.patch('/card-expenses', { ids, changes: { categoryId: antiga.id } });
-            const inactivePerson = await api.patch('/card-expenses', { ids, changes: { personId: bia.id } });
+            const inactivePerson = await api.patch('/card-expenses', { ids, changes: { split: 'PERSONAL', personId: bia.id } });
             const missingCategory = await api.patch('/card-expenses', { ids, changes: { categoryId: MISSING_ID } });
-            const missingPerson = await api.patch('/card-expenses', { ids, changes: { personId: MISSING_ID } });
+            const missingPerson = await api.patch('/card-expenses', { ids, changes: { split: 'PERSONAL', personId: MISSING_ID } });
             const missingExpense = await api.patch('/card-expenses', { ids: [expense.id, MISSING_ID], changes: { nickname: 'X' } });
 
             expect(inactiveCategory.status).toBe(409);
@@ -347,7 +366,13 @@ describe('rotas /card-expenses', () => {
         it('adiciona a compra (201) e valida o corpo (400)', async () => {
             const created = await api.post('/card-expenses', {
                 cardId: CARD_ID, month: '2026-12', date: '2026-11-06', description: 'Padaria', amount: '12.50',
-                installment: { number: 1, total: 2 }
+                installment: { number: 1, total: 2 }, split: 'SHARED'
+            });
+            const withoutSplit = await api.post('/card-expenses', {
+                cardId: CARD_ID, month: '2026-12', date: '2026-11-06', description: 'Padaria', amount: '12.50'
+            });
+            const personalWithoutPerson = await api.post('/card-expenses', {
+                cardId: CARD_ID, month: '2026-12', date: '2026-11-06', description: 'Padaria', amount: '12.50', split: 'PERSONAL'
             });
             const invalid = await api.post('/card-expenses', {
                 cardId: 'x', month: '2026-13', date: '2026-02-30', description: '', amount: '12,50', installment: { number: 3, total: 2 }, extra: 1
@@ -358,7 +383,11 @@ describe('rotas /card-expenses', () => {
                 ['2026-12', { number: 1, total: 2 }],
                 ['2027-01', { number: 2, total: 2 }]
             ]);
-            expectValidationError(invalid, ['cardId', 'month', 'date', 'description', 'amount', 'installment.number', 'extra']);
+            expect(dataOf<CardExpenseBody[]>(created)[0]).toMatchObject({ split: 'SHARED', personId: null });
+            expectValidationError(invalid, ['cardId', 'month', 'date', 'description', 'amount', 'installment.number', 'split', 'extra']);
+            // "Adicionar compra" exige escolher a pessoa (ou compartilhada) na hora.
+            expectValidationError(withoutSplit, ['split']);
+            expectValidationError(personalWithoutPerson, ['personId']);
         });
 
         it('move a compra (200) e devolve as linhas; valida o corpo e recusa compra de upload (409)', async () => {

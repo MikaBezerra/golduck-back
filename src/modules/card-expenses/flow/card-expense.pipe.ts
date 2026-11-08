@@ -1,5 +1,6 @@
 import Joi from 'joi';
 
+import { ALL_SPLITS, splitSchemas } from '../../common/expense-split/expense-split.js';
 import { JoiValidationPipePtbr } from '../../common/index.js';
 import {
     CardExpenseChangesDto,
@@ -38,7 +39,8 @@ export class ListCardExpensesPipe extends JoiValidationPipePtbr {
         return Joi.object<ListCardExpensesDto>({
             month: monthSchema.required(),
             cardId: idSchema.optional(),
-            includeExcluded: Joi.boolean().default(false)
+            includeExcluded: Joi.boolean().default(false),
+            split: Joi.string().valid(...ALL_SPLITS).optional()
         }).unknown(false);
     }
 }
@@ -50,7 +52,7 @@ export class UpdateCardExpensesPipe extends JoiValidationPipePtbr {
             changes: Joi.object<CardExpenseChangesDto>({
                 nickname: Joi.string().trim().min(1).max(160).allow(null).optional(),
                 categoryId: idSchema.optional(),
-                personId: idSchema.allow(null).optional()
+                ...splitSchemas(idSchema, { required: false })
             }).min(1).unknown(false).required()
         }).unknown(false);
     }
@@ -81,7 +83,7 @@ export class CreateCardExpensePipe extends JoiValidationPipePtbr {
             }).allow(null).optional(),
             nickname: Joi.string().trim().min(1).max(160).allow(null).optional(),
             categoryId: idSchema.optional(),
-            personId: idSchema.allow(null).optional()
+            ...splitSchemas(idSchema, { required: true })
         }).unknown(false);
     }
 }

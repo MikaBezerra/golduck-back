@@ -115,6 +115,21 @@ describe('rotas /summary/dispatches', () => {
         }
     });
 
+    it('POST com compra do cartão sem pessoa no mês: 409 SUMMARY_DISPATCH_PENDING_EXPENSES', async () => {
+        summary.cardExpenses.push({ month: '2026-11', categoryId: 'casa', personId: null, amountCents: 1_000n, pending: true });
+        await start();
+
+        const response = await send({ month: '2026-11' });
+        const preview = await api.get('/summary/dispatches/preview', { query: { month: '2026-11' } });
+
+        expect(response.status).toBe(409);
+        expect(errorOf(response)).toMatchObject({
+            code: 'SUMMARY_DISPATCH_PENDING_EXPENSES',
+            message: 'Há 1 compra do cartão sem pessoa definida neste mês. Escolha a pessoa (ou compartilhada) antes de enviar o resumo.'
+        });
+        expect(dataOf<SummaryDispatchPreviewResponse>(preview)).toMatchObject({ pending: { amount: '10.00', count: 1 }, lastDispatch: null });
+    });
+
     it('POST com e-mail desligado: 503 MAIL_DISABLED', async () => {
         mailer = new DisabledSummaryMailer();
         await start();

@@ -14,7 +14,8 @@ type GroupRow = {
 
 type AmountRow = { amountCents: bigint };
 type SumRow = { _sum: { amountCents: bigint | null } };
-type CardRow = { id: string; cardId: string; amountCents: bigint; personId: string | null };
+type CardRow = { id: string; cardId: string; amountCents: bigint; split: string; personId: string | null };
+type Rows = { byCategory: GroupRow[]; byPerson: GroupRow[]; pending?: GroupRow[] };
 
 const NOVEMBER = new Date('2026-11-01T00:00:00.000Z');
 const DECEMBER = new Date('2026-12-01T00:00:00.000Z');
@@ -35,11 +36,15 @@ const row = (month: Date, key: { categoryId: string } | { personId: string | nul
 describe('SummaryRepository', () => {
     let incomes: Array<{ month: Date; amountCents: bigint }>;
     let reserves: Array<{ month: Date; amountCents: bigint }>;
-    let manualRows: { byCategory: GroupRow[]; byPerson: GroupRow[] };
-    let cardRows: { byCategory: GroupRow[]; byPerson: GroupRow[] };
+    let manualRows: Rows;
+    let cardRows: Rows;
 
-    const groupRows = (rows: () => { byCategory: GroupRow[]; byPerson: GroupRow[] }) =>
-        async (args: GroupByArgs): Promise<GroupRow[]> => Promise.resolve(args.by[1] === 'categoryId' ? rows().byCategory : rows().byPerson);
+    /** by: [month, categoryId], [month, personId] ou só [month] (as compras pendentes). */
+    const groupRows = (rows: () => Rows) => async (args: GroupByArgs): Promise<GroupRow[]> => {
+        const { byCategory, byPerson, pending = [] } = rows();
+
+        return Promise.resolve(args.by.length === 1 ? pending : args.by[1] === 'categoryId' ? byCategory : byPerson);
+    };
     const prisma = {
         monthlyIncome: {
             findMany: jest.fn(async () => Promise.resolve(incomes)),
@@ -84,12 +89,15 @@ describe('SummaryRepository', () => {
             expect(prisma.manualExpense.groupBy).toHaveBeenCalledTimes(2);
             expect(prisma.manualExpense.groupBy).toHaveBeenCalledWith({ by: ['month', 'categoryId'], where: { month: range }, ...aggregates });
             expect(prisma.manualExpense.groupBy).toHaveBeenCalledWith({ by: ['month', 'personId'], where: { month: range }, ...aggregates });
-            expect(prisma.cardExpense.groupBy).toHaveBeenCalledTimes(2);
+            expect(prisma.cardExpense.groupBy).toHaveBeenCalledTimes(3);
             expect(prisma.cardExpense.groupBy).toHaveBeenCalledWith({
                 by: ['month', 'categoryId'], where: { month: range, excludedAt: null }, ...aggregates
             });
             expect(prisma.cardExpense.groupBy).toHaveBeenCalledWith({
                 by: ['month', 'personId'], where: { month: range, excludedAt: null }, ...aggregates
+            });
+            expect(prisma.cardExpense.groupBy).toHaveBeenCalledWith({
+                by: ['month'], where: { month: range, excludedAt: null, split: 'PENDING' }, ...aggregates
             });
         });
 
@@ -107,8 +115,9 @@ describe('SummaryRepository', () => {
                 byPerson: [row(NOVEMBER, { personId: null }, 100n, 1), row(DECEMBER, { personId: 'ana' }, 700n, 2)]
             };
             cardRows = {
-                byCategory: [row(NOVEMBER, { categoryId: 'lazer' }, 250n, 3)],
-                byPerson: [row(NOVEMBER, { personId: 'bruno' }, 250n, 3)]
+                byCategory: [row(NOVEMBER, { categoryId: 'lazer' }, 250n, 3), row(DECEMBER, { categoryId: 'lazer' }, 40n, 1)],
+                byPerson: [row(NOVEMBER, { personId: 'bruno' }, 250n, 3), row(DECEMBER, { personId: null }, 40n, 1)],
+                pending: [{ month: DECEMBER, _sum: { amountCents: 40n }, _count: { _all: 1 } }]
             };
 
             const months = await repository.loadMonths(NOVEMBER, 3);
@@ -120,15 +129,17 @@ describe('SummaryRepository', () => {
                     manualByCategory: [{ key: 'casa', amountCents: 100n, count: 1 }],
                     manualByPerson: [{ key: null, amountCents: 100n, count: 1 }],
                     cardByCategory: [{ key: 'lazer', amountCents: 250n, count: 3 }],
-                    cardByPerson: [{ key: 'bruno', amountCents: 250n, count: 3 }]
+                    cardByPerson: [{ key: 'bruno', amountCents: 250n, count: 3 }],
+                    pending: { amountCents: 0n, count: 0 }
                 },
                 {
                     incomeCents: 300_000n,
                     reserveCents: 5_000n,
                     manualByCategory: [{ key: 'casa', amountCents: 700n, count: 2 }],
                     manualByPerson: [{ key: 'ana', amountCents: 700n, count: 2 }],
-                    cardByCategory: [],
-                    cardByPerson: []
+                    cardByCategory: [{ key: 'lazer', amountCents: 40n, count: 1 }],
+                    cardByPerson: [{ key: null, amountCents: 40n, count: 1 }],
+                    pending: { amountCents: 40n, count: 1 }
                 },
                 {
                     incomeCents: null,
@@ -136,7 +147,8 @@ describe('SummaryRepository', () => {
                     manualByCategory: [],
                     manualByPerson: [],
                     cardByCategory: [],
-                    cardByPerson: []
+                    cardByPerson: [],
+                    pending: { amountCents: 0n, count: 0 }
                 }
             ]);
             expect(prisma.monthlyIncome.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { month: { gte: NOVEMBER, lt: FEBRUARY } } }));
@@ -176,7 +188,7 @@ describe('SummaryRepository', () => {
 
     describe('loadStatementSource', () => {
         it('lê o mês (cartão sem as excluídas), a reserva acumulada até ele e só os cartões das despesas', async () => {
-            const card = { id: 'c1', cardId: 'nubank', amountCents: 500n, personId: null };
+            const card = { id: 'c1', cardId: 'nubank', amountCents: 500n, split: 'PENDING', personId: null };
             prisma.monthlyIncome.findUnique.mockResolvedValueOnce({ amountCents: 100_000n });
             prisma.monthlyReserve.findUnique.mockResolvedValueOnce({ amountCents: 5_000n });
             prisma.monthlyReserve.aggregate.mockResolvedValueOnce({ _sum: { amountCents: 25_000n } });
@@ -197,9 +209,10 @@ describe('SummaryRepository', () => {
             });
             expect(prisma.monthlyReserve.aggregate).toHaveBeenCalledWith({ where: { month: { lt: DECEMBER } }, _sum: { amountCents: true } });
             expect(prisma.manualExpense.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { month: { gte: NOVEMBER, lt: DECEMBER } } }));
-            expect(prisma.cardExpense.findMany).toHaveBeenCalledWith(expect.objectContaining({
-                where: { month: { gte: NOVEMBER, lt: DECEMBER }, excludedAt: null }
-            }));
+            expect(prisma.cardExpense.findMany).toHaveBeenCalledWith({
+                where: { month: { gte: NOVEMBER, lt: DECEMBER }, excludedAt: null },
+                select: { id: true, cardId: true, amountCents: true, split: true, personId: true }
+            });
             expect(prisma.creditCard.findMany).toHaveBeenCalledWith({ where: { id: { in: ['nubank'] } }, select: { id: true, name: true } });
         });
 

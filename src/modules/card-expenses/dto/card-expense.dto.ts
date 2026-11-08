@@ -1,7 +1,9 @@
+import type { ChosenSplit } from '../../common/expense-split/expense-split.js';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-import { CardExpenseOrigin } from '../../../generated/prisma/client.js';
+import { CardExpenseOrigin, ExpenseSplit } from '../../../generated/prisma/client.js';
 
+import { CHOSEN_SPLIT_PROPERTY, SPLIT_PROPERTY } from '../../common/expense-split/expense-split.js';
 import {
     DATE_PATTERN,
     DATE_TIME_PROPERTY,
@@ -36,6 +38,9 @@ export class ListCardExpensesDto {
 
     @ApiPropertyOptional({ type: Boolean, default: false, description: 'Inclui as despesas excluídas' })
     public includeExcluded!: boolean;
+
+    @ApiPropertyOptional({ ...SPLIT_PROPERTY, description: 'Só as despesas com este split (PENDING = as que faltam classificar)' })
+    public split?: ExpenseSplit;
 }
 
 export class CardExpenseChangesDto {
@@ -45,7 +50,10 @@ export class CardExpenseChangesDto {
     @ApiPropertyOptional(UUID_PROPERTY)
     public categoryId?: string;
 
-    @ApiPropertyOptional({ ...UUID_PROPERTY, nullable: true, description: 'null torna a despesa compartilhada' })
+    @ApiPropertyOptional(CHOSEN_SPLIT_PROPERTY)
+    public split?: ChosenSplit;
+
+    @ApiPropertyOptional({ ...UUID_PROPERTY, nullable: true, description: 'Obrigatório com split PERSONAL; nos outros casos, omitido ou null' })
     public personId?: string | null;
 }
 
@@ -95,7 +103,10 @@ export class CreateCardExpenseDto {
     @ApiPropertyOptional({ ...UUID_PROPERTY, description: 'Padrão: a categoria padrão ("Outros")' })
     public categoryId?: string;
 
-    @ApiPropertyOptional({ ...UUID_PROPERTY, nullable: true, description: 'null ou omitido = compartilhada' })
+    @ApiProperty(CHOSEN_SPLIT_PROPERTY)
+    public split!: ChosenSplit;
+
+    @ApiPropertyOptional({ ...UUID_PROPERTY, nullable: true, description: 'Obrigatório com split PERSONAL; com SHARED, omitido ou null' })
     public personId?: string | null;
 }
 
@@ -160,7 +171,10 @@ export class CardExpenseResponse {
     @ApiProperty(UUID_PROPERTY)
     public categoryId!: string;
 
-    @ApiProperty({ ...UUID_PROPERTY, nullable: true, description: 'null = compartilhada' })
+    @ApiProperty(SPLIT_PROPERTY)
+    public split!: ExpenseSplit;
+
+    @ApiProperty({ ...UUID_PROPERTY, nullable: true, description: 'Só na despesa individual (PERSONAL)' })
     public personId!: string | null;
 
     @ApiProperty({ type: Boolean, description: 'Excluída: fora das listas (salvo includeExcluded) e dos totais' })

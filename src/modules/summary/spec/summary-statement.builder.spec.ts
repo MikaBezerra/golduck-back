@@ -23,10 +23,11 @@ const source: StatementSource = {
         { id: 'm5', title: 'Livro', amountCents: 50_000n, personId: 'bruno' }
     ],
     cardExpenses: [
-        { id: 'c1', cardId: 'nubank', amountCents: 41_235n, personId: null },
-        { id: 'c2', cardId: 'nubank', amountCents: 7_800n, personId: 'ana' },
-        { id: 'c3', cardId: 'c6', amountCents: 1_000n, personId: 'bruno' },
-        { id: 'c4', cardId: 'sumido', amountCents: 500n, personId: null }
+        { id: 'c1', cardId: 'nubank', amountCents: 41_235n, split: 'SHARED', personId: null },
+        { id: 'c2', cardId: 'nubank', amountCents: 7_800n, split: 'PERSONAL', personId: 'ana' },
+        { id: 'c3', cardId: 'c6', amountCents: 1_000n, split: 'PERSONAL', personId: 'bruno' },
+        // Ainda sem pessoa: entra no compartilhado e no aviso de pendentes.
+        { id: 'c4', cardId: 'sumido', amountCents: 500n, split: 'PENDING', personId: null }
     ],
     cards: [{ id: 'nubank', name: 'Nubank da Ana' }, { id: 'c6', name: 'C6' }]
 };
@@ -56,6 +57,13 @@ describe('buildStatement', () => {
         expect(statement.sections.map(section => section.id)).toEqual(['income', 'shared', 'individual', 'result']);
         expect(statement.hasPeople).toBe(true);
         expect(statement.incomeMissing).toBe(false);
+    });
+
+    it('avisa as compras do cartão ainda sem pessoa, que já entram no compartilhado', () => {
+        expect(buildStatement(source).pending).toEqual({ amount: '5.00', count: 1 });
+        expect(cents(rowOf('shared-card').total)).toBe(41_235n + 500n);
+        expect(buildStatement({ ...source, cardExpenses: source.cardExpenses.filter(expense => expense.id !== 'c4') }).pending)
+            .toEqual({ amount: '0.00', count: 0 });
     });
 
     it('divide entrada e compartilhado igualmente; as linhas do compartilhado somam a parte de cada um', () => {

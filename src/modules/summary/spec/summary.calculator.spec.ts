@@ -17,6 +17,7 @@ describe('computeMonth e combinePeriods', () => {
         manualByPerson: [],
         cardByCategory: [],
         cardByPerson: [],
+        pending: { amountCents: 0n, count: 0 },
         ...overrides
     });
     const january = computeMonth(month({
@@ -58,6 +59,26 @@ describe('computeMonth e combinePeriods', () => {
 
     it('sem entrada em nenhum mês, a entrada do período é null', () => {
         expect(combinePeriods([march, march], people).incomeCents).toBeNull();
+    });
+
+    describe('compras pendentes (sem pessoa)', () => {
+        // 100 do cartão sem pessoa, das quais 60 ainda pendentes: as 100 contam como compartilhadas.
+        const withPending = computeMonth(month({
+            incomeCents: 1000n,
+            cardByCategory: [{ key: 'casa', amountCents: 100n, count: 2 }],
+            cardByPerson: [{ key: null, amountCents: 100n, count: 2 }],
+            pending: { amountCents: 60n, count: 1 }
+        }), people);
+
+        it('o mês repassa o aviso, sem mudar as contas (pendente conta como compartilhada)', () => {
+            expect(withPending.pending).toEqual({ amountCents: 60n, count: 1 });
+            expect(withPending.nets.map(net => net.shareCents)).toEqual([450n, 450n]);
+        });
+
+        it('o período soma os pendentes dos meses', () => {
+            expect(combinePeriods([withPending, march, withPending], people).pending).toEqual({ amountCents: 120n, count: 2 });
+            expect(combinePeriods([march], people).pending).toEqual({ amountCents: 0n, count: 0 });
+        });
     });
 
     describe('reserva', () => {
@@ -223,7 +244,8 @@ describe('ordem das pessoas na divisão', () => {
             manualByCategory: [],
             manualByPerson: [],
             cardByCategory: [],
-            cardByPerson: []
+            cardByPerson: [],
+            pending: { amountCents: 0n, count: 0 }
         };
         const period = combinePeriods([computeMonth(empty, people)], people);
 

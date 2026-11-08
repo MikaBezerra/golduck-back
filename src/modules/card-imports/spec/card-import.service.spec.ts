@@ -150,6 +150,7 @@ describe('CardImportService', () => {
                 amountCents: 1200n,
                 categoryId: outros.id,
                 nickname: null,
+                split: 'PENDING',
                 personId: null,
                 excludedAt: null
             });
@@ -290,7 +291,7 @@ describe('CardImportService', () => {
             const casa = categories.seed({ name: 'Casa' });
             const ana = people.seed({ name: 'Ana' });
 
-            await createNubank([{ key: LOJA_KEY, nickname: 'Geladeira', categoryId: casa.id, personId: ana.id }]);
+            await createNubank([{ key: LOJA_KEY, nickname: 'Geladeira', categoryId: casa.id, split: 'PERSONAL', personId: ana.id }]);
 
             const rows = imports.expensesOf(nubankCard.id);
             const loja = rows.filter(row => row.purchaseKey === LOJA_KEY);
@@ -299,15 +300,28 @@ describe('CardImportService', () => {
             for (const row of loja) {
                 expect(row).toMatchObject({ nickname: 'Geladeira', categoryId: casa.id, personId: ana.id });
             }
-            expect(rows.find(row => row.purchaseKey === PADARIA_KEY)).toMatchObject({ nickname: null, categoryId: outros.id, personId: null });
+            // Sem escolha, a compra nova fica pendente.
+            expect(rows.find(row => row.purchaseKey === PADARIA_KEY)).toMatchObject({ nickname: null, categoryId: outros.id, split: 'PENDING', personId: null });
+        });
+
+        it('split PENDING ou SHARED na escolha: grava como veio, sem pessoa', async () => {
+            await createNubank([
+                { key: LOJA_KEY, nickname: null, categoryId: outros.id, split: 'PENDING' },
+                { key: PADARIA_KEY, nickname: null, categoryId: outros.id, split: 'SHARED' }
+            ]);
+
+            const rows = imports.expensesOf(nubankCard.id);
+
+            expect(rows.filter(row => row.purchaseKey === LOJA_KEY).every(row => row.split === 'PENDING' && row.personId === null)).toBe(true);
+            expect(rows.find(row => row.purchaseKey === PADARIA_KEY)).toMatchObject({ split: 'SHARED', personId: null });
         });
 
         it('key que não está no arquivo: a fatura mudou desde a pré-visualização (400), mesmo junto de keys válidas', async () => {
             const apply = spyApply();
 
             await expectAppError(createNubank([
-                { key: LOJA_KEY, nickname: null, categoryId: outros.id, personId: null },
-                { key: 'S|2026-10-21|1200|PADARIA', nickname: null, categoryId: outros.id, personId: null }
+                { key: LOJA_KEY, nickname: null, categoryId: outros.id, split: 'SHARED', personId: null },
+                { key: 'S|2026-10-21|1200|PADARIA', nickname: null, categoryId: outros.id, split: 'SHARED', personId: null }
             ]), { code: 'IMPORT_OVERRIDE_UNKNOWN_KEY', statusCode: 400, reason: 'override_key_not_in_file' });
             expect(apply).not.toHaveBeenCalled();
         });
@@ -318,32 +332,32 @@ describe('CardImportService', () => {
             const apply = spyApply();
 
             await expectAppError(createNubank([
-                { key: LOJA_KEY, nickname: null, categoryId: casa.id, personId: null },
-                { key: PADARIA_KEY, nickname: null, categoryId: antiga.id, personId: null }
+                { key: LOJA_KEY, nickname: null, categoryId: casa.id, split: 'SHARED', personId: null },
+                { key: PADARIA_KEY, nickname: null, categoryId: antiga.id, split: 'SHARED', personId: null }
             ]), { code: 'CARD_EXPENSE_INACTIVE_CATEGORY', statusCode: 409, reason: 'category_inactive' });
             await expectAppError(createNubank([
-                { key: LOJA_KEY, nickname: null, categoryId: MISSING_ID, personId: null }
+                { key: LOJA_KEY, nickname: null, categoryId: MISSING_ID, split: 'SHARED', personId: null }
             ]), { code: 'CATEGORY_NOT_FOUND', statusCode: 404, reason: 'category_id_not_found' });
             expect(apply).not.toHaveBeenCalled();
         });
 
-        it('pessoa inativa é 409 e inexistente é 404; personId null (compartilhada) não consulta pessoas', async () => {
+        it('pessoa inativa é 409 e inexistente é 404; compartilhada (SHARED) não consulta pessoas', async () => {
             const ana = people.seed({ name: 'Ana' });
             const bia = people.seed({ name: 'Bia', active: false });
             const apply = spyApply();
             const findPerson = jest.spyOn(people, 'findById');
 
             await expectAppError(createNubank([
-                { key: LOJA_KEY, nickname: null, categoryId: outros.id, personId: ana.id },
-                { key: PADARIA_KEY, nickname: null, categoryId: outros.id, personId: bia.id }
+                { key: LOJA_KEY, nickname: null, categoryId: outros.id, split: 'PERSONAL', personId: ana.id },
+                { key: PADARIA_KEY, nickname: null, categoryId: outros.id, split: 'PERSONAL', personId: bia.id }
             ]), { code: 'CARD_EXPENSE_INACTIVE_PERSON', statusCode: 409, reason: 'person_inactive' });
             await expectAppError(createNubank([
-                { key: LOJA_KEY, nickname: null, categoryId: outros.id, personId: MISSING_ID }
+                { key: LOJA_KEY, nickname: null, categoryId: outros.id, split: 'PERSONAL', personId: MISSING_ID }
             ]), { code: 'PERSON_NOT_FOUND', statusCode: 404, reason: 'person_id_not_found' });
             expect(apply).not.toHaveBeenCalled();
 
             findPerson.mockClear();
-            await createNubank([{ key: LOJA_KEY, nickname: null, categoryId: outros.id, personId: null }]);
+            await createNubank([{ key: LOJA_KEY, nickname: null, categoryId: outros.id, split: 'SHARED', personId: null }]);
 
             expect(findPerson).not.toHaveBeenCalled();
         });
@@ -354,8 +368,8 @@ describe('CardImportService', () => {
             const findPerson = jest.spyOn(people, 'findById');
 
             await createNubank([
-                { key: LOJA_KEY, nickname: null, categoryId: outros.id, personId: ana.id },
-                { key: PADARIA_KEY, nickname: null, categoryId: outros.id, personId: ana.id }
+                { key: LOJA_KEY, nickname: null, categoryId: outros.id, split: 'PERSONAL', personId: ana.id },
+                { key: PADARIA_KEY, nickname: null, categoryId: outros.id, split: 'PERSONAL', personId: ana.id }
             ]);
 
             expect(findCategory).toHaveBeenCalledTimes(1);
@@ -452,6 +466,7 @@ describe('CardImportService', () => {
                     cardLastDigits: '1951',
                     nickname: null,
                     categoryId: outros.id,
+                    split: 'PENDING',
                     personId: null,
                     projectedCount: 1,
                     excluded: false,
@@ -468,6 +483,7 @@ describe('CardImportService', () => {
                     cardLastDigits: '4256',
                     nickname: 'Corrida',
                     categoryId: transporte.id,
+                    split: 'PERSONAL',
                     personId: ana.id,
                     projectedCount: 0,
                     excluded: true,
@@ -491,6 +507,7 @@ describe('CardImportService', () => {
                 amount: '1234.56',
                 installment: null,
                 categoryId: outros.id,
+                split: 'SHARED',
                 personId: null,
                 excluded: false,
                 createdAt: z.createdAt,

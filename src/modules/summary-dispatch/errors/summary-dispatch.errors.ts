@@ -17,6 +17,15 @@ export const SUMMARY_DISPATCH_ERRORS = {
             'Esta Idempotency-Key já foi usada em um envio de outro mês. Gere uma chave nova para cada envio.',
             reason
         ),
+    pendingExpenses: (count: number, reason?: string): AppError =>
+        new AppError(
+            'SUMMARY_DISPATCH_PENDING_EXPENSES',
+            HttpStatus.CONFLICT,
+            count === 1
+                ? 'Há 1 compra do cartão sem pessoa definida neste mês. Escolha a pessoa (ou compartilhada) antes de enviar o resumo.'
+                : `Há ${count} compras do cartão sem pessoa definida neste mês. Escolha a pessoa (ou compartilhada) antes de enviar o resumo.`,
+            reason
+        ),
     unknownPerson: (reason?: string): AppError =>
         new AppError(
             'SUMMARY_DISPATCH_UNKNOWN_PERSON',

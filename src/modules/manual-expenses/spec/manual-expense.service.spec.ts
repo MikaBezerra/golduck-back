@@ -55,18 +55,19 @@ describe('ManualExpenseService', () => {
     };
 
     describe('create', () => {
-        it('sem categoria nem pessoa: uma despesa compartilhada na categoria padrão, com o valor em centavos', async () => {
-            const created = await service.create({ month: '2026-10', title: 'Internet', amount: '99.9' });
+        it('compartilhada sem categoria: uma despesa SHARED na categoria padrão, com o valor em centavos', async () => {
+            const created = await service.create({ split: 'SHARED', month: '2026-10', title: 'Internet', amount: '99.9' });
 
             expect(created).toHaveLength(1);
             const row = repository.get(created[0].id);
-            expect(row).toMatchObject({ month: OCTOBER, title: 'Internet', amountCents: 9990n, categoryId: outros.id, personId: null });
+            expect(row).toMatchObject({ month: OCTOBER, title: 'Internet', amountCents: 9990n, categoryId: outros.id, split: 'SHARED', personId: null });
             expect(created[0]).toEqual({
                 id: row.id,
                 month: '2026-10',
                 title: 'Internet',
                 amount: '99.90',
                 categoryId: outros.id,
+                split: 'SHARED',
                 personId: null,
                 createdAt: row.createdAt,
                 updatedAt: row.updatedAt
@@ -75,26 +76,26 @@ describe('ManualExpenseService', () => {
 
         it('usa a categoria e a pessoa escolhidas (despesa individual)', async () => {
             const [created] = await service.create({
-                month: '2026-03', title: 'Feira', amount: '1234.56', categoryId: mercado.id, personId: ana.id
+                split: 'PERSONAL', month: '2026-03', title: 'Feira', amount: '1234.56', categoryId: mercado.id, personId: ana.id
             });
 
-            expect(created).toMatchObject({ month: '2026-03', amount: '1234.56', categoryId: mercado.id, personId: ana.id });
+            expect(created).toMatchObject({ month: '2026-03', amount: '1234.56', categoryId: mercado.id, split: 'PERSONAL', personId: ana.id });
             expect(repository.get(created.id)).toMatchObject({ month: new Date('2026-03-01T00:00:00.000Z'), amountCents: 123456n });
         });
 
-        it('personId null também é compartilhada, sem consultar o cadastro de pessoas', async () => {
+        it('SHARED com personId null (o front reenviando a resposta) é compartilhada, sem consultar o cadastro de pessoas', async () => {
             const findPerson = jest.spyOn(people, 'findById');
 
-            const [created] = await service.create({ month: '2026-10', title: 'Luz', amount: '150', personId: null });
+            const [created] = await service.create({ split: 'SHARED', month: '2026-10', title: 'Luz', amount: '150', personId: null });
 
-            expect(created.personId).toBeNull();
+            expect(created).toMatchObject({ split: 'SHARED', personId: null });
             expect(created.amount).toBe('150.00');
             expect(findPerson).not.toHaveBeenCalled();
         });
 
         it('com replicateUntilYearEnd, cria uma despesa independente em cada mês até dezembro', async () => {
             const created = await service.create({
-                month: '2026-10', title: 'Academia', amount: '120.00', categoryId: mercado.id, personId: ana.id, replicateUntilYearEnd: true
+                split: 'PERSONAL', month: '2026-10', title: 'Academia', amount: '120.00', categoryId: mercado.id, personId: ana.id, replicateUntilYearEnd: true
             });
 
             expect(created.map(expense => expense.month)).toEqual(['2026-10', '2026-11', '2026-12']);
@@ -107,8 +108,8 @@ describe('ManualExpenseService', () => {
         });
 
         it('replicar a partir de janeiro cria o ano todo; a partir de dezembro, só dezembro', async () => {
-            const fromJanuary = await service.create({ month: '2027-01', title: 'Seguro', amount: '50', replicateUntilYearEnd: true });
-            const fromDecember = await service.create({ month: '2027-12', title: 'Seguro', amount: '50', replicateUntilYearEnd: true });
+            const fromJanuary = await service.create({ split: 'SHARED', month: '2027-01', title: 'Seguro', amount: '50', replicateUntilYearEnd: true });
+            const fromDecember = await service.create({ split: 'SHARED', month: '2027-12', title: 'Seguro', amount: '50', replicateUntilYearEnd: true });
 
             expect(fromJanuary.map(expense => expense.month)).toEqual([
                 '2027-01', '2027-02', '2027-03', '2027-04', '2027-05', '2027-06',
@@ -118,7 +119,7 @@ describe('ManualExpenseService', () => {
         });
 
         it('sem replicar (ou com replicateUntilYearEnd false) cria só o mês pedido', async () => {
-            const withFalse = await service.create({ month: '2026-02', title: 'Presente', amount: '80', replicateUntilYearEnd: false });
+            const withFalse = await service.create({ split: 'SHARED', month: '2026-02', title: 'Presente', amount: '80', replicateUntilYearEnd: false });
 
             expect(withFalse.map(expense => expense.month)).toEqual(['2026-02']);
             expect(repository.expenses.size).toBe(1);
@@ -128,7 +129,7 @@ describe('ManualExpenseService', () => {
             jest.spyOn(repository, 'createMany').mockImplementation(async entries =>
                 Promise.resolve(entries.map(entry => repository.seed(entry)).reverse()));
 
-            const created = await service.create({ month: '2026-09', title: 'Curso', amount: '300', replicateUntilYearEnd: true });
+            const created = await service.create({ split: 'SHARED', month: '2026-09', title: 'Curso', amount: '300', replicateUntilYearEnd: true });
 
             expect(created.map(expense => expense.month)).toEqual(['2026-09', '2026-10', '2026-11', '2026-12']);
         });
@@ -137,7 +138,7 @@ describe('ManualExpenseService', () => {
             const createMany = jest.spyOn(repository, 'createMany');
 
             for (const amount of ['0', '0.00', '92233720368547758.08']) {
-                await expectAppError(service.create({ month: '2026-10', title: 'Nada', amount }), {
+                await expectAppError(service.create({ split: 'SHARED', month: '2026-10', title: 'Nada', amount }), {
                     code: 'MANUAL_EXPENSE_INVALID_AMOUNT', statusCode: 400, reason: 'manual_expense_amount_invalid'
                 });
             }
@@ -146,7 +147,7 @@ describe('ManualExpenseService', () => {
         });
 
         it('aceita o maior valor que cabe em centavos', async () => {
-            const [created] = await service.create({ month: '2026-10', title: 'Teto', amount: '92233720368547758.07' });
+            const [created] = await service.create({ split: 'SHARED', month: '2026-10', title: 'Teto', amount: '92233720368547758.07' });
 
             expect(created.amount).toBe('92233720368547758.07');
         });
@@ -155,14 +156,14 @@ describe('ManualExpenseService', () => {
             const antiga = categories.seed({ name: 'Antiga', active: false });
             const createMany = jest.spyOn(repository, 'createMany');
 
-            await expectAppError(service.create({ month: '2026-10', title: 'Velha', amount: '10', categoryId: antiga.id }), {
+            await expectAppError(service.create({ split: 'SHARED', month: '2026-10', title: 'Velha', amount: '10', categoryId: antiga.id }), {
                 code: 'MANUAL_EXPENSE_INACTIVE_CATEGORY', statusCode: 409, reason: 'category_inactive'
             });
             expect(createMany).not.toHaveBeenCalled();
         });
 
         it('categoria inexistente: 404 CATEGORY_NOT_FOUND (vem do cadastro de categorias)', async () => {
-            await expectAppError(service.create({ month: '2026-10', title: 'X', amount: '10', categoryId: MISSING_ID }), {
+            await expectAppError(service.create({ split: 'SHARED', month: '2026-10', title: 'X', amount: '10', categoryId: MISSING_ID }), {
                 code: 'CATEGORY_NOT_FOUND', statusCode: 404, reason: 'category_id_not_found'
             });
             expect(repository.expenses.size).toBe(0);
@@ -171,14 +172,14 @@ describe('ManualExpenseService', () => {
         it('recusa pessoa inativa (409) sem gravar', async () => {
             const bia = people.seed({ name: 'Bia', active: false });
 
-            await expectAppError(service.create({ month: '2026-10', title: 'X', amount: '10', personId: bia.id }), {
+            await expectAppError(service.create({ split: 'PERSONAL', month: '2026-10', title: 'X', amount: '10', personId: bia.id }), {
                 code: 'MANUAL_EXPENSE_INACTIVE_PERSON', statusCode: 409, reason: 'person_inactive'
             });
             expect(repository.expenses.size).toBe(0);
         });
 
         it('pessoa inexistente: 404 PERSON_NOT_FOUND (vem do cadastro de pessoas)', async () => {
-            await expectAppError(service.create({ month: '2026-10', title: 'X', amount: '10', personId: MISSING_ID }), {
+            await expectAppError(service.create({ split: 'PERSONAL', month: '2026-10', title: 'X', amount: '10', personId: MISSING_ID }), {
                 code: 'PERSON_NOT_FOUND', statusCode: 404, reason: 'person_id_not_found'
             });
         });
@@ -186,7 +187,7 @@ describe('ManualExpenseService', () => {
         it('sem a categoria padrão no banco é erro de instalação, não do usuário', async () => {
             categories.categories.delete(outros.id);
 
-            await expect(service.create({ month: '2026-10', title: 'X', amount: '10' })).rejects.toThrow('Categoria padrão não encontrada');
+            await expect(service.create({ split: 'SHARED', month: '2026-10', title: 'X', amount: '10' })).rejects.toThrow('Categoria padrão não encontrada');
         });
     });
 
@@ -230,6 +231,7 @@ describe('ManualExpenseService', () => {
                 title: 'Gás',
                 amount: '0.05',
                 categoryId: mercado.id,
+                split: 'PERSONAL',
                 personId: ana.id,
                 createdAt: expense.createdAt,
                 updatedAt: expense.updatedAt
@@ -269,17 +271,25 @@ describe('ManualExpenseService', () => {
             expect(repository.get(expense.id)).toMatchObject({ amountCents: 150000n, title: 'Net', categoryId: mercado.id });
         });
 
-        it('troca a categoria e a pessoa; personId null torna a despesa compartilhada', async () => {
+        it('troca a categoria e a pessoa; split SHARED torna a despesa compartilhada e limpa a pessoa', async () => {
             const lazer = categories.seed({ name: 'Lazer' });
             const first = repository.seed({ month: OCTOBER, title: 'Cinema', categoryId: outros.id });
             const second = repository.seed({ month: OCTOBER, title: 'Show', categoryId: outros.id, personId: ana.id });
 
-            const [moved] = await service.updateMany({ ids: [first.id], changes: { categoryId: lazer.id, personId: ana.id } });
-            const [shared] = await service.updateMany({ ids: [second.id], changes: { personId: null } });
+            const [moved] = await service.updateMany({ ids: [first.id], changes: { categoryId: lazer.id, split: 'PERSONAL', personId: ana.id } });
+            const [shared] = await service.updateMany({ ids: [second.id], changes: { split: 'SHARED' } });
 
-            expect(moved).toMatchObject({ categoryId: lazer.id, personId: ana.id });
-            expect(shared).toMatchObject({ categoryId: outros.id, personId: null });
-            expect(repository.get(second.id).personId).toBeNull();
+            expect(moved).toMatchObject({ categoryId: lazer.id, split: 'PERSONAL', personId: ana.id });
+            expect(shared).toMatchObject({ categoryId: outros.id, split: 'SHARED', personId: null });
+            expect(repository.get(second.id)).toMatchObject({ split: 'SHARED', personId: null });
+        });
+
+        it('sem split, a pessoa fica como estava', async () => {
+            const expense = repository.seed({ month: OCTOBER, title: 'Show', categoryId: outros.id, personId: ana.id });
+
+            const [updated] = await service.updateMany({ ids: [expense.id], changes: { title: 'Teatro' } });
+
+            expect(updated).toMatchObject({ title: 'Teatro', split: 'PERSONAL', personId: ana.id });
         });
 
         it('altera todas as despesas pedidas de uma vez e devolve todas', async () => {
@@ -315,7 +325,7 @@ describe('ManualExpenseService', () => {
             await expectAppError(service.updateMany({ ids: [expense.id], changes: { categoryId: antiga.id } }), {
                 code: 'MANUAL_EXPENSE_INACTIVE_CATEGORY', statusCode: 409, reason: 'category_inactive'
             });
-            await expectAppError(service.updateMany({ ids: [expense.id], changes: { personId: bia.id } }), {
+            await expectAppError(service.updateMany({ ids: [expense.id], changes: { split: 'PERSONAL', personId: bia.id } }), {
                 code: 'MANUAL_EXPENSE_INACTIVE_PERSON', statusCode: 409, reason: 'person_inactive'
             });
             expect(update).not.toHaveBeenCalled();

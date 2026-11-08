@@ -1,4 +1,5 @@
 import type { ManualExpense } from '../../../generated/prisma/client.js';
+import type { ChosenSplit, SplitAssignment } from '../../common/expense-split/expense-split.js';
 import { Injectable } from '@nestjs/common';
 
 import { Prisma } from '../../../generated/prisma/client.js';
@@ -25,7 +26,7 @@ export class ManualExpenseService {
     public async create(data: CreateManualExpenseDto): Promise<ManualExpenseResponse[]> {
         const amountCents = this.parseAmount(data.amount);
         const categoryId = await this.resolveCategoryId(data.categoryId);
-        const personId = await this.resolvePersonId(data.personId);
+        const assignment = await this.resolveSplit(data.split, data.personId);
 
         const [year, firstMonth] = data.month.split('-').map(Number);
         const lastMonth = data.replicateUntilYearEnd ? 12 : firstMonth;
@@ -37,7 +38,7 @@ export class ManualExpenseService {
                 title: data.title,
                 amountCents,
                 categoryId,
-                personId
+                ...assignment
             });
         }
 
@@ -77,9 +78,9 @@ export class ManualExpenseService {
             categoryId: data.changes.categoryId === undefined
                 ? undefined
                 : await this.resolveCategoryId(data.changes.categoryId),
-            personId: data.changes.personId === undefined
-                ? undefined
-                : await this.resolvePersonId(data.changes.personId)
+            ...(data.changes.split === undefined
+                ? {}
+                : await this.resolveSplit(data.changes.split, data.changes.personId))
         };
 
         try {
@@ -117,9 +118,10 @@ export class ManualExpenseService {
         return category.id;
     }
 
-    private async resolvePersonId(personId?: string | null): Promise<string | null> {
-        if (personId === undefined || personId === null) {
-            return null;
+    /** O pipe já garante personId só (e sempre) no PERSONAL; aqui, que a pessoa existe e está ativa. */
+    private async resolveSplit(split: ChosenSplit, personId?: string | null): Promise<SplitAssignment> {
+        if (split !== 'PERSONAL' || !personId) {
+            return { split: 'SHARED', personId: null };
         }
 
         const person = await this.personService.findById(personId);
@@ -128,7 +130,7 @@ export class ManualExpenseService {
             throw MANUAL_EXPENSE_ERRORS.inactivePerson('person_inactive');
         }
 
-        return person.id;
+        return { split, personId: person.id };
     }
 
     private parseAmount(amount: string): bigint {
@@ -153,6 +155,7 @@ export class ManualExpenseService {
             title: expense.title,
             amount: formatAmountCents(expense.amountCents),
             categoryId: expense.categoryId,
+            split: expense.split,
             personId: expense.personId,
             createdAt: expense.createdAt,
             updatedAt: expense.updatedAt

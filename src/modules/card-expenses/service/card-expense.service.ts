@@ -1,4 +1,5 @@
 import type { CardExpense } from '../../../generated/prisma/client.js';
+import type { ChosenSplit, SplitAssignment } from '../../common/expense-split/expense-split.js';
 import { Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 
@@ -37,7 +38,8 @@ export class CardExpenseService {
         const expenses = await this.cardExpenseRepository.findAll({
             month: parseMonth(query.month),
             cardId: query.cardId,
-            includeExcluded: query.includeExcluded
+            includeExcluded: query.includeExcluded,
+            split: query.split
         });
 
         return expenses.map(expense => toCardExpenseResponse(expense));
@@ -58,7 +60,7 @@ export class CardExpenseService {
         const categoryId = data.categoryId === undefined
             ? (await this.categoryService.findDefault()).id
             : await this.resolveCategoryId(data.categoryId);
-        const personId = data.personId === undefined ? null : await this.resolvePersonId(data.personId);
+        const assignment = await this.resolveSplit(data.split, data.personId);
         const month = parseMonth(data.month);
         const installmentNumber = data.installment?.number ?? 1;
         const installmentTotal = data.installment?.total ?? null;
@@ -82,7 +84,7 @@ export class CardExpenseService {
                 installmentTotal,
                 nickname: data.nickname ?? null,
                 categoryId,
-                personId,
+                ...assignment,
                 excludedAt: null,
                 exclusionRemembered: false
             }));
@@ -139,8 +141,9 @@ export class CardExpenseService {
     }
 
     /**
-     * Altera apelido, categoria ou pessoa das despesas escolhidas. Em compras
-     * parceladas, a alteração vale também para as parcelas seguintes.
+     * Altera apelido, categoria ou pessoa (split) das despesas escolhidas. Em compras
+     * parceladas, a alteração vale também para as parcelas seguintes. Escolher a pessoa
+     * (ou compartilhada) tira a compra de PENDING.
      */
     public async updateMany(data: UpdateCardExpensesDto): Promise<CardExpenseResponse[]> {
         const expenses = await this.getByIds(data.ids);
@@ -150,9 +153,9 @@ export class CardExpenseService {
             categoryId: data.changes.categoryId === undefined
                 ? undefined
                 : await this.resolveCategoryId(data.changes.categoryId),
-            personId: data.changes.personId === undefined
-                ? undefined
-                : await this.resolvePersonId(data.changes.personId)
+            ...(data.changes.split === undefined
+                ? {}
+                : await this.resolveSplit(data.changes.split, data.changes.personId))
         };
         const updated = await this.cardExpenseRepository.updateWithFollowingInstallments(expenses, changes);
 
@@ -190,6 +193,7 @@ export class CardExpenseService {
             installmentTotal: expense.installmentTotal,
             nickname: expense.nickname,
             categoryId: expense.categoryId,
+            split: expense.split,
             personId: expense.personId,
             excludedAt: expense.excludedAt,
             exclusionRemembered: expense.exclusionRemembered
@@ -226,9 +230,10 @@ export class CardExpenseService {
         return category.id;
     }
 
-    private async resolvePersonId(personId: string | null): Promise<string | null> {
-        if (personId === null) {
-            return null;
+    /** O pipe já garante personId só (e sempre) no PERSONAL; aqui, que a pessoa existe e está ativa. */
+    private async resolveSplit(split: ChosenSplit, personId?: string | null): Promise<SplitAssignment> {
+        if (split !== 'PERSONAL' || !personId) {
+            return { split: 'SHARED', personId: null };
         }
 
         const person = await this.personService.findById(personId);
@@ -237,6 +242,6 @@ export class CardExpenseService {
             throw CARD_EXPENSE_ERRORS.inactivePerson('person_inactive');
         }
 
-        return person.id;
+        return { split, personId: person.id };
     }
 }

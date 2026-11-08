@@ -14,14 +14,18 @@ só nos `repository/` de cada módulo.
 | `Category` | categoria de despesa | `nameKey` único (nome em minúsculas); `isDefault` marca "Outros", a padrão |
 | `MonthlyIncome` | entrada de um mês | um registro por mês; valor em centavos |
 | `MonthlyReserve` | reserva (valor guardado) de um mês | um registro por mês; valor em centavos |
-| `ManualExpense` | despesa fora do cartão | mês, título, valor, categoria e pessoa opcional (sem pessoa = compartilhada) |
+| `ManualExpense` | despesa fora do cartão | mês, título, valor, categoria e `split` (`SHARED` ou `PERSONAL` com `personId`; nunca `PENDING`) |
 | `CreditCard` | cartão | banco (`CardBank`: `NUBANK`, `C6`, `NEON`) e `active`; ciclo da fatura (`dueDay`, `bestPurchaseDay`); ligação com o Meu Pluggy (`pluggyItemId`, `pluggyAccountId`, `syncFromMonth`) e situação da última sincronização (`sync*`) |
 | `CardBill` | uma fatura do cartão (mês do vencimento) | único por cartão e mês; melhor dia ajustado pelo usuário (`bestPurchaseDate`) e fechamento/vencimento informados pelo banco (`bankClosingDate`, `bankDueDate`) ([sincronizacao-de-cartoes.md](sincronizacao-de-cartoes.md)) |
 | `CardPurchaseCorrection` | correção do usuário: em que fatura cai uma compra | único por cartão e `purchaseKey`; a parcela `installmentNumber` fica em `month` e as outras seguem |
 | `CardImport` | um upload de fatura | cartão, mês da fatura, nome e hash do arquivo, versão do parser e contagens |
 | `SummaryDispatch` | um envio do resumo do mês por e-mail | `idempotencyKey` único; `runningMonth` único e preenchido só enquanto roda (trava um envio por mês); `status` `RUNNING`, `DONE` ou `INTERRUPTED` ([envio-de-resumos.md](envio-de-resumos.md)) |
 | `SummaryDispatchItem` | resultado de uma pessoa num envio | nome no momento do envio, destinatário mascarado, `status` `SENT`, `SKIPPED_NO_EMAIL` ou `FAILED`, código e mensagem |
-| `CardExpense` | uma linha da fatura num mês | `purchaseKey` identifica a compra; parcela `n/N`; `sourceMonth` (mês da 1ª parcela); `origin` (`SYNC`, `UPLOAD` ou `MANUAL`) e `externalId` (id da transação na Pluggy); apelido, categoria e pessoa; exclusão suave (`excludedAt`, `exclusionRemembered`) |
+| `CardExpense` | uma linha da fatura num mês | `purchaseKey` identifica a compra; parcela `n/N`; `sourceMonth` (mês da 1ª parcela); `origin` (`SYNC`, `UPLOAD` ou `MANUAL`) e `externalId` (id da transação na Pluggy); apelido, categoria e `split` (`PENDING`, `SHARED` ou `PERSONAL` com `personId`); exclusão suave (`excludedAt`, `exclusionRemembered`) |
+
+`split` (enum `ExpenseSplit`) tem um `CHECK` em cada tabela de despesa: `personId` preenchido se e só se
+`split = 'PERSONAL'` (e, em `ManualExpense`, nunca `PENDING`). O Prisma não descreve `CHECK`: ele está só
+na migração `add_expense_split`, que também converteu as linhas antigas (sem pessoa → `SHARED`).
 
 Relações principais: despesas apontam para `Category` e `Person` com `onDelete: Restrict` (não dá para
 apagar categoria/pessoa em uso; por isso elas são desativadas, não apagadas). `CardExpense` pode pertencer a

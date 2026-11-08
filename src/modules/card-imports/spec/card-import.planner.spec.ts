@@ -30,6 +30,7 @@ function existing(overrides: Partial<ExistingCardExpense> & { purchaseKey: strin
         nickname: null,
         categoryId: DEFAULT_CATEGORY,
         personId: null,
+        split: overrides.personId ? 'PERSONAL' : 'SHARED',
         excludedAt: null,
         exclusionRemembered: false,
         ...overrides
@@ -96,7 +97,8 @@ describe('planCardImport', () => {
             ['2026-12', 3]
         ]);
         expect(result.summary).toEqual({ created: 1, updated: 0, removed: 0, projected: 2 });
-        expect(result.creates.every(row => row.categoryId === DEFAULT_CATEGORY && row.personId === null)).toBe(true);
+        // Compra nova no arquivo: pendente até alguém escolher a pessoa.
+        expect(result.creates.every(row => row.categoryId === DEFAULT_CATEGORY && row.split === 'PENDING' && row.personId === null)).toBe(true);
     });
 
     it('atualiza a projeção quando o CSV do mês seguinte chega, mantendo o ID', () => {
@@ -172,12 +174,12 @@ describe('planCardImport', () => {
 
             expect(inherited).toMatchObject({
                 status: 'new',
-                suggestion: { nickname: 'Sofá', categoryId: 'cat-casa', personId: 'p2' },
+                suggestion: { nickname: 'Sofá', categoryId: 'cat-casa', split: 'PERSONAL', personId: 'p2' },
                 projectedCount: 1
             });
             expect(plain).toMatchObject({
                 status: 'new',
-                suggestion: { nickname: null, categoryId: DEFAULT_CATEGORY, personId: null },
+                suggestion: { nickname: null, categoryId: DEFAULT_CATEGORY, split: 'PENDING', personId: null },
                 projectedCount: 0
             });
         });
@@ -193,7 +195,7 @@ describe('planCardImport', () => {
 
             expect(item).toMatchObject({
                 status: 'update',
-                suggestion: { nickname: 'Geladeira', categoryId: 'cat-casa', personId: 'p1' },
+                suggestion: { nickname: 'Geladeira', categoryId: 'cat-casa', split: 'PERSONAL', personId: 'p1' },
                 projectedCount: 1
             });
         });
@@ -208,7 +210,7 @@ describe('planCardImport', () => {
                 existing({ purchaseKey: chosen, month: november, sourceMonth: october, nickname: 'Antigo' }),
                 existing({ purchaseKey: untouched, month: november, sourceMonth: october, nickname: 'Fica' })
             ];
-            const choice = { nickname: 'Geladeira', categoryId: 'cat-casa', personId: 'p1' };
+            const choice = { nickname: 'Geladeira', categoryId: 'cat-casa', split: 'PERSONAL' as const, personId: 'p1' };
             const result = planCardImport({
                 cardId: CARD,
                 month: november,

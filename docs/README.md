@@ -38,7 +38,7 @@ tema; este aqui é o mapa. O `README.md` da raiz do repositório tem só o resum
 | `src/modules/common/logging/` | [observabilidade.md](observabilidade.md) |
 | `src/modules/common/http/`, `validation/`, `pagination/`, `swagger/` | [api.md](api.md) |
 | `src/modules/common/provider/config.provider.ts` | [ambiente-e-configuracao.md](ambiente-e-configuracao.md) |
-| `src/modules/summary/` | [regras-de-negocio.md](regras-de-negocio.md) |
+| `src/modules/summary/`, `common/expense-split/` | [regras-de-negocio.md](regras-de-negocio.md) |
 | `src/modules/summary-dispatch/` | [envio-de-resumos.md](envio-de-resumos.md) |
 | `src/modules/card-sync/`, `credit-cards/service/billing-calendar.ts` | [sincronizacao-de-cartoes.md](sincronizacao-de-cartoes.md) |
 | `src/modules/card-imports/`, `card-expenses/` | [importacao-de-faturas.md](importacao-de-faturas.md), [sincronizacao-de-cartoes.md](sincronizacao-de-cartoes.md) |

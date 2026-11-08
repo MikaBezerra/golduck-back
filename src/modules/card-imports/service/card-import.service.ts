@@ -3,6 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { createHash } from 'crypto';
 import { extname } from 'path';
 
+import { ExpenseSplit } from '../../../generated/prisma/client.js';
 import { toCardExpenseResponse } from '../../card-expenses/service/card-expense.mapper.js';
 import { CategoryService } from '../../categories/service/category.service.js';
 import { formatMonth, parseMonth } from '../../common/date/month.js';
@@ -127,6 +128,7 @@ export class CardImportService {
                 cardLastDigits: transaction.cardLastDigits,
                 nickname: suggestion.nickname,
                 categoryId: suggestion.categoryId,
+                split: suggestion.split,
                 personId: suggestion.personId,
                 projectedCount,
                 excluded,
@@ -223,8 +225,8 @@ export class CardImportService {
         }
 
         const personIds = overrides
-            .map(override => override.personId)
-            .filter((personId): personId is string => personId !== null);
+            .filter(override => override.split === ExpenseSplit.PERSONAL)
+            .map(override => override.personId as string);
 
         for (const personId of new Set(personIds)) {
             if (!(await this.personService.findById(personId)).active) {
@@ -235,7 +237,8 @@ export class CardImportService {
         return new Map(overrides.map(override => [override.key, {
             nickname: override.nickname,
             categoryId: override.categoryId,
-            personId: override.personId
+            split: override.split,
+            personId: override.split === ExpenseSplit.PERSONAL ? override.personId ?? null : null
         }]));
     }
 

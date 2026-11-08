@@ -40,6 +40,7 @@ const FAILURE_MESSAGES: Record<MailErrorCode, (name: string) => string> = {
  * - Dois envios do mesmo mês ao mesmo tempo: o runningMonth (único) recusa o segundo (409).
  * - Cada pessoa é isolada: sem e-mail ou com falha no envio vira um item com mensagem amigável, e as
  *   outras recebem normalmente.
+ * - Mês com compras do cartão sem pessoa (PENDING): recusado (409) antes de falar com o servidor de e-mail.
  */
 @Injectable()
 export class SummaryDispatchService {
@@ -64,7 +65,8 @@ export class SummaryDispatchService {
 
                 return { personId: person.personId, name: person.name, hasEmail: email !== null, recipient: email === null ? null : maskEmail(email) };
             }),
-            lastDispatch: last ? toResponse(last) : null
+            lastDispatch: last ? toResponse(last) : null,
+            pending: statement.pending
         };
     }
 
@@ -95,10 +97,16 @@ export class SummaryDispatchService {
             return this.replay(existing, body.month);
         }
 
-        await this.mailer.verify();
-
         const month = parseMonth(body.month);
         const statement = await this.summaryService.findStatement({ month: body.month });
+
+        // Compra sem pessoa muda a divisão: o resumo só sai depois que todas forem classificadas.
+        if (statement.pending.count > 0) {
+            throw SUMMARY_DISPATCH_ERRORS.pendingExpenses(statement.pending.count, 'summary_dispatch_pending_expenses');
+        }
+
+        await this.mailer.verify();
+
         const targets = this.pickTargets(statement, body.personIds);
         const contacts = await this.contactsOf(targets);
 

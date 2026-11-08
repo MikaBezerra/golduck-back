@@ -87,14 +87,14 @@ describe('CreateCardImportPipe (campos do formulário do upload)', () => {
 
 describe('CardImportOverridesPipe (escolhas da pré-visualização, em JSON)', () => {
     const pipe = new CardImportOverridesPipe();
-    const override = { key: 'S|2026-11-05|1000|LOJA', nickname: 'Mercado do mês', categoryId: CATEGORY_ID, personId: PERSON_ID };
+    const override = { key: 'S|2026-11-05|1000|LOJA', nickname: 'Mercado do mês', categoryId: CATEGORY_ID, split: 'PERSONAL', personId: PERSON_ID };
     const transform = (value: unknown) => pipe.transform(JSON.stringify(value));
 
     it('converte o texto JSON na lista, tirando espaços do apelido', () => {
-        expect(transform([{ ...override, nickname: '  Mercado do mês  ' }, { ...override, key: 'outra', nickname: null, personId: null }])).toEqual([
-            override,
-            { ...override, key: 'outra', nickname: null, personId: null }
-        ]);
+        const shared = { ...override, key: 'outra', nickname: null, split: 'SHARED', personId: null };
+        const pending = { key: 'pendente', nickname: null, categoryId: CATEGORY_ID, split: 'PENDING' };
+
+        expect(transform([{ ...override, nickname: '  Mercado do mês  ' }, shared, pending])).toEqual([override, shared, pending]);
         expect(transform([])).toEqual([]);
     });
 
@@ -110,12 +110,21 @@ describe('CardImportOverridesPipe (escolhas da pré-visualização, em JSON)', (
         ]);
     });
 
-    it('todos os campos são obrigatórios (null é a forma de dizer "sem apelido" ou "compartilhada")', () => {
+    it('key, apelido (null = sem apelido), categoria e split são obrigatórios; personId só (e sempre) com PERSONAL', () => {
         expect(detailsOf(() => transform([{}])).map(detail => detail.field)).toEqual([
             'overrides[0].key',
             'overrides[0].nickname',
             'overrides[0].categoryId',
-            'overrides[0].personId'
+            'overrides[0].split'
+        ]);
+        expect(detailsOf(() => transform([
+            { ...override, personId: undefined },
+            { ...override, key: 'b', split: 'SHARED' },
+            { ...override, key: 'c', split: 'NINGUEM', personId: null }
+        ])).map(detail => [detail.field, detail.code])).toEqual([
+            ['overrides[0].personId', 'any.required'],
+            ['overrides[1].personId', 'any.only'],
+            ['overrides[2].split', 'any.only']
         ]);
     });
 

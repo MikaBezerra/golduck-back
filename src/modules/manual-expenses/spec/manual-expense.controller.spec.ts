@@ -15,7 +15,7 @@ const MISSING_ID = '3f2a9c1e-8b7d-4c2a-9e1f-5a6b7c8d9e0f';
 const UUID_V1 = '3f2a9c1e-8b7d-1c2a-9e1f-5a6b7c8d9e0f';
 const OCTOBER = new Date('2026-10-01T00:00:00.000Z');
 
-type ExpenseBody = { id: string; month: string; title: string; amount: string; categoryId: string; personId: string | null };
+type ExpenseBody = { id: string; month: string; title: string; amount: string; categoryId: string; split: string; personId: string | null };
 
 /** Campos apontados pela validação (details[].field). */
 const fieldsOf = (response: TestResponse): string[] =>
@@ -61,7 +61,7 @@ describe('rotas /manual-expenses', () => {
 
     /** Uma despesa válida, com o que o teste quiser trocar. */
     const newExpense = (changes: Record<string, unknown> = {}): Record<string, unknown> =>
-        ({ month: '2026-10', title: 'Internet', amount: '99.90', ...changes });
+        ({ month: '2026-10', title: 'Internet', amount: '99.90', split: 'SHARED', ...changes });
 
     const expectValidationError = (response: TestResponse, fields: string[]): void => {
         expect(response.status).toBe(400);
@@ -93,12 +93,12 @@ describe('rotas /manual-expenses', () => {
             expect(response.status).toBe(201);
             const [created] = dataOf<ExpenseBody[]>(response);
             expect(dataOf<ExpenseBody[]>(response)).toHaveLength(1);
-            expect(created).toMatchObject({ month: '2026-10', title: 'Internet', amount: '99.90', categoryId: outros.id, personId: null });
+            expect(created).toMatchObject({ month: '2026-10', title: 'Internet', amount: '99.90', categoryId: outros.id, split: 'SHARED', personId: null });
             expect(repository.get(created.id)).toMatchObject({ month: OCTOBER, amountCents: 9990n });
         });
 
         it('com replicateUntilYearEnd, devolve uma despesa por mês até dezembro', async () => {
-            const response = await api.post('/manual-expenses', newExpense({ replicateUntilYearEnd: true, personId: ana.id, categoryId: mercado.id }));
+            const response = await api.post('/manual-expenses', newExpense({ replicateUntilYearEnd: true, split: 'PERSONAL', personId: ana.id, categoryId: mercado.id }));
 
             expect(response.status).toBe(201);
             expect(dataOf<ExpenseBody[]>(response).map(expense => [expense.month, expense.personId, expense.categoryId])).toEqual([
@@ -181,18 +181,23 @@ describe('rotas /manual-expenses', () => {
             expect(repository.expenses.size).toBe(0);
         });
 
-        it('valida categoryId, personId (UUID v4; personId aceita null), replicateUntilYearEnd e campos extras', async () => {
+        it('valida categoryId, split + personId (UUID v4; null só fora do PERSONAL), replicateUntilYearEnd e campos extras', async () => {
             const shared = await api.post('/manual-expenses', newExpense({ personId: null }));
 
             expect(shared.status).toBe(201);
-            expect(dataOf<ExpenseBody[]>(shared)[0].personId).toBeNull();
+            expect(dataOf<ExpenseBody[]>(shared)[0]).toMatchObject({ split: 'SHARED', personId: null });
+            expectValidationError(await api.post('/manual-expenses', newExpense({ split: undefined })), ['split']);
+            expectValidationError(await api.post('/manual-expenses', newExpense({ split: 'PENDING' })), ['split']);
+            expectValidationError(await api.post('/manual-expenses', newExpense({ split: 'PERSONAL' })), ['personId']);
+            expectValidationError(await api.post('/manual-expenses', newExpense({ split: 'PERSONAL', personId: null })), ['personId']);
+            expectValidationError(await api.post('/manual-expenses', newExpense({ personId: ana.id })), ['personId']);
             expectValidationError(await api.post('/manual-expenses', newExpense({ categoryId: '123' })), ['categoryId']);
             expectValidationError(await api.post('/manual-expenses', newExpense({ categoryId: UUID_V1 })), ['categoryId']);
             expectValidationError(await api.post('/manual-expenses', newExpense({ categoryId: null })), ['categoryId']);
-            expectValidationError(await api.post('/manual-expenses', newExpense({ personId: 'ana' })), ['personId']);
+            expectValidationError(await api.post('/manual-expenses', newExpense({ split: 'PERSONAL', personId: 'ana' })), ['personId']);
             expectValidationError(await api.post('/manual-expenses', newExpense({ replicateUntilYearEnd: 'talvez' })), ['replicateUntilYearEnd']);
             expectValidationError(await api.post('/manual-expenses', newExpense({ color: 'azul' })), ['color']);
-            expectValidationError(await api.post('/manual-expenses', {}), ['month', 'title', 'amount']);
+            expectValidationError(await api.post('/manual-expenses', {}), ['month', 'title', 'amount', 'split']);
             expect(repository.expenses.size).toBe(1);
         });
 
@@ -201,9 +206,9 @@ describe('rotas /manual-expenses', () => {
             const bia = people.seed({ name: 'Bia', active: false });
 
             const inactiveCategory = await api.post('/manual-expenses', newExpense({ categoryId: antiga.id }));
-            const inactivePerson = await api.post('/manual-expenses', newExpense({ personId: bia.id }));
+            const inactivePerson = await api.post('/manual-expenses', newExpense({ split: 'PERSONAL', personId: bia.id }));
             const missingCategory = await api.post('/manual-expenses', newExpense({ categoryId: MISSING_ID }));
-            const missingPerson = await api.post('/manual-expenses', newExpense({ personId: MISSING_ID }));
+            const missingPerson = await api.post('/manual-expenses', newExpense({ split: 'PERSONAL', personId: MISSING_ID }));
 
             expect(inactiveCategory.status).toBe(409);
             expect(errorOf(inactiveCategory)).toMatchObject({ code: 'MANUAL_EXPENSE_INACTIVE_CATEGORY', message: 'A categoria selecionada está inativa' });
@@ -268,13 +273,13 @@ describe('rotas /manual-expenses', () => {
 
             const response = await api.patch('/manual-expenses', {
                 ids: [first.id, second.id],
-                changes: { title: '  Fibra ', amount: '120.5', categoryId: mercado.id, personId: null }
+                changes: { title: '  Fibra ', amount: '120.5', categoryId: mercado.id, split: 'SHARED' }
             });
 
             expect(response.status).toBe(200);
             expect(dataOf<ExpenseBody[]>(response)).toEqual([
-                expect.objectContaining({ id: first.id, title: 'Fibra', amount: '120.50', categoryId: mercado.id, personId: null }),
-                expect.objectContaining({ id: second.id, title: 'Fibra', amount: '120.50', categoryId: mercado.id, personId: null })
+                expect.objectContaining({ id: first.id, title: 'Fibra', amount: '120.50', categoryId: mercado.id, split: 'SHARED', personId: null }),
+                expect.objectContaining({ id: second.id, title: 'Fibra', amount: '120.50', categoryId: mercado.id, split: 'SHARED', personId: null })
             ]);
         });
 
@@ -303,7 +308,10 @@ describe('rotas /manual-expenses', () => {
             expectValidationError(await api.patch('/manual-expenses', { ids, changes: { title: 'x'.repeat(161) } }), ['changes.title']);
             expectValidationError(await api.patch('/manual-expenses', { ids, changes: { amount: '1,00' } }), ['changes.amount']);
             expectValidationError(await api.patch('/manual-expenses', { ids, changes: { categoryId: null } }), ['changes.categoryId']);
-            expectValidationError(await api.patch('/manual-expenses', { ids, changes: { personId: 'ana' } }), ['changes.personId']);
+            expectValidationError(await api.patch('/manual-expenses', { ids, changes: { split: 'PERSONAL', personId: 'ana' } }), ['changes.personId']);
+            expectValidationError(await api.patch('/manual-expenses', { ids, changes: { split: 'PERSONAL' } }), ['changes.personId']);
+            expectValidationError(await api.patch('/manual-expenses', { ids, changes: { personId: ana.id } }), ['changes.personId']);
+            expectValidationError(await api.patch('/manual-expenses', { ids, changes: { split: 'PENDING' } }), ['changes.split']);
             expect(repository.get(expense.id).title).toBe('A');
         });
 

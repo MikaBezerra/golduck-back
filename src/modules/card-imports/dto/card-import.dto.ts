@@ -1,7 +1,10 @@
 import type { CardExpenseScope } from '../../card-expenses/service/card-expense-scope.js';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
+import { ExpenseSplit } from '../../../generated/prisma/client.js';
+
 import { CardExpenseResponse, CardInstallmentDto, SCOPE_PROPERTY } from '../../card-expenses/dto/card-expense.dto.js';
+import { SPLIT_PROPERTY } from '../../common/expense-split/expense-split.js';
 import {
     DATE_PATTERN,
     DATE_TIME_PROPERTY,
@@ -53,8 +56,11 @@ export class CardImportOverrideDto {
     @ApiProperty(UUID_PROPERTY)
     public categoryId!: string;
 
-    @ApiProperty({ ...UUID_PROPERTY, nullable: true, description: 'null = compartilhada' })
-    public personId!: string | null;
+    @ApiProperty({ ...SPLIT_PROPERTY, description: 'PENDING (deixar para depois), SHARED ou PERSONAL' })
+    public split!: ExpenseSplit;
+
+    @ApiPropertyOptional({ ...UUID_PROPERTY, nullable: true, description: 'Obrigatório com split PERSONAL; nos outros casos, omitido ou null' })
+    public personId?: string | null;
 }
 
 /** Só para a documentação: o formulário multipart da pré-visualização. */
@@ -77,7 +83,7 @@ export class CardImportSaveUploadDto extends CardImportUploadDto {
     @ApiPropertyOptional({
         type: String,
         maxLength: 256 * 1024,
-        example: '[{"key":"P|2026-09|8|FERREIRA COSTA","nickname":"Geladeira","categoryId":"<uuid>","personId":null}]',
+        example: '[{"key":"P|2026-09|8|FERREIRA COSTA","nickname":"Geladeira","categoryId":"<uuid>","split":"SHARED"}]',
         description: 'JSON com até 500 itens no formato CardImportOverrideDto. Cada escolha vale para a linha do mês e as parcelas futuras lançadas por ela.'
     })
     public overrides?: string;
@@ -185,7 +191,10 @@ export class CardImportPreviewTransactionDto {
     @ApiProperty({ ...UUID_PROPERTY, description: 'Sugestão: o que será gravado sem override' })
     public categoryId!: string;
 
-    @ApiProperty({ ...UUID_PROPERTY, nullable: true, description: 'Sugestão: o que será gravado sem override (null = compartilhada)' })
+    @ApiProperty({ ...SPLIT_PROPERTY, description: 'Sugestão: o que será gravado sem override (compra nova = PENDING)' })
+    public split!: ExpenseSplit;
+
+    @ApiProperty({ ...UUID_PROPERTY, nullable: true, description: 'Sugestão: o que será gravado sem override (só com PERSONAL)' })
     public personId!: string | null;
 
     @ApiProperty({ type: Number, description: 'Parcelas futuras que esta linha vai lançar' })

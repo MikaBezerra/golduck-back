@@ -90,6 +90,9 @@ model ManualExpense {
   title       String   @db.VarChar(160)
   amountCents BigInt   @db.BigInt
   categoryId  String   @db.Uuid
+  /// Nunca PENDING: quem lança a despesa à mão escolhe na hora.
+  split       ExpenseSplit
+  /// Preenchido só quando split = PERSONAL (CHECK no banco).
   personId    String?  @db.Uuid
   createdAt   DateTime @default(now()) @db.Timestamptz(3)
   updatedAt   DateTime @updatedAt @db.Timestamptz(3)
@@ -208,6 +211,9 @@ model CardExpense {
   installmentTotal    Int?
   nickname            String?           @db.VarChar(160)
   categoryId          String            @db.Uuid
+  /// PENDING até alguém escolher a pessoa (ou compartilhada); parcelas novas herdam da compra.
+  split               ExpenseSplit
+  /// Preenchido só quando split = PERSONAL (CHECK no banco).
   personId            String?           @db.Uuid
   /// Exclusão suave: a linha sai das listas e dos totais, e os uploads a mantêm excluída.
   excludedAt          DateTime?         @db.Timestamptz(3)
@@ -227,6 +233,7 @@ model CardExpense {
   @@index([importId])
   @@index([categoryId])
   @@index([personId])
+  @@index([month, split])
 }
 
 /// Um envio do resumo do mês (botão "Enviar por e-mail"), com o resultado de cada pessoa.
@@ -281,6 +288,14 @@ enum SummaryDispatchItemStatus {
   SENT
   SKIPPED_NO_EMAIL
   FAILED
+}
+
+/// De quem é a despesa: ainda sem escolha (só no cartão), compartilhada (dividida entre as pessoas
+/// ativas) ou individual (personId).
+enum ExpenseSplit {
+  PENDING
+  SHARED
+  PERSONAL
 }
 
 /// De onde veio a despesa do cartão: upload de fatura, sincronização com a Pluggy ou "Adicionar compra".

@@ -195,7 +195,7 @@ describe('rotas /card-imports', () => {
             const casa = categories.seed({ name: 'Casa' });
             const ana = people.seed({ name: 'Ana' });
             const overrides = JSON.stringify([
-                { key: 'P|2026-08|8|LOJA EXEMPLO', nickname: '  Geladeira  ', categoryId: casa.id, personId: ana.id }
+                { key: 'P|2026-08|8|LOJA EXEMPLO', nickname: '  Geladeira  ', categoryId: casa.id, split: 'PERSONAL', personId: ana.id }
             ]);
             const exclusions = JSON.stringify([{ key: 'S|2026-10-20|1200|PADARIA', action: 'exclude', scope: 'all' }]);
 
@@ -214,6 +214,7 @@ describe('rotas /card-imports', () => {
             const rows = imports.expensesOf(card.id);
 
             expect(rows.filter(row => row.nickname === 'Geladeira' && row.categoryId === casa.id && row.personId === ana.id)).toHaveLength(5);
+            expect(rows.find(row => row.originalDescription === 'Padaria')).toMatchObject({ split: 'PENDING', personId: null });
             expect(rows.find(row => row.originalDescription === 'Padaria')).toMatchObject({ exclusionRemembered: false });
             expect(rows.find(row => row.originalDescription === 'Padaria')?.excludedAt).toBeInstanceOf(Date);
         });
@@ -287,7 +288,7 @@ describe('rotas /card-imports', () => {
         it('escolha com key que não está no arquivo: 400 IMPORT_OVERRIDE_UNKNOWN_KEY', async () => {
             const outros = [...categories.categories.values()][0];
             const response = await postMultipart('/card-imports', nubankForm({
-                overrides: JSON.stringify([{ key: 'S|2026-01-01|1|SUMIU', nickname: null, categoryId: outros.id, personId: null }])
+                overrides: JSON.stringify([{ key: 'S|2026-01-01|1|SUMIU', nickname: null, categoryId: outros.id, split: 'SHARED' }])
             }));
 
             expectError(response, 400, 'IMPORT_OVERRIDE_UNKNOWN_KEY', 'A fatura mudou desde a pré-visualização; pré-visualize de novo');

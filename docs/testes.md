@@ -30,6 +30,9 @@ node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.json 
   globais), as variáveis de teste (`TEST_ENV`) e um usuário de teste já logado. `api.get/post/patch/delete`,
   `dataOf(res)` e `errorOf(res)`.
 - O `PrismaService` vira um objeto vazio: qualquer acesso ao banco que escape do fake falha na hora.
+- `expense-split-check.ts`: `assertSplitCheck(row)` imita o `CHECK` do banco (pessoa só, e sempre, com
+  `split` `PERSONAL`) e é chamado pelos repositórios em memória de despesas a cada gravação; `splitFor(personId)`
+  dá o `split` padrão das linhas montadas nos testes (com pessoa, `PERSONAL`; sem, `SHARED`).
 
 ### Boas práticas
 

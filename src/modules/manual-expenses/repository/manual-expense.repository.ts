@@ -1,4 +1,5 @@
 import type {
+    ExpenseSplit,
     ManualExpense,
     Prisma
 } from '../../../generated/prisma/client.js';
@@ -11,6 +12,7 @@ type NewManualExpense = {
     title: string;
     amountCents: bigint;
     categoryId: string;
+    split: ExpenseSplit;
     personId: string | null;
 };
 
@@ -18,6 +20,7 @@ type ManualExpenseChanges = {
     title?: string;
     amountCents?: bigint;
     categoryId?: string;
+    split?: ExpenseSplit;
     personId?: string | null;
 };
 

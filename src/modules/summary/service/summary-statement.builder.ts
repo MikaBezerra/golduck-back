@@ -1,3 +1,4 @@
+import type { ExpenseSplit } from '../../../generated/prisma/client.js';
 import { formatMonth } from '../../common/date/month.js';
 import { formatAmountCents } from '../../common/money/money.js';
 import { splitEvenly } from './summary.calculator.js';
@@ -29,11 +30,12 @@ export type StatementManualExpense = {
     personId: string | null;
 };
 
-/** Despesa do cartão já sem as excluídas. */
+/** Despesa do cartão já sem as excluídas. PENDING entra como compartilhada (personId null). */
 export type StatementCardExpense = {
     id: string;
     cardId: string;
     amountCents: bigint;
+    split: ExpenseSplit;
     personId: string | null;
 };
 
@@ -121,6 +123,11 @@ export type Statement = {
     /** Há pessoas ativas para dividir o compartilhado. */
     hasPeople: boolean;
     incomeMissing: boolean;
+    /** Compras do cartão ainda sem pessoa (já somadas no compartilhado). */
+    pending: {
+        amount: string;
+        count: number;
+    };
 };
 
 type Cells = (bigint | null)[];
@@ -190,6 +197,7 @@ export function buildStatement(source: StatementSource): Statement {
     // ---------- Compartilhado ----------
     const sharedManual = source.manualExpenses.filter(expense => expense.personId === null);
     const sharedCard = source.cardExpenses.filter(expense => expense.personId === null);
+    const pending = sharedCard.filter(expense => expense.split === 'PENDING');
     const reserveCents = source.reserveCents ?? 0n;
     const sharedManualCents = sum(sharedManual);
     const sharedCardCents = sum(sharedCard);
@@ -318,7 +326,11 @@ export function buildStatement(source: StatementSource): Statement {
             accumulated: formatAmountCents(source.reserveAccumulatedCents)
         },
         hasPeople: count > 0,
-        incomeMissing: source.incomeCents === null
+        incomeMissing: source.incomeCents === null,
+        pending: {
+            amount: formatAmountCents(sum(pending)),
+            count: pending.length
+        }
     };
 }
 

@@ -30,8 +30,8 @@ describe('ManualExpenseRepository', () => {
 
     it('createMany grava todas as linhas de uma vez e devolve as criadas', async () => {
         const entries = [
-            { month: october, title: 'Internet', amountCents: 9990n, categoryId: 'categoria', personId: null },
-            { month: new Date('2026-11-01T00:00:00.000Z'), title: 'Internet', amountCents: 9990n, categoryId: 'categoria', personId: 'pessoa' }
+            { month: october, title: 'Internet', amountCents: 9990n, categoryId: 'categoria', split: 'SHARED' as const, personId: null },
+            { month: new Date('2026-11-01T00:00:00.000Z'), title: 'Internet', amountCents: 9990n, categoryId: 'categoria', split: 'PERSONAL' as const, personId: 'pessoa' }
         ];
 
         await expect(repository.createMany(entries)).resolves.toEqual([{ id: 'criada' }]);

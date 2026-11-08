@@ -1,6 +1,8 @@
 import type { CardExpense } from '../../../generated/prisma/client.js';
+import type { SplitAssignment } from '../../common/expense-split/expense-split.js';
 import type { ParsedCardTransaction } from '../parsers/card-statement.parser.js';
 import { addMonths, formatMonth } from '../../common/date/month.js';
+import { PENDING_SPLIT } from '../../common/expense-split/expense-split.js';
 
 /*
  * Regras da conciliação de um upload do mês M (todas puras, sem banco de dados):
@@ -32,18 +34,17 @@ export type KeyedTransaction = ParsedCardTransaction & {
 
 export type ExistingCardExpense = Pick<
     CardExpense,
-    'id' | 'month' | 'sourceMonth' | 'purchaseKey' | 'nickname' | 'categoryId' | 'personId'
+    'id' | 'month' | 'sourceMonth' | 'purchaseKey' | 'nickname' | 'categoryId' | 'split' | 'personId'
     | 'excludedAt' | 'exclusionRemembered'
 >;
 
 /** Estado de exclusão de uma linha. */
 export type CardExpenseExclusionState = Pick<CardExpense, 'excludedAt' | 'exclusionRemembered'>;
 
-/** O que o usuário escolhe para uma despesa: apelido, categoria e pessoa. */
-export type CardExpensePersonalization = {
+/** O que o usuário escolhe para uma despesa: apelido, categoria e pessoa (split). */
+export type CardExpensePersonalization = SplitAssignment & {
     nickname: string | null;
     categoryId: string;
-    personId: string | null;
 };
 
 export type CardExpenseBankData = {
@@ -187,7 +188,8 @@ export function planCardImport(input: PlanCardImportInput): CardImportPlan {
         const inherited: CardExpensePersonalization = {
             nickname: source?.nickname ?? null,
             categoryId: source?.categoryId ?? input.defaultCategoryId,
-            personId: source ? source.personId : null
+            // Compra nova no arquivo: pendente até alguém escolher a pessoa.
+            ...(source ? { split: source.split, personId: source.personId } : PENDING_SPLIT)
         };
         const inheritedExclusion: CardExpenseExclusionState = {
             excludedAt: source?.excludedAt ?? null,
@@ -249,7 +251,7 @@ export function planCardImport(input: PlanCardImportInput): CardImportPlan {
             transaction,
             status: monthRow ? 'update' : 'new',
             suggestion: monthRow
-                ? { nickname: monthRow.nickname, categoryId: monthRow.categoryId, personId: monthRow.personId }
+                ? { nickname: monthRow.nickname, categoryId: monthRow.categoryId, split: monthRow.split, personId: monthRow.personId }
                 : inherited,
             projectedCount,
             excluded: monthExclusion.excludedAt !== null,

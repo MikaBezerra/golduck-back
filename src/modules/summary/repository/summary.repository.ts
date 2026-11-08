@@ -2,6 +2,8 @@ import type { Category, Person } from '../../../generated/prisma/client.js';
 import type { StatementSource } from '../service/summary-statement.builder.js';
 import { Injectable } from '@nestjs/common';
 
+import { ExpenseSplit } from '../../../generated/prisma/client.js';
+
 import { addMonths, formatMonth } from '../../common/date/month.js';
 import { PrismaService } from '../../common/index.js';
 import { AmountGroup, MonthGroups } from '../service/summary.calculator.js';
@@ -18,20 +20,22 @@ export class SummaryRepository {
 
     /**
      * Entrada, reserva e despesas agrupadas de cada mês, a partir de start, na ordem dos
-     * meses. Despesas do cartão excluídas não entram.
+     * meses, mais as compras do cartão ainda sem pessoa (PENDING). Despesas do cartão
+     * excluídas não entram.
      */
     public async loadMonths(start: Date, count: number): Promise<MonthGroups[]> {
         const range = { gte: start, lt: addMonths(start, count) };
         const manualWhere = { month: range };
         const cardWhere = { month: range, excludedAt: null };
         const aggregates = { _sum: { amountCents: true }, _count: { _all: true } } as const;
-        const [incomes, reserves, manualByCategory, manualByPerson, cardByCategory, cardByPerson] = await Promise.all([
+        const [incomes, reserves, manualByCategory, manualByPerson, cardByCategory, cardByPerson, pendingByMonth] = await Promise.all([
             this.prisma.monthlyIncome.findMany({ where: { month: range }, select: { month: true, amountCents: true } }),
             this.prisma.monthlyReserve.findMany({ where: { month: range }, select: { month: true, amountCents: true } }),
             this.prisma.manualExpense.groupBy({ by: ['month', 'categoryId'], where: manualWhere, ...aggregates }),
             this.prisma.manualExpense.groupBy({ by: ['month', 'personId'], where: manualWhere, ...aggregates }),
             this.prisma.cardExpense.groupBy({ by: ['month', 'categoryId'], where: cardWhere, ...aggregates }),
-            this.prisma.cardExpense.groupBy({ by: ['month', 'personId'], where: cardWhere, ...aggregates })
+            this.prisma.cardExpense.groupBy({ by: ['month', 'personId'], where: cardWhere, ...aggregates }),
+            this.prisma.cardExpense.groupBy({ by: ['month'], where: { ...cardWhere, split: ExpenseSplit.PENDING }, ...aggregates })
         ]);
         const months = Array.from({ length: count }, (_, index) => formatMonth(addMonths(start, index)));
         const byMonth = new Map<string, MonthGroups>(months.map(month => [month, {
@@ -40,7 +44,8 @@ export class SummaryRepository {
             manualByCategory: [],
             manualByPerson: [],
             cardByCategory: [],
-            cardByPerson: []
+            cardByPerson: [],
+            pending: { amountCents: 0n, count: 0 }
         }]));
         const bucket = (row: { month: Date }): MonthGroups => byMonth.get(formatMonth(row.month)) as MonthGroups;
 
@@ -56,6 +61,11 @@ export class SummaryRepository {
         manualByPerson.forEach(row => bucket(row).manualByPerson.push(toGroup(row.personId, row)));
         cardByCategory.forEach(row => bucket(row).cardByCategory.push(toGroup(row.categoryId, row)));
         cardByPerson.forEach(row => bucket(row).cardByPerson.push(toGroup(row.personId, row)));
+        pendingByMonth.forEach(row => {
+            const group = toGroup(null, row);
+
+            bucket(row).pending = { amountCents: group.amountCents, count: group.count };
+        });
 
         return months.map(month => byMonth.get(month) as MonthGroups);
     }
@@ -77,7 +87,7 @@ export class SummaryRepository {
             }),
             this.prisma.cardExpense.findMany({
                 where: { month: range, excludedAt: null },
-                select: { id: true, cardId: true, amountCents: true, personId: true }
+                select: { id: true, cardId: true, amountCents: true, split: true, personId: true }
             })
         ]);
         const cardIds = [...new Set(cardExpenses.map(expense => expense.cardId))];

@@ -1,8 +1,9 @@
-import type { CardExpense } from '../../../generated/prisma/client.js';
+import type { CardExpense, ExpenseSplit } from '../../../generated/prisma/client.js';
 import type { CardExpenseChanges, NewCardExpenseRow, PurchaseCorrectionData } from '../repository/card-expense.repository.js';
 import type { CardExpenseScope } from '../service/card-expense-scope.js';
 import { randomUUID } from 'node:crypto';
 
+import { assertSplitCheck, splitFor } from '../../../testing/expense-split-check.js';
 import { addMonths } from '../../common/date/month.js';
 
 export const CARD_ID = '6c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f';
@@ -59,12 +60,14 @@ export class InMemoryCardExpenseRepository {
             installmentTotal: null,
             nickname: null,
             personId: null,
+            split: splitFor(data.personId),
             excludedAt: null,
             exclusionRemembered: false,
             createdAt: now,
             updatedAt: now,
             ...data
         };
+        assertSplitCheck(expense);
         this.expenses.set(expense.id, expense);
         return expense;
     }
@@ -94,10 +97,11 @@ export class InMemoryCardExpenseRepository {
         return expense;
     }
 
-    public async findAll(filter: { month: Date; cardId?: string; includeExcluded: boolean }): Promise<CardExpense[]> {
+    public async findAll(filter: { month: Date; cardId?: string; includeExcluded: boolean; split?: ExpenseSplit }): Promise<CardExpense[]> {
         return [...this.expenses.values()]
             .filter(expense => expense.month.getTime() === filter.month.getTime())
             .filter(expense => filter.cardId === undefined || expense.cardId === filter.cardId)
+            .filter(expense => filter.split === undefined || expense.split === filter.split)
             .filter(expense => filter.includeExcluded || expense.excludedAt === null)
             .sort(compareRows);
     }
@@ -151,7 +155,10 @@ export class InMemoryCardExpenseRepository {
         const targets = this.rowsInScope(expenses, 'forward');
 
         for (const row of targets) {
-            this.expenses.set(row.id, { ...row, ...defined, updatedAt: new Date() });
+            const updated = { ...row, ...defined, updatedAt: new Date() };
+
+            assertSplitCheck(updated);
+            this.expenses.set(row.id, updated);
         }
 
         return targets.map(row => this.get(row.id)).sort(compareRows);
@@ -180,6 +187,7 @@ export class InMemoryCardExpenseRepository {
         const now = new Date();
         const expense: CardExpense = { ...row, id: randomUUID(), createdAt: now, updatedAt: now };
 
+        assertSplitCheck(expense);
         this.expenses.set(expense.id, expense);
         return expense;
     }

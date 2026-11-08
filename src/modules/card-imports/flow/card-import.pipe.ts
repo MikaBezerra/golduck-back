@@ -1,6 +1,7 @@
 import Joi from 'joi';
 
 import { CARD_EXPENSE_SCOPES } from '../../card-expenses/service/card-expense-scope.js';
+import { ALL_SPLITS, splitSchemas } from '../../common/expense-split/expense-split.js';
 import { JoiValidationPipePtbr } from '../../common/index.js';
 import { ValidationError } from '../../common/validation/validation-error.js';
 import {
@@ -40,7 +41,7 @@ export class CardImportOverridesPipe extends JoiValidationPipePtbr {
                     key: Joi.string().min(1).max(400).required(),
                     nickname: Joi.string().trim().min(1).max(160).allow(null).required(),
                     categoryId: idSchema.required(),
-                    personId: idSchema.allow(null).required()
+                    ...splitSchemas(idSchema, { required: true, allowed: ALL_SPLITS })
                 }).unknown(false)
             ).max(MAX_CHOICES).unique('key').required()
         });

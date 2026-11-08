@@ -69,6 +69,15 @@ describe('CardExpenseRepository', () => {
             expect(prisma.cardExpense.findMany).toHaveBeenCalledWith({ where: { month: OCTOBER, cardId: 'cartao-1' }, orderBy: ORDER_BY });
         });
 
+        it('findAll com split: só as despesas desse tipo', async () => {
+            await repository.findAll({ month: OCTOBER, includeExcluded: false, split: 'PENDING' });
+
+            expect(prisma.cardExpense.findMany).toHaveBeenCalledWith({
+                where: { month: OCTOBER, cardId: undefined, split: 'PENDING', excludedAt: null },
+                orderBy: ORDER_BY
+            });
+        });
+
         it('findById e findByIds buscam pelos ids', async () => {
             await repository.findById('id-1');
             await repository.findByIds(['id-1', 'id-2']);

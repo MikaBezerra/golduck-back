@@ -37,8 +37,11 @@ para a pré-visualização e para o salvamento). Para um upload do mês **M**:
 3. Uma parcela `n/N` **projeta** as parcelas seguintes nos meses M+1 até M+(N−n), mas para antes do
    primeiro mês posterior que tenha upload próprio: dali em diante, quem decide é o upload daquele mês.
    Uma projeção nunca sobrescreve linhas gravadas por uploads de meses posteriores.
-4. Linhas novas **herdam** apelido, categoria e pessoa de outra parcela da mesma compra.
-5. Uma escolha do usuário (override) vale para todas as linhas que o upload grava daquela compra.
+4. Linhas novas **herdam** apelido, categoria e pessoa (`split`) de outra parcela da mesma compra; compra
+   sem histórico chega como `PENDING` (a sugestão da pré-visualização mostra isso).
+5. Uma escolha do usuário (override: `key`, `nickname`, `categoryId`, `split` e `personId` só com
+   `PERSONAL`; `split` aceita `PENDING` para "decidir depois") vale para todas as linhas que o upload grava
+   daquela compra.
 6. A **exclusão suave** é mantida nas atualizações e herdada pelas linhas novas. Compra excluída que
    reaparece pergunta de novo, a menos que o usuário tenha marcado "não perguntar de novo"
    (`exclusionRemembered`).

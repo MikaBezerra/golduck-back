@@ -39,10 +39,15 @@ A reserva entra **uma vez só** no líquido. O e-mail não mostra os gastos indi
 
 | Rota | Para quê |
 | --- | --- |
-| `GET /summary/dispatches/preview?month=` | quem vai receber (e-mail mascarado `an•••@gmail.com`, `hasEmail`), se o envio está ligado (`enabled`) e o último envio do mês (`lastDispatch`) |
+| `GET /summary/dispatches/preview?month=` | quem vai receber (e-mail mascarado `an•••@gmail.com`, `hasEmail`), se o envio está ligado (`enabled`), o último envio do mês (`lastDispatch`) e as compras sem pessoa (`pending`: com `count > 0` o front desabilita o botão) |
 | `POST /summary/dispatches` + header `Idempotency-Key` | envia; `{ month, personIds? }` (`personIds` = só essas pessoas, por exemplo reenviar para quem falhou) |
 | `GET /summary/dispatches?month=` | histórico do mês (até 20, do mais recente) |
 | `GET /summary/dispatches/email?month=&personId=` | o e-mail de uma pessoa (assunto, HTML, texto) sem enviar |
+
+Mês com compras do cartão ainda sem pessoa (`split` `PENDING`, sem as excluídas): o `POST` é recusado com
+`409 SUMMARY_DISPATCH_PENDING_EXPENSES` ("Há 2 compras do cartão sem pessoa definida neste mês..."), antes de
+falar com o servidor de e-mail e sem gravar nada. Uma compra individual esquecida mudaria a divisão de
+todo mundo, por isso o resumo só sai depois que todas forem classificadas.
 
 O `POST` responde **200 mesmo com falhas parciais**. Cada pessoa vira um item:
 

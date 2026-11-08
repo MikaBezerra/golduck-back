@@ -22,6 +22,7 @@ export function toCardExpenseResponse(expense: CardExpense): CardExpenseResponse
             ? { number: expense.installmentNumber, total: expense.installmentTotal }
             : null,
         categoryId: expense.categoryId,
+        split: expense.split,
         personId: expense.personId,
         excluded: expense.excludedAt !== null,
         createdAt: expense.createdAt,

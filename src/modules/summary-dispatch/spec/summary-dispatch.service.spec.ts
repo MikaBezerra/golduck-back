@@ -147,6 +147,37 @@ describe('SummaryDispatchService', () => {
             expect(repository.dispatches).toEqual([]);
         });
 
+        it('mês com compra do cartão sem pessoa: 409 antes de falar com o servidor de e-mail, sem enviar nem gravar', async () => {
+            const verify = jest.spyOn(mailer, 'verify');
+
+            summary.cardExpenses.push({ month: '2026-11', categoryId: 'casa', personId: null, amountCents: 1_000n, pending: true });
+
+            await expect(service.dispatch({ month: '2026-11' }, KEY)).rejects.toMatchObject({
+                code: 'SUMMARY_DISPATCH_PENDING_EXPENSES',
+                statusCode: 409,
+                message: 'Há 1 compra do cartão sem pessoa definida neste mês. Escolha a pessoa (ou compartilhada) antes de enviar o resumo.',
+                reason: 'summary_dispatch_pending_expenses'
+            });
+
+            summary.cardExpenses.push({ month: '2026-11', categoryId: 'casa', personId: null, amountCents: 500n, pending: true });
+
+            await expect(service.dispatch({ month: '2026-11', personIds: [ana.id] }, KEY)).rejects.toMatchObject({
+                message: 'Há 2 compras do cartão sem pessoa definida neste mês. Escolha a pessoa (ou compartilhada) antes de enviar o resumo.'
+            });
+            expect(verify).not.toHaveBeenCalled();
+            expect(mailer.sent).toEqual([]);
+            expect(repository.dispatches).toEqual([]);
+        });
+
+        it('compra pendente excluída da fatura ou de outro mês não bloqueia o envio', async () => {
+            summary.cardExpenses.push(
+                { month: '2026-11', categoryId: 'casa', personId: null, amountCents: 1_000n, pending: true, excluded: true },
+                { month: '2026-12', categoryId: 'casa', personId: null, amountCents: 1_000n, pending: true }
+            );
+
+            await expect(service.dispatch({ month: '2026-11' }, KEY)).resolves.toMatchObject({ status: 'DONE' });
+        });
+
         it('e-mail fora do ar: 503 antes de qualquer envio, sem gravar nada', async () => {
             mailer.verifyError = new Error('503 simulado');
 
@@ -252,8 +283,15 @@ describe('SummaryDispatchService', () => {
                     { personId: bruno.id, name: 'Bruno', hasEmail: false, recipient: null },
                     { personId: carla.id, name: 'Carla', hasEmail: true, recipient: 'ca•••@exemplo.com' }
                 ],
-                lastDispatch: null
+                lastDispatch: null,
+                pending: { amount: '0.00', count: 0 }
             });
+        });
+
+        it('avisa as compras pendentes do mês (o front desabilita o botão de enviar)', async () => {
+            summary.cardExpenses.push({ month: '2026-11', categoryId: 'casa', personId: null, amountCents: 1_234n, pending: true });
+
+            await expect(service.preview('2026-11')).resolves.toMatchObject({ pending: { amount: '12.34', count: 1 } });
         });
 
         it('traz o último envio do mês', async () => {

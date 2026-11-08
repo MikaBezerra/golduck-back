@@ -70,11 +70,12 @@ A sincronização é a fonte da verdade das faturas a partir de `syncFromMonth`:
    Duas parcelas da mesma compra nunca dividem a fatura.
 4. **Linha que já existe na mesma fatura** é atualizada só no que vem do banco; apelido, categoria, pessoa
    e exclusão ficam. **Linha nova** herda isso de outra parcela da mesma compra; sem histórico, vai para
-   "Outros", sem apelido nem pessoa (não há pré-visualização: o usuário corrige depois).
+   "Outros", sem apelido e **`PENDING`** (sem pessoa definida): não há pré-visualização, então o usuário
+   classifica depois, e o envio do resumo por e-mail fica bloqueado até isso.
 5. **Linhas sincronizadas ou de upload** que não vieram são removidas: compra que mudou de fatura (porque o
    banco informou o fechamento, por exemplo) sai da antiga e entra na nova, com a personalização.
 6. **Compras de "Adicionar compra"** ficam. Quando o banco traz a mesma compra (mesmo valor e total de
-   parcelas, até 3 dias de diferença), a do banco a substitui e herda apelido, categoria e pessoa.
+   parcelas, até 3 dias de diferença), a do banco a substitui e herda apelido, categoria e pessoa (`split`).
 
 Busca: as transações desde 13 meses antes de `syncFromMonth` (compras parceladas antigas ainda têm
 parcelas nas faturas atuais) e todas as faturas fechadas. Tudo é gravado numa transação; a segunda

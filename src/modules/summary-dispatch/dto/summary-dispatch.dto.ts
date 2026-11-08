@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { DATE_TIME_PROPERTY, MONTH_PROPERTY, UUID_PROPERTY } from '../../common/swagger/api-docs.js';
+import { SummaryPendingDto } from '../../summary/dto/summary.dto.js';
 
 const RECIPIENT_PROPERTY = {
     type: String,
@@ -129,6 +130,12 @@ export class SummaryDispatchPreviewResponse {
 
     @ApiProperty({ type: SummaryDispatchResponse, nullable: true, description: 'Último envio do mês; null se nunca foi enviado' })
     public lastDispatch!: SummaryDispatchResponse | null;
+
+    @ApiProperty({
+        type: () => SummaryPendingDto,
+        description: 'Compras do cartão do mês sem pessoa; com count > 0 o envio é recusado (SUMMARY_DISPATCH_PENDING_EXPENSES)'
+    })
+    public pending!: SummaryPendingDto;
 }
 
 export class SummaryEmailPreviewResponse {

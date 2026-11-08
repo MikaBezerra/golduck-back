@@ -1,5 +1,6 @@
 import Joi from 'joi';
 
+import { splitSchemas } from '../../common/expense-split/expense-split.js';
 import { JoiValidationPipePtbr } from '../../common/index.js';
 import {
     CreateManualExpenseDto,
@@ -26,7 +27,7 @@ export class CreateManualExpensePipe extends JoiValidationPipePtbr {
             title: titleSchema.required(),
             amount: amountSchema.required(),
             categoryId: idSchema.optional(),
-            personId: idSchema.allow(null).optional(),
+            ...splitSchemas(idSchema, { required: true }),
             replicateUntilYearEnd: Joi.boolean().optional()
         }).unknown(false);
     }
@@ -40,7 +41,7 @@ export class UpdateManualExpensesPipe extends JoiValidationPipePtbr {
                 title: titleSchema.optional(),
                 amount: amountSchema.optional(),
                 categoryId: idSchema.optional(),
-                personId: idSchema.allow(null).optional()
+                ...splitSchemas(idSchema, { required: false })
             }).min(1).unknown(false).required()
         }).unknown(false);
     }

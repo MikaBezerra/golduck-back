@@ -12,7 +12,7 @@
  */
 
 export type AmountGroup = {
-    /** categoryId ou personId; null = despesas sem pessoa (compartilhadas). */
+    /** categoryId ou personId; null = despesas sem pessoa (compartilhadas ou ainda pendentes). */
     key: string | null;
     amountCents: bigint;
     count: number;
@@ -30,7 +30,16 @@ export type ParticipantNet = {
     netCents: bigint;
 };
 
-/** Entrada, reserva e despesas de um mês, com as despesas agrupadas por categoria e por pessoa. */
+export type Total = {
+    amountCents: bigint;
+    count: number;
+};
+
+/**
+ * Entrada, reserva e despesas de um mês, com as despesas agrupadas por categoria e por pessoa.
+ * pending = compras do cartão ainda sem pessoa: já estão em cardByPerson com key null (contam como
+ * compartilhadas); aqui só para avisar.
+ */
 export type MonthGroups = {
     incomeCents: bigint | null;
     reserveCents: bigint | null;
@@ -38,11 +47,7 @@ export type MonthGroups = {
     manualByPerson: AmountGroup[];
     cardByCategory: AmountGroup[];
     cardByPerson: AmountGroup[];
-};
-
-export type Total = {
-    amountCents: bigint;
-    count: number;
+    pending: Total;
 };
 
 /** Resultado de um período (um mês ou a soma de vários). */
@@ -59,6 +64,8 @@ export type PeriodTotals = {
     byCategory: AmountGroup[];
     byPerson: AmountGroup[];
     nets: ParticipantNet[];
+    /** Compras do cartão sem pessoa definida (já incluídas nas compartilhadas). */
+    pending: Total;
 };
 
 /** Calcula um mês: totais, saldo e o líquido de cada pessoa ativa. */
@@ -85,7 +92,8 @@ export function computeMonth(groups: MonthGroups, participants: Participant[]): 
         byCategory: mergeGroups(groups.manualByCategory, groups.cardByCategory),
         byPerson,
         // A reserva entra na divisão como mais um gasto compartilhado.
-        nets: netByParticipant(incomeCents, sharedCents + reserveCents, participants, individualByPerson)
+        nets: netByParticipant(incomeCents, sharedCents + reserveCents, participants, individualByPerson),
+        pending: { ...groups.pending }
     };
 }
 
@@ -126,7 +134,8 @@ export function combinePeriods(periods: PeriodTotals[], participants: Participan
                 individualCents: total(net => net.individualCents),
                 netCents: total(net => net.netCents)
             };
-        })
+        }),
+        pending: sumTotals(period => period.pending)
     };
 }
 

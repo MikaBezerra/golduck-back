@@ -15,6 +15,8 @@ export type SummaryExpense = {
     amountCents: bigint;
     /** Só no cartão: despesa excluída da fatura (não entra no resumo). */
     excluded?: boolean;
+    /** Só no cartão: compra ainda sem pessoa (PENDING; personId precisa ser null). */
+    pending?: boolean;
     /** Só na tabela do mês (statement); sem id, vira a posição na lista. */
     id?: string;
     /** Só fora do cartão, na tabela do mês. */
@@ -81,7 +83,10 @@ export class InMemorySummaryRepository {
                 manualByCategory: groupBy(manual, expense => expense.categoryId),
                 manualByPerson: groupBy(manual, expense => expense.personId),
                 cardByCategory: groupBy(card, expense => expense.categoryId),
-                cardByPerson: groupBy(card, expense => expense.personId)
+                cardByPerson: groupBy(card, expense => expense.personId),
+                pending: card
+                    .filter(expense => expense.pending)
+                    .reduce((total, expense) => ({ amountCents: total.amountCents + expense.amountCents, count: total.count + 1 }), { amountCents: 0n, count: 0 })
             };
         });
     }
@@ -111,6 +116,7 @@ export class InMemorySummaryRepository {
                     id: expense.id ?? `card-${index}`,
                     cardId: expense.cardId ?? 'cartao',
                     amountCents: expense.amountCents,
+                    split: expense.pending ? 'PENDING' as const : expense.personId === null ? 'SHARED' as const : 'PERSONAL' as const,
                     personId: expense.personId
                 })),
             cards: [...this.cards.entries()].map(([id, name]) => ({ id, name }))

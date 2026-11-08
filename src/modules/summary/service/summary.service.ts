@@ -69,7 +69,8 @@ export class SummaryService {
                 reserve: month.reserveCents === null ? null : formatAmountCents(month.reserveCents),
                 expensesTotal: formatAmountCents(month.expensesCents),
                 expensesCount: month.expensesCount,
-                balance: formatAmountCents(month.balanceCents)
+                balance: formatAmountCents(month.balanceCents),
+                pendingCount: month.pending.count
             }))
         };
     }
@@ -161,7 +162,8 @@ export class SummaryService {
                 share: formatAmountCents(item.shareCents),
                 individual: formatAmountCents(item.individualCents),
                 net: formatAmountCents(item.netCents)
-            }))
+            })),
+            pending: { amount: formatAmountCents(totals.pending.amountCents), count: totals.pending.count }
         };
     }
 }

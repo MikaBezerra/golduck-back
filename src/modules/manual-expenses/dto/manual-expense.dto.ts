@@ -1,5 +1,9 @@
+import type { ChosenSplit } from '../../common/expense-split/expense-split.js';
 import { ApiProperty, ApiPropertyOptional, ApiPropertyOptions } from '@nestjs/swagger';
 
+import { ExpenseSplit } from '../../../generated/prisma/client.js';
+
+import { CHOSEN_SPLIT_PROPERTY } from '../../common/expense-split/expense-split.js';
 import { DATE_TIME_PROPERTY, MONEY_PROPERTY, MONTH_PROPERTY, UUID_PROPERTY } from '../../common/swagger/api-docs.js';
 
 const IDS_PROPERTY: ApiPropertyOptions = { type: [String], format: 'uuid', minItems: 1, uniqueItems: true };
@@ -17,7 +21,10 @@ export class CreateManualExpenseDto {
     @ApiPropertyOptional({ ...UUID_PROPERTY, description: 'Sem categoria, usa a padrão ("Outros")' })
     public categoryId?: string;
 
-    @ApiPropertyOptional({ ...UUID_PROPERTY, nullable: true, description: 'Pessoa da despesa individual; null ou ausente = compartilhada' })
+    @ApiProperty(CHOSEN_SPLIT_PROPERTY)
+    public split!: ChosenSplit;
+
+    @ApiPropertyOptional({ ...UUID_PROPERTY, nullable: true, description: 'Obrigatório com split PERSONAL; com SHARED, omitido ou null' })
     public personId?: string | null;
 
     @ApiPropertyOptional({ type: Boolean, description: 'Cria uma despesa independente em cada mês até dezembro' })
@@ -34,7 +41,10 @@ export class ManualExpenseChangesDto {
     @ApiPropertyOptional(UUID_PROPERTY)
     public categoryId?: string;
 
-    @ApiPropertyOptional({ ...UUID_PROPERTY, nullable: true, description: 'null torna a despesa compartilhada' })
+    @ApiPropertyOptional(CHOSEN_SPLIT_PROPERTY)
+    public split?: ChosenSplit;
+
+    @ApiPropertyOptional({ ...UUID_PROPERTY, nullable: true, description: 'Obrigatório com split PERSONAL; nos outros casos, omitido ou null' })
     public personId?: string | null;
 }
 
@@ -72,7 +82,10 @@ export class ManualExpenseResponse {
     @ApiProperty(UUID_PROPERTY)
     public categoryId!: string;
 
-    @ApiProperty({ ...UUID_PROPERTY, nullable: true, description: 'null = compartilhada' })
+    @ApiProperty({ ...CHOSEN_SPLIT_PROPERTY, enum: ExpenseSplit, description: 'SHARED ou PERSONAL (despesa manual nunca fica PENDING)' })
+    public split!: ExpenseSplit;
+
+    @ApiProperty({ ...UUID_PROPERTY, nullable: true, description: 'Só na despesa individual (PERSONAL)' })
     public personId!: string | null;
 
     @ApiProperty(DATE_TIME_PROPERTY)

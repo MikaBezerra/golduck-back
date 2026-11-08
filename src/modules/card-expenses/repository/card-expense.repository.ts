@@ -1,4 +1,4 @@
-import type { CardExpense, Prisma } from '../../../generated/prisma/client.js';
+import type { CardExpense, ExpenseSplit, Prisma } from '../../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../../common/index.js';
@@ -7,6 +7,7 @@ import { CardExpenseScope, purchaseScopeWhere } from '../service/card-expense-sc
 export type CardExpenseChanges = {
     nickname?: string | null;
     categoryId?: string;
+    split?: ExpenseSplit;
     personId?: string | null;
 };
 
@@ -31,12 +32,13 @@ const ORDER_BY = [
 export class CardExpenseRepository {
     public constructor(private readonly prisma: PrismaService) { }
 
-    /** Sem includeExcluded, esconde as despesas excluídas. */
-    public async findAll(filter: { month: Date; cardId?: string; includeExcluded: boolean }): Promise<CardExpense[]> {
+    /** Sem includeExcluded, esconde as despesas excluídas; com split, só as desse tipo. */
+    public async findAll(filter: { month: Date; cardId?: string; includeExcluded: boolean; split?: ExpenseSplit }): Promise<CardExpense[]> {
         return this.prisma.cardExpense.findMany({
             where: {
                 month: filter.month,
                 cardId: filter.cardId,
+                split: filter.split,
                 ...(filter.includeExcluded ? {} : { excludedAt: null })
             },
             orderBy: ORDER_BY

@@ -129,7 +129,7 @@ describe('rotas /summary', () => {
         expect(annual).toMatchObject({ year: 2026, income: '5000.00', expensesTotal: '133.45', balance: '4866.55' });
         expect(annual.months).toHaveLength(12);
         expect(annual.months[10]).toEqual({
-            month: '2026-11', income: '5000.00', reserve: null, expensesTotal: '133.45', expensesCount: 2, balance: '4866.55'
+            month: '2026-11', income: '5000.00', reserve: null, expensesTotal: '133.45', expensesCount: 2, balance: '4866.55', pendingCount: 0
         });
     });
 

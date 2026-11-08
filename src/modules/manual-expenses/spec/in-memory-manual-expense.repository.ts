@@ -2,9 +2,10 @@ import type { ManualExpense } from '../../../generated/prisma/client.js';
 import { randomUUID } from 'node:crypto';
 
 import { Prisma } from '../../../generated/prisma/client.js';
+import { assertSplitCheck, splitFor } from '../../../testing/expense-split-check.js';
 
-type NewManualExpense = Pick<ManualExpense, 'month' | 'title' | 'amountCents' | 'categoryId' | 'personId'>;
-type ManualExpenseChanges = Partial<Pick<ManualExpense, 'title' | 'amountCents' | 'categoryId' | 'personId'>>;
+type NewManualExpense = Pick<ManualExpense, 'month' | 'title' | 'amountCents' | 'categoryId' | 'split' | 'personId'>;
+type ManualExpenseChanges = Partial<Pick<ManualExpense, 'title' | 'amountCents' | 'categoryId' | 'split' | 'personId'>>;
 
 /* eslint-disable @typescript-eslint/require-await -- imita a interface assíncrona do ManualExpenseRepository */
 /**
@@ -21,10 +22,12 @@ export class InMemoryManualExpenseRepository {
             id: randomUUID(),
             amountCents: 1000n,
             personId: null,
+            split: splitFor(data.personId),
             createdAt: now,
             updatedAt: now,
             ...data
         };
+        assertSplitCheck(expense);
         this.expenses.set(expense.id, expense);
         return expense;
     }
@@ -64,6 +67,7 @@ export class InMemoryManualExpenseRepository {
 
         return ids.map(id => {
             const updated: ManualExpense = { ...this.get(id), ...defined, updatedAt: new Date() };
+            assertSplitCheck(updated);
             this.expenses.set(id, updated);
             return updated;
         });

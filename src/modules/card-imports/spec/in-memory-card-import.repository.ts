@@ -8,6 +8,8 @@ import type {
 import type { CardImportPlan } from '../service/card-import.planner.js';
 import { randomUUID } from 'node:crypto';
 
+import { assertSplitCheck, splitFor } from '../../../testing/expense-split-check.js';
+
 /*
  * CardImportRepository em memória, com as mesmas regras do real: o contexto do plano é lido das
  * despesas guardadas, o upload e a conciliação são gravados juntos (se algo falhar no meio,
@@ -61,12 +63,14 @@ export class InMemoryCardImportRepository {
             installmentTotal: null,
             nickname: null,
             personId: null,
+            split: splitFor(data.personId),
             excludedAt: null,
             exclusionRemembered: false,
             createdAt: now,
             updatedAt: now,
             ...data
         };
+        assertSplitCheck(expense);
         this.expenses.set(expense.id, expense);
         return expense;
     }
@@ -96,12 +100,18 @@ export class InMemoryCardImportRepository {
                 throw new Error(`despesa ${update.id} não existe`);
             }
 
-            store.expenses.set(update.id, { ...current, ...update.data, importId: cardImport.id, origin: 'UPLOAD', updatedAt: now });
+            const updated = { ...current, ...update.data, importId: cardImport.id, origin: 'UPLOAD' as const, updatedAt: now };
+
+            assertSplitCheck(updated);
+            store.expenses.set(update.id, updated);
         }
 
         for (const row of plan.creates) {
             const id = randomUUID();
-            store.expenses.set(id, { ...row, id, importId: cardImport.id, origin: 'UPLOAD', externalId: null, createdAt: now, updatedAt: now });
+            const created = { ...row, id, importId: cardImport.id, origin: 'UPLOAD' as const, externalId: null, createdAt: now, updatedAt: now };
+
+            assertSplitCheck(created);
+            store.expenses.set(id, created);
         }
 
         for (const decision of input.exclusions ?? []) {

@@ -23,6 +23,14 @@ export class SummaryBySourceDto {
     public card!: SummarySourceDto;
 }
 
+export class SummaryPendingDto {
+    @ApiProperty({ ...MONEY_PROPERTY, description: 'Soma das compras do cartão sem pessoa definida' })
+    public amount!: string;
+
+    @ApiProperty({ type: Number, description: 'Quantidade; maior que zero = o resumo pode estar errado e o envio por e-mail fica bloqueado' })
+    public count!: number;
+}
+
 export class SummaryCategoryDto {
     @ApiProperty(UUID_PROPERTY)
     public categoryId!: string;
@@ -109,6 +117,12 @@ export class SummaryTotalsDto {
         description: 'Líquido de cada pessoa ativa, em ordem alfabética (no anual, a soma dos líquidos mensais)'
     })
     public netByPerson!: SummaryNetByPersonDto[];
+
+    @ApiProperty({
+        type: () => SummaryPendingDto,
+        description: 'Compras do cartão (sem as excluídas) ainda sem pessoa: entram nas contas como compartilhadas até alguém escolher'
+    })
+    public pending!: SummaryPendingDto;
 }
 
 export class SummaryResponse extends SummaryTotalsDto {
@@ -139,6 +153,9 @@ export class SummaryMonthDto {
 
     @ApiProperty({ ...MONEY_PROPERTY, description: 'entrada (ou 0) − despesas − reserva; pode ser negativo' })
     public balance!: string;
+
+    @ApiProperty({ type: Number, description: 'Compras do cartão do mês ainda sem pessoa' })
+    public pendingCount!: number;
 }
 
 export class AnnualSummaryResponse extends SummaryTotalsDto {
@@ -254,4 +271,7 @@ export class SummaryStatementResponse {
 
     @ApiProperty({ type: Boolean, description: 'Mês sem entrada cadastrada (as contas usam zero)' })
     public incomeMissing!: boolean;
+
+    @ApiProperty({ type: () => SummaryPendingDto, description: 'Compras do cartão do mês ainda sem pessoa (contam como compartilhadas)' })
+    public pending!: SummaryPendingDto;
 }

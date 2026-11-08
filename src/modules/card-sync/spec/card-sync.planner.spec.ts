@@ -50,6 +50,7 @@ const existingRow = (data: Partial<CardExpense> & Pick<CardExpense, 'purchaseKey
     nickname: null,
     categoryId: OUTROS,
     personId: null,
+    split: data.personId ? 'PERSONAL' : 'SHARED',
     excludedAt: null,
     exclusionRemembered: false,
     createdAt: day('2026-11-01'),
@@ -102,7 +103,9 @@ describe('planCardSync', () => {
 
             expect(result.creates.map(row => [row.originalDescription, ym(row.month)])).toEqual([['Novembro', '2026-11'], ['Dezembro', '2026-12']]);
             expect(result.creates[0]).toMatchObject({
-                origin: 'SYNC', importId: null, categoryId: OUTROS, nickname: null, personId: null, excludedAt: null, holderName: null, cardId: CARD_ID
+                origin: 'SYNC', importId: null, categoryId: OUTROS, nickname: null, personId: null, excludedAt: null, holderName: null, cardId: CARD_ID,
+                // Compra que ninguém viu ainda: pendente até alguém escolher a pessoa.
+                split: 'PENDING'
             });
         });
 
@@ -232,7 +235,7 @@ describe('planCardSync', () => {
 
             expect(result.deleteIds).toEqual([moved.id]);
             expect(result.creates).toEqual([expect.objectContaining({
-                month: month('2027-01'), nickname: 'Gasolina', categoryId: MERCADO, personId: 'ana', excludedAt: day('2026-11-25'), exclusionRemembered: true
+                month: month('2027-01'), nickname: 'Gasolina', categoryId: MERCADO, split: 'PERSONAL', personId: 'ana', excludedAt: day('2026-11-25'), exclusionRemembered: true
             })]);
         });
 
@@ -260,12 +263,15 @@ describe('planCardSync', () => {
 
             expect(result.deleteIds).toEqual([manual.id]);
             expect(result.summary).toMatchObject({ created: 1, removed: 0, replacedManual: 1 });
-            expect(result.creates).toEqual([expect.objectContaining({ originalDescription: 'Padaria', nickname: 'Pão', categoryId: MERCADO, origin: 'SYNC' })]);
+            expect(result.creates).toEqual([expect.objectContaining({
+                originalDescription: 'Padaria', nickname: 'Pão', categoryId: MERCADO, origin: 'SYNC', split: 'SHARED', personId: null
+            })]);
         });
 
         it('compra nova sem histórico herda de outra parcela da mesma compra, gravada em mês anterior', () => {
             const earlier = existingRow({
-                purchaseKey: 'P|2026-08-07|5|LOJA', month: month('2026-10'), installmentNumber: 3, installmentTotal: 5, nickname: 'Sofá', categoryId: MERCADO
+                purchaseKey: 'P|2026-08-07|5|LOJA', month: month('2026-10'), installmentNumber: 3, installmentTotal: 5, nickname: 'Sofá', categoryId: MERCADO,
+                personId: 'ana'
             });
 
             const result = plan({
@@ -273,7 +279,11 @@ describe('planCardSync', () => {
                 existing: [earlier]
             });
 
-            expect(result.creates.map(row => [ym(row.month), row.installmentNumber, row.nickname])).toEqual([['2026-11', 4, 'Sofá'], ['2026-12', 5, 'Sofá']]);
+            // A pessoa também vem junto: parcela nova de compra já classificada não volta a ficar pendente.
+            expect(result.creates.map(row => [ym(row.month), row.installmentNumber, row.nickname, row.split, row.personId])).toEqual([
+                ['2026-11', 4, 'Sofá', 'PERSONAL', 'ana'],
+                ['2026-12', 5, 'Sofá', 'PERSONAL', 'ana']
+            ]);
             expect(result.deleteIds).toEqual([]);
         });
     });

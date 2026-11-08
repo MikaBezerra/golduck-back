@@ -161,24 +161,45 @@ describe('CardExpenseService', () => {
             expect(updated).toMatchObject({ nickname: null, description: 'NETFLIX.COM' });
         });
 
-        it('troca a pessoa; personId null torna a despesa compartilhada sem consultar pessoas', async () => {
+        it('troca a pessoa; split SHARED torna a despesa compartilhada sem consultar pessoas', async () => {
             const first = repository.seed({ month: OCTOBER, categoryId: outros.id });
             const second = repository.seed({ month: OCTOBER, categoryId: outros.id, personId: ana.id });
 
-            const [individual] = await service.updateMany({ ids: [first.id], changes: { personId: ana.id } });
+            const [individual] = await service.updateMany({ ids: [first.id], changes: { split: 'PERSONAL', personId: ana.id } });
             const findPerson = jest.spyOn(people, 'findById');
-            const [shared] = await service.updateMany({ ids: [second.id], changes: { personId: null } });
+            const [shared] = await service.updateMany({ ids: [second.id], changes: { split: 'SHARED', personId: null } });
 
-            expect(individual.personId).toBe(ana.id);
-            expect(shared.personId).toBeNull();
+            expect(individual).toMatchObject({ split: 'PERSONAL', personId: ana.id });
+            expect(shared).toMatchObject({ split: 'SHARED', personId: null });
             expect(findPerson).not.toHaveBeenCalled();
+        });
+
+        it('classificar uma compra pendente tira ela (e as parcelas seguintes) de PENDING', async () => {
+            const [first, second, third] = repository.seedInstallments(SEPTEMBER, 3, {
+                categoryId: outros.id, purchaseKey: 'P|2026-09|3|LOJA', split: 'PENDING'
+            });
+
+            const updated = await service.updateMany({ ids: [second.id], changes: { split: 'SHARED' } });
+
+            expect(updated.map(row => row.id).sort()).toEqual([second.id, third.id].sort());
+            expect(repository.get(first.id).split).toBe('PENDING');
+            expect(repository.get(second.id).split).toBe('SHARED');
+            expect(repository.get(third.id).split).toBe('SHARED');
+        });
+
+        it('sem split, a pessoa (e o PENDING) fica como estava', async () => {
+            const expense = repository.seed({ month: OCTOBER, categoryId: outros.id, split: 'PENDING' });
+
+            const [updated] = await service.updateMany({ ids: [expense.id], changes: { nickname: 'Café' } });
+
+            expect(updated).toMatchObject({ nickname: 'Café', split: 'PENDING', personId: null });
         });
 
         it('altera várias despesas de uma vez e devolve todas as linhas alteradas', async () => {
             const single = repository.seed({ month: OCTOBER, categoryId: outros.id, originalDescription: 'A' });
             const [, second, third] = repository.seedInstallments(SEPTEMBER, 3, { categoryId: outros.id, purchaseKey: 'P|2026-09|3|B' });
 
-            const updated = await service.updateMany({ ids: [single.id, second.id], changes: { personId: ana.id, nickname: 'Junto' } });
+            const updated = await service.updateMany({ ids: [single.id, second.id], changes: { split: 'PERSONAL', personId: ana.id, nickname: 'Junto' } });
 
             expect(updated.map(expense => expense.id).sort()).toEqual([single.id, second.id, third.id].sort());
             expect(updated.every(expense => expense.personId === ana.id && expense.description === 'Junto')).toBe(true);
@@ -193,7 +214,7 @@ describe('CardExpenseService', () => {
             await expectAppError(service.updateMany({ ids: [expense.id], changes: { categoryId: antiga.id } }), {
                 code: 'CARD_EXPENSE_INACTIVE_CATEGORY', statusCode: 409, reason: 'category_inactive'
             });
-            await expectAppError(service.updateMany({ ids: [expense.id], changes: { personId: bia.id } }), {
+            await expectAppError(service.updateMany({ ids: [expense.id], changes: { split: 'PERSONAL', personId: bia.id } }), {
                 code: 'CARD_EXPENSE_INACTIVE_PERSON', statusCode: 409, reason: 'person_inactive'
             });
             expect(update).not.toHaveBeenCalled();
@@ -206,7 +227,7 @@ describe('CardExpenseService', () => {
             await expectAppError(service.updateMany({ ids: [expense.id], changes: { categoryId: MISSING_ID } }), {
                 code: 'CATEGORY_NOT_FOUND', statusCode: 404, reason: 'category_id_not_found'
             });
-            await expectAppError(service.updateMany({ ids: [expense.id], changes: { personId: MISSING_ID } }), {
+            await expectAppError(service.updateMany({ ids: [expense.id], changes: { split: 'PERSONAL', personId: MISSING_ID } }), {
                 code: 'PERSON_NOT_FOUND', statusCode: 404, reason: 'person_id_not_found'
             });
         });
@@ -321,7 +342,7 @@ describe('CardExpenseService', () => {
 
         it('à vista: uma linha MANUAL no mês, com a categoria padrão e a descrição sem espaços sobrando', async () => {
             const created = await service.create({
-                cardId: card.id, month: '2026-12', date: '2026-11-06', description: '  Padaria   do  bairro ', amount: '12.50'
+                cardId: card.id, month: '2026-12', date: '2026-11-06', description: '  Padaria   do  bairro ', amount: '12.50', split: 'SHARED'
             });
 
             expect(created).toEqual([expect.objectContaining({
@@ -334,6 +355,7 @@ describe('CardExpenseService', () => {
                 amount: '12.50',
                 installment: null,
                 categoryId: outros.id,
+                split: 'SHARED',
                 personId: null,
                 excluded: false
             })]);
@@ -351,6 +373,7 @@ describe('CardExpenseService', () => {
                 installment: { number: 3, total: 5 },
                 nickname: 'Cadeira',
                 categoryId: mercado.id,
+                split: 'PERSONAL',
                 personId: ana.id
             });
 
@@ -364,12 +387,12 @@ describe('CardExpenseService', () => {
             expect(repository.get(created[0].id).sourceMonth).toEqual(OCTOBER);
         });
 
-        it('personId null é compartilhada; cartão inativo e categoria inativa são 409', async () => {
+        it('SHARED com personId null é compartilhada; cartão inativo e categoria inativa são 409', async () => {
             const inactiveCard = cards.seed({ name: 'Antigo', active: false });
             const antiga = categories.seed({ name: 'Antiga', active: false });
-            const base = { cardId: card.id, month: '2026-12', date: '2026-11-06', description: 'X', amount: '1.00' };
+            const base = { cardId: card.id, month: '2026-12', date: '2026-11-06', description: 'X', amount: '1.00', split: 'SHARED' as const };
 
-            await expect(service.create({ ...base, personId: null })).resolves.toEqual([expect.objectContaining({ personId: null })]);
+            await expect(service.create({ ...base, personId: null })).resolves.toEqual([expect.objectContaining({ split: 'SHARED', personId: null })]);
             await expectAppError(service.create({ ...base, cardId: inactiveCard.id }), {
                 code: 'CREDIT_CARD_INACTIVE', statusCode: 409, reason: 'credit_card_inactive'
             });
@@ -442,7 +465,7 @@ describe('CardExpenseService', () => {
 
         it('lançada à mão: muda sem gravar correção, a partir da primeira parcela que a compra tinha', async () => {
             const created = await service.create({
-                cardId: card.id, month: '2026-12', date: '2026-10-03', description: 'Loja', amount: '50.00', installment: { number: 3, total: 5 }
+                cardId: card.id, month: '2026-12', date: '2026-10-03', description: 'Loja', amount: '50.00', installment: { number: 3, total: 5 }, split: 'SHARED'
             });
             const key = repository.get(created[0].id).purchaseKey;
 

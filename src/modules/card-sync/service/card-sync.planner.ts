@@ -6,6 +6,7 @@ import type { PurchaseAnchor } from '../../card-expenses/service/purchase-schedu
 import { CardExpenseOrigin } from '../../../generated/prisma/client.js';
 import { scheduleInstallments } from '../../card-expenses/service/purchase-schedule.js';
 import { addMonths, formatDate, formatMonth } from '../../common/date/month.js';
+import { PENDING_SPLIT } from '../../common/expense-split/expense-split.js';
 
 /*
  * Plano da sincronização de um cartão (funções puras, sem banco). A sincronização é a fonte da
@@ -75,7 +76,7 @@ type DesiredRow = {
     data: SyncedRowData;
 };
 
-type Personalization = Pick<CardExpense, 'nickname' | 'categoryId' | 'personId' | 'excludedAt' | 'exclusionRemembered'>;
+type Personalization = Pick<CardExpense, 'nickname' | 'categoryId' | 'split' | 'personId' | 'excludedAt' | 'exclusionRemembered'>;
 
 export function planCardSync(input: CardSyncPlanInput): CardSyncPlan {
     const purchases = groupByPurchase(assignSyncKeys(input.transactions));
@@ -230,7 +231,8 @@ function diff(input: CardSyncPlanInput, desired: DesiredRow[]): CardSyncPlan {
 
             inherited.set(row.purchaseKey, source
                 ? personalizationOf(source)
-                : { nickname: null, categoryId: input.defaultCategoryId, personId: null, excludedAt: null, exclusionRemembered: false });
+                // Compra que ninguém viu ainda: fica pendente até alguém escolher a pessoa.
+                : { nickname: null, categoryId: input.defaultCategoryId, ...PENDING_SPLIT, excludedAt: null, exclusionRemembered: false });
         }
 
         plan.creates.push({
@@ -279,6 +281,7 @@ function personalizationOf(row: CardExpense): Personalization {
     return {
         nickname: row.nickname,
         categoryId: row.categoryId,
+        split: row.split,
         personId: row.personId,
         excludedAt: row.excludedAt,
         exclusionRemembered: row.exclusionRemembered

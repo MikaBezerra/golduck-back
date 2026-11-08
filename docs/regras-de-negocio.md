@@ -29,10 +29,31 @@ O Golduck organiza as contas de uma casa em que várias pessoas dividem as despe
 - Consulta, alteração e remoção são pelo mês (`/incomes/2026-11`).
 - `GET /reserves/totals`: soma histórica de todas as reservas e a soma de cada ano.
 
+## De quem é a despesa (`split`)
+
+Toda despesa diz de quem é no campo `split` (`common/expense-split/expense-split.ts`):
+
+| `split` | `personId` | Significado |
+| --- | --- | --- |
+| `PENDING` | `null` | compra do cartão que chegou pela sincronização ou pelo upload e **ninguém classificou ainda** |
+| `SHARED` | `null` | compartilhada: dividida entre as pessoas ativas |
+| `PERSONAL` | obrigatório | individual da pessoa |
+
+- Por que existe: com a sincronização trazendo compras sozinha, "sem pessoa" deixava de distinguir
+  "compartilhada" de "ninguém olhou", e uma compra individual esquecida virava compartilhada sem aviso.
+- O banco garante a regra com um `CHECK` (pessoa só, e sempre, no `PERSONAL`); despesa manual nunca é `PENDING`.
+- Quem cria ou edita escolhe `SHARED` ou `PERSONAL` (+ `personId`); `PENDING` não é uma escolha. Com
+  `SHARED`, `personId` pode faltar ou vir `null`; com `PERSONAL`, é obrigatório.
+- Só nasce `PENDING` a compra **nova de verdade**: parcelas seguintes de uma compra já classificada e a
+  compra do banco que substitui uma de "Adicionar compra" herdam o `split` e a pessoa.
+- No resumo, `PENDING` **conta como compartilhada** (as contas não travam), mas os resumos devolvem
+  `pending` (quantidade e soma) e o **envio por e-mail é recusado** enquanto o mês tiver alguma
+  (`409 SUMMARY_DISPATCH_PENDING_EXPENSES`).
+
 ## Despesas fora do cartão (`manual-expenses`)
 
-- Cada despesa tem mês, título, valor, categoria e, opcionalmente, uma pessoa.
-  **Sem pessoa = compartilhada** (dividida entre todos); com pessoa = individual.
+- Cada despesa tem mês, título, valor, categoria e `split` (`SHARED` ou `PERSONAL` + `personId`),
+  escolhido na criação (obrigatório).
 - Sem categoria, vai para "Outros". Categoria ou pessoa inativa: `409 MANUAL_EXPENSE_INACTIVE_*`.
 - `replicateUntilYearEnd`: cria uma cópia por mês, do mês informado até dezembro.
 - Alteração e exclusão são em lote (lista de IDs) e numa transação: ou todas, ou nenhuma.
@@ -45,12 +66,14 @@ de uploads de fatura ([importacao-de-faturas.md](importacao-de-faturas.md)) ou d
 fatura (melhor dia de compra, fechamento) está em [sincronizacao-de-cartoes.md](sincronizacao-de-cartoes.md#ciclo-da-fatura-credit-cardsservicebilling-calendarts).
 O usuário pode:
 
-- **adicionar uma compra** que está faltando numa fatura (à vista ou parcelada, lançando as parcelas seguintes);
+- **adicionar uma compra** que está faltando numa fatura (à vista ou parcelada, lançando as parcelas
+  seguintes), escolhendo na hora de quem ela é (`split` obrigatório);
 - **mudar a compra de fatura ou de parcela**: a compra inteira muda a partir da linha escolhida, e a
   sincronização passa a respeitar a correção (compras de upload não mudam);
 
-- dar um **apelido** e escolher **categoria** e **pessoa**; numa compra parcelada, a mudança vale também
-  para as parcelas seguintes;
+- dar um **apelido** e escolher **categoria** e **pessoa** (`split`); numa compra parcelada, a mudança vale
+  também para as parcelas seguintes (classificar uma compra pendente tira as parcelas seguintes de `PENDING`);
+- listar só as que faltam classificar: `GET /card-expenses?month=&split=PENDING`;
 - **excluir** (exclusão suave: a linha sai das listas e dos totais) e **restaurar**, com escopo:
   `month` (só o mês), `forward` (o mês e os seguintes), `backward` (o mês e os anteriores) ou `all`
   (todas as parcelas da compra) — `card-expense-scope.ts`.
@@ -69,6 +92,8 @@ líquido da pessoa p   = (E − C − R) / k − Dₚ
 ```
 
 - Despesas = fora do cartão + do cartão **pelo mês da fatura**, sem as excluídas.
+- C inclui as compras do cartão ainda `PENDING`; `pending` (`{ amount, count }`, sem as excluídas) avisa
+  quantas são. No anual, `pending` soma o ano e cada mês traz `pendingCount`.
 - A reserva entra na divisão como mais um gasto compartilhado, mas aparece separada das despesas.
 - Quando `E − C − R` não divide exatamente por `k`, os centavos que sobram vão, um a um, para as
   primeiras pessoas em ordem alfabética: a soma das partes é sempre igual a `E − C − R`.

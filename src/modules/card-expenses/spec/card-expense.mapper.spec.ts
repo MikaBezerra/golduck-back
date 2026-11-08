@@ -24,6 +24,7 @@ const row = (changes: Partial<CardExpense> = {}): CardExpense => ({
     installmentTotal: 10,
     nickname: 'Sofá',
     categoryId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+    split: 'PERSONAL',
     personId: 'b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e',
     excludedAt: new Date('2026-10-04T10:00:00.000Z'),
     exclusionRemembered: true,
@@ -50,11 +51,16 @@ describe('toCardExpenseResponse', () => {
             amount: '123.45',
             installment: { number: 3, total: 10 },
             categoryId: 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d',
+            split: 'PERSONAL',
             personId: 'b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e',
             excluded: true,
             createdAt: CREATED_AT,
             updatedAt: UPDATED_AT
         });
+    });
+
+    it('compra pendente: split PENDING e sem pessoa', () => {
+        expect(toCardExpenseResponse(row({ split: 'PENDING', personId: null }))).toMatchObject({ split: 'PENDING', personId: null });
     });
 
     it('sem apelido, a descrição é a original do banco', () => {
