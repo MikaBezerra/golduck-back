@@ -200,7 +200,14 @@ export class NeonPdfParser implements CardStatementParser {
         }
     }
 
+    /**
+     * Carrega o pdfjs com o worker já carregado em `globalThis.pdfjsWorker`. Sem isso o pdfjs importa o
+     * worker por um caminho montado em tempo de execução, que a Vercel não inclui no pacote da função.
+     */
     private async loadPdfJs(): Promise<PdfJs> {
+        const pdfjsGlobal = globalThis as { pdfjsWorker?: unknown };
+        pdfjsGlobal.pdfjsWorker ??= await import('pdfjs-dist/legacy/build/pdf.worker.mjs');
+
         return import('pdfjs-dist/legacy/build/pdf.mjs');
     }
 }

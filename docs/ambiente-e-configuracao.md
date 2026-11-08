@@ -2,7 +2,7 @@
 
 ## Pré-requisitos
 
-- Node **22.13 ou mais novo** (veja o `.nvmrc`).
+- Node **22** (veja o `.nvmrc`; o `engines` do `package.json` fixa o 22 também na Vercel).
 - Docker, para o PostgreSQL 18 local.
 
 ## Rodando na máquina
@@ -74,7 +74,7 @@ de 32 caracteres, a API nem sobe.
 | `APP_ENV` | nome do ambiente (`local`, `develop`, `production`...), nos logs e em `/api/version` |
 | `API_PORT`, `API_PREFIX` | porta e prefixo das rotas (`/api`) |
 | `API_CORS_ORIGINS` | origens do front, separadas por vírgula: liberam o CORS com cookies e são aceitas no login/refresh/logout; vazio desliga o CORS (no local, `http://localhost:4200`) |
-| `SWAGGER_ENABLE` | `1` publica `/docs` e `/docs-json` (e desliga a CSP do Helmet, que bloquearia a interface) |
+| `SWAGGER_ENABLE` | `1` publica `/docs` e `/docs-json` (e desliga a CSP do Helmet, que bloquearia a interface). Na Vercel fica `0`: o Swagger usa o `@fastify/static`, que é CommonJS e carrega um pacote só ESM, e o carregador da Vercel não aceita isso (a API não sobe) |
 | `TRUST_PROXY` | em quais proxies confiar para obter o IP real: vazio/`false` = nenhum, `true` = todos (Vercel), número de saltos ou IPs/CIDRs |
 | `DATABASE_URL` | conexão com o PostgreSQL (obrigatória); `?schema=` escolhe o schema (`public` se ausente). No Neon, é o endereço com pooler |
 | `DATABASE_DIRECT_URL` | conexão direta, usada só pelas migrações (`prisma.config.ts`); a API não lê. No Neon, o mesmo endereço sem o `-pooler`. Vazia: as migrações usam a `DATABASE_URL` |

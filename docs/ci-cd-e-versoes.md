@@ -40,6 +40,9 @@ Branch da feature → PR (squash) para `develop` → PR de `develop` para `main`
   (`<projeto>.vercel.app`) e escapa da proteção que o plano Hobby põe nos deploys de preview.
 - O `vercel.json` usa o preset NestJS (entrada `src/server.ts`), roda `npm ci` e `npm run build` e
   publica a função em São Paulo (`gru1`), perto do banco.
+- `SWAGGER_ENABLE=0` nos dois projetos: com o Swagger ligado a API não sobe na Vercel
+  ([ambiente-e-configuracao.md](ambiente-e-configuracao.md#variáveis)). O front gera os tipos pela API local.
+- O `engines` do `package.json` (`22.x`) manda na versão do Node da Vercel; sem ele, ela escolhe a mais nova.
 - As variáveis da API ficam no painel de cada projeto (*Settings > Environment Variables*, ambiente
   *Production*), não no `.env.develop`/`.env.production`: a Vercel não roda o `dotenvx`. Esses
   arquivos continuam valendo para as migrações e o `admin:create:*`. Mudou um valor usado pelos dois

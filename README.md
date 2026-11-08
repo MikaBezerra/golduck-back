@@ -43,7 +43,7 @@ Principais regras (detalhes em [docs/](docs/README.md)):
 
 ## Como rodar
 
-Pré-requisitos: Node **22.13 ou mais novo** (veja o `.nvmrc`) e Docker.
+Pré-requisitos: Node **22** (veja o `.nvmrc`; o `engines` do `package.json` fixa o 22 também na Vercel) e Docker.
 
 ```sh
 npm ci
