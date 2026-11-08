@@ -96,7 +96,7 @@ describe('normalizePluggyTransactions', () => {
 
         expect(transactions.map(transaction => [transaction.description, transaction.installmentNumber, transaction.installmentTotal, transaction.cardLastDigits])).toEqual([
             ['HAMBURGUERIA', null, null, null],
-            ['LOJA ESPORTIVA EXTREMA BR', 1, 5, null],
+            ['LOJA ESPORTIVA EXTREMA', 1, 5, null],
             ['LIVRARIA', null, null, null]
         ]);
         expect(transactions[1].purchaseDate).toEqual(day('2026-09-15'));

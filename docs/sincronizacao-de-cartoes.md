@@ -86,7 +86,7 @@ sincronização sem novidades não muda nada (`unchanged`).
 | --- | --- | --- |
 | C6 | largura fixa `ESTABELECIMENTO(22) CIDADE(13) PAÍS(3)`: fica o estabelecimento, como no CSV | nos metadados; cada uma chega no mês em que é lançada |
 | Nubank | termina em `" 4/8"` nas parcelas: o sufixo sai | todas chegam, inclusive as futuras; a fatura prevista pelo banco acerta |
-| Neon | largura fixa `ESTABELECIMENTO(25) CIDADE(13) PAÍS(2)` à vista; `" 1/5"` no fim das parceladas | só a 1ª chega |
+| Neon | largura fixa `ESTABELECIMENTO(25) CIDADE(13) PAÍS(2)` à vista; parceladas como `LOJA CIDADE BR 1/5` (saem o país e a parcela) | só a 1ª chega; as seguintes usam o valor dela, então pode haver diferença de centavos para a fatura do banco |
 
 Ficam de fora pagamentos da fatura (`PAGAMENTO_FATURA`), estornos e créditos. Compra em outra moeda usa o
 valor em reais (`amountInAccountCurrency`). Cartão `0000` (Neon) fica sem final.

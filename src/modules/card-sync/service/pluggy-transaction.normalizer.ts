@@ -8,8 +8,9 @@ import { PluggyTransaction } from '../pluggy/pluggy-client.js';
  *
  * - C6: descrição com largura fixa, "ESTABELECIMENTO (22) CIDADE (13) PAÍS (3)"; fica só o estabelecimento,
  *   como no CSV do banco. Cada parcela chega no mês em que é lançada.
- * - Neon: largura fixa "ESTABELECIMENTO (25) CIDADE (13) PAÍS (2)" nas compras à vista; nas parceladas, a
- *   descrição termina em " 1/5". Só a primeira parcela chega: as outras são lançadas pela sincronização.
+ * - Neon: largura fixa "ESTABELECIMENTO (25) CIDADE (13) PAÍS (2)" nas compras à vista; nas parceladas,
+ *   "LOJA CIDADE BR 1/5" (saem o " BR" e o " 1/5"). Só a primeira parcela chega: as outras são lançadas
+ *   pela sincronização.
  * - Nubank: a descrição termina em " 4/8" nas parcelas; chegam todas, inclusive as futuras. A fatura
  *   prevista pelo banco (billForecastDate) acerta, então é usada antes do calendário.
  *
@@ -122,7 +123,8 @@ function cleanDescription(bank: CardBank, raw: string): string {
     if (bank === CardBank.C6) {
         text = C6_FIXED_WIDTH.exec(text)?.[1] ?? text;
     } else if (bank === CardBank.NEON) {
-        text = NEON_FIXED_WIDTH.exec(text)?.[1] ?? text;
+        // À vista vem com largura fixa; parcelada vem como "LOJA CIDADE BR 1/5": sai o país do fim.
+        text = NEON_FIXED_WIDTH.exec(text)?.[1] ?? text.replace(/\s+BR$/, '');
     }
 
     return text.trim().replace(/\s+/g, ' ');
