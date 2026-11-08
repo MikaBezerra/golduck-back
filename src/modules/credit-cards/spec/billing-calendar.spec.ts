@@ -33,23 +33,23 @@ describe('BillingCalendar', () => {
 
     it('fechamento informado pelo banco vale sobre o ajuste do usuário, que vale sobre o padrão', () => {
         const calendar = new BillingCalendar({ dueDay: 1, bestPurchaseDay: 25 }, [
-            // Fatura de novembro do C6: a compra de 22/10 entrou nela e a de 23/10 já não.
-            { month: month('2026-11'), bestPurchaseDate: day('2026-10-28'), bankClosingDate: day('2026-10-22'), bankDueDate: day('2026-11-03') },
+            // Fatura de novembro do C6, que "fecha 25/10": fica com o que o banco lançou até 24/10.
+            { month: month('2026-11'), bestPurchaseDate: day('2026-10-28'), bankClosingDate: day('2026-10-25'), bankDueDate: day('2026-11-03') },
             { month: month('2026-12'), bestPurchaseDate: day('2026-11-27'), bankClosingDate: null, bankDueDate: null }
         ]);
 
         expect(calendar.schedule(month('2026-11'))).toEqual({
             month: month('2026-11'),
-            bestPurchaseDate: day('2026-10-23'),
-            closingDate: day('2026-10-22'),
+            bestPurchaseDate: day('2026-10-25'),
+            closingDate: day('2026-10-24'),
             dueDate: day('2026-11-03'),
             source: 'bank',
             userBestPurchaseDate: day('2026-10-28')
         });
         expect(calendar.schedule(month('2026-12'))).toMatchObject({ bestPurchaseDate: day('2026-11-27'), dueDate: day('2026-12-01'), source: 'user' });
         expect(calendar.schedule(month('2027-01'))).toMatchObject({ bestPurchaseDate: day('2026-12-25'), source: 'default' });
-        expect(ym(calendar.billMonthOf(day('2026-10-22')))).toBe('2026-11');
-        expect(ym(calendar.billMonthOf(day('2026-10-23')))).toBe('2026-12');
+        expect(ym(calendar.billMonthOf(day('2026-10-24')))).toBe('2026-11');
+        expect(ym(calendar.billMonthOf(day('2026-10-25')))).toBe('2026-12');
         expect(ym(calendar.billMonthOf(day('2026-11-26')))).toBe('2026-12');
         expect(ym(calendar.billMonthOf(day('2026-11-27')))).toBe('2027-01');
     });

@@ -47,6 +47,29 @@ describe('normalizePluggyTransactions', () => {
         });
     });
 
+    it('a fatura é decidida pelo dia em que o banco lançou a compra (billPostDate); a data da compra fica para a chave', () => {
+        const [purchase] = normalizePluggyTransactions('C6', [pluggyTransaction({
+            description: c6Description('FARMACIA'),
+            amount: 21.21,
+            date: '2026-09-24T15:00:00.000Z',
+            creditCardMetadata: { billPostDate: '2026-09-25', billForecastDate: '2026-09' }
+        })]).transactions;
+
+        expect(purchase).toMatchObject({ postedDate: day('2026-09-25'), purchaseDate: day('2026-09-24'), bankBillMonth: null });
+    });
+
+    it('Nubank: usa a fatura prevista pelo banco (billForecastDate), que no Nubank acerta', () => {
+        const [purchase, withoutForecast] = normalizePluggyTransactions('NUBANK', [
+            pluggyTransaction({
+                description: 'Mercado', amount: 25.97, date: '2026-10-24T18:00:00.000Z', creditCardMetadata: { billForecastDate: '2026-11', billPostDate: '2026-10-25' }
+            }),
+            pluggyTransaction({ description: 'Padaria', amount: 5, date: '2026-10-24T18:00:00.000Z', creditCardMetadata: { billForecastDate: 'nov' } })
+        ]).transactions;
+
+        expect(purchase.bankBillMonth).toEqual(day('2026-11-01'));
+        expect(withoutForecast).toMatchObject({ bankBillMonth: null, postedDate: day('2026-10-24') });
+    });
+
     it('Nubank: tira o " 4/8" do fim da descrição', () => {
         const [first] = normalizePluggyTransactions('NUBANK', [pluggyTransaction({
             description: 'Loja de Construcao 4/8',

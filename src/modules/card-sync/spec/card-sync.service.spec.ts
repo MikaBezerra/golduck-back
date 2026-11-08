@@ -50,21 +50,27 @@ describe('CardSyncService', () => {
         outros = categories.seed({ name: 'Outros', isDefault: true });
         c6 = cards.seed({ name: 'C6', bank: 'C6', dueDay: 1, bestPurchaseDay: 25, pluggyItemId: ITEM_ID, syncFromMonth: NOVEMBER });
         pluggy.transactions = [
-            // Fatura de novembro: a parcela lançada em 01/10 e a compra de 22/10 às 22h31.
+            // Fatura de novembro (fecha 25/10): a parcela lançada em 01/10 e a compra de 22/10 às 22h31, lançada em 23/10.
             pluggyTransaction({
                 description: c6Description('LOJA DE MOVEIS'),
                 amount: 114,
                 date: '2026-10-01T03:00:00.000Z',
-                creditCardMetadata: { installmentNumber: 3, totalInstallments: 5, purchaseDate: '2026-08-07T13:32:00.000Z', cardNumber: '1234' }
+                creditCardMetadata: {
+                    installmentNumber: 3, totalInstallments: 5, purchaseDate: '2026-08-07T13:32:00.000Z', cardNumber: '1234', billPostDate: '2026-10-01'
+                }
             }),
-            pluggyTransaction({ description: c6Description('LANCHONETE'), amount: 21.5, date: '2026-10-23T01:31:00.000Z' }),
-            // Fatura de dezembro (a aberta).
-            pluggyTransaction({ description: c6Description('POSTO DE GASOLINA'), amount: 10.99, date: '2026-10-23T12:00:00.000Z' }),
+            pluggyTransaction({
+                description: c6Description('LANCHONETE'), amount: 21.5, date: '2026-10-23T01:31:00.000Z', creditCardMetadata: { billPostDate: '2026-10-23' }
+            }),
+            // Fatura de dezembro (a aberta): compra de 23/10 lançada em 26/10, depois do fechamento.
+            pluggyTransaction({
+                description: c6Description('POSTO DE GASOLINA'), amount: 10.99, date: '2026-10-23T12:00:00.000Z', creditCardMetadata: { billPostDate: '2026-10-26' }
+            }),
             pluggyTransaction({ description: 'Inclusao de Pagamento Ciclo Corrente', amount: -500, date: '2026-10-25T03:00:00.000Z', operationType: 'PAGAMENTO_FATURA' }),
             // Antes da primeira fatura sincronizada.
             pluggyTransaction({ description: c6Description('MERCADO ANTIGO'), amount: 30, date: '2026-09-10T15:00:00.000Z' })
         ];
-        pluggy.bills = [{ id: 'fatura-nov', dueDate: '2026-11-01T00:00:00', billClosingDate: '2026-10-22T00:00:00', totalAmount: 135.5 }];
+        pluggy.bills = [{ id: 'fatura-nov', dueDate: '2026-11-01T00:00:00', billClosingDate: '2026-10-25T00:00:00', totalAmount: 135.5 }];
         service = createService();
     });
 
@@ -103,7 +109,7 @@ describe('CardSyncService', () => {
             });
             expect(cards.get(c6.id).pluggyAccountId).toBe('conta-cartao');
             expect(pluggy.calls).toEqual([`item:${ITEM_ID}`, `accounts:${ITEM_ID}`, 'transactions:conta-cartao:2025-10-01', 'bills:conta-cartao']);
-            expect((await cards.findBills(c6.id))[0]).toMatchObject({ month: NOVEMBER, bankClosingDate: day('2026-10-22'), bankDueDate: day('2026-11-01') });
+            expect((await cards.findBills(c6.id))[0]).toMatchObject({ month: NOVEMBER, bankClosingDate: day('2026-10-25'), bankDueDate: day('2026-11-01') });
             expect([...expenses.expenses.values()].every(row => row.categoryId === outros.id && row.origin === 'SYNC')).toBe(true);
         });
 

@@ -9,7 +9,8 @@ import { addMonths, formatMonth } from '../../common/date/month.js';
  * 2. o melhor dia que o usuário ajustou para aquela fatura;
  * 3. o melhor dia padrão do cartão.
  *
- * Todas as datas são dias (meia-noite UTC), já no horário de Brasília.
+ * Todas as datas são dias (meia-noite UTC), já no horário de Brasília. O dia que conta é o do LANÇAMENTO
+ * da compra pelo banco (de 1 a 3 dias depois dela), não o da compra: é assim que o banco fecha a fatura.
  */
 
 /** Configuração do cartão: dia do vencimento e melhor dia de compra padrão (1 a 31). */
@@ -42,12 +43,6 @@ export type BillSchedule = {
 };
 
 const DAY_MS = 86_400_000;
-
-/**
- * O fechamento do banco (billClosingDate da Pluggy) é o último dia de compra da fatura: o melhor dia
- * é o dia seguinte.
- */
-const BANK_CLOSING_IS_LAST_PURCHASE_DAY = true;
 
 /** Dia do mês, limitado ao último dia (31 em fevereiro vira 28 ou 29). */
 export function dayInMonth(month: Date, day: number): Date {
@@ -90,7 +85,9 @@ export class BillingCalendar {
         let source: BillBoundarySource;
 
         if (stored?.bankClosingDate) {
-            bestPurchaseDate = BANK_CLOSING_IS_LAST_PURCHASE_DAY ? addDays(stored.bankClosingDate, 1) : stored.bankClosingDate;
+            // O fechamento do banco (billClosingDate) já é o primeiro dia de lançamento da fatura seguinte:
+            // no C6, a fatura que "fecha 25/09" ficou com o que foi lançado até 24/09.
+            bestPurchaseDate = stored.bankClosingDate;
             source = 'bank';
         } else if (stored?.bestPurchaseDate) {
             bestPurchaseDate = stored.bestPurchaseDate;

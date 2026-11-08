@@ -14,7 +14,8 @@ import { addMonths, formatDate, formatMonth } from '../../common/date/month.js';
  * 1. Cada compra recebe uma chave estável (purchaseKey): parcelada = data da compra + total de parcelas
  *    + descrição; à vista = data + valor + descrição. Repetições idênticas recebem #2, #3...
  * 2. A fatura de cada lançamento vem, nesta ordem: da correção do usuário (mover de mês/parcela), da
- *    fatura informada pelo banco (billId) ou do calendário do cartão (melhor dia de compra).
+ *    fatura informada pelo banco (billId), da fatura prevista pelo Nubank ou do calendário do cartão
+ *    aplicado ao dia em que o banco lançou a compra (melhor dia de compra).
  * 3. As parcelas que o banco ainda não mandou (as futuras no C6, todas menos a 1ª no Neon) são lançadas
  *    a partir da última conhecida, uma por mês.
  * 4. Linhas que já existem na mesma fatura são atualizadas, mantendo apelido, categoria, pessoa e
@@ -126,7 +127,9 @@ function scheduleRows(purchaseKey: string, installments: KeyedTransaction[], inp
         (transaction.installmentNumber ?? 0) > (last.installmentNumber ?? 0) ? transaction : last);
     const correction = input.corrections.get(purchaseKey);
     const billOf = (transaction: KeyedTransaction): Date =>
-        (transaction.billId ? input.billMonthById.get(transaction.billId) : undefined) ?? input.billMonthOf(transaction.postedDate);
+        (transaction.billId ? input.billMonthById.get(transaction.billId) : undefined)
+            ?? transaction.bankBillMonth
+            ?? input.billMonthOf(transaction.postedDate);
     const row = (transaction: KeyedTransaction, month: Date, installmentNumber: number | null, installmentTotal: number | null): DesiredRow => ({
         purchaseKey,
         month,

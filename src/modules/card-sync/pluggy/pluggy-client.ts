@@ -33,6 +33,10 @@ export type PluggyCreditCardMetadata = {
     cardNumber?: string | null;
     /** Fatura da compra; só aparece depois que a fatura vence. */
     billId?: string | null;
+    /** Dia em que o banco lança a compra ("2026-10-26"), de 1 a 3 dias depois dela: é o que decide a fatura. */
+    billPostDate?: string | null;
+    /** Mês da fatura previsto pelo banco ("2026-12"); só o Nubank acerta (no C6 e no Neon é o mês do lançamento). */
+    billForecastDate?: string | null;
 };
 
 export type PluggyTransaction = {

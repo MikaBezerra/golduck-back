@@ -228,17 +228,17 @@ describe('CreditCardService', () => {
         it('lista início, fechamento, melhor dia e vencimento; fechamento do banco e ajuste do usuário prevalecem', async () => {
             const card = seedC6();
             await repository.saveBestPurchaseDate(card.id, day('2026-12-01'), day('2026-11-27'));
-            await repository.saveBankDates(card.id, [{ month: NOVEMBER, closingDate: day('2026-10-22'), dueDate: day('2026-11-03') }]);
+            await repository.saveBankDates(card.id, [{ month: NOVEMBER, closingDate: day('2026-10-26'), dueDate: day('2026-11-03') }]);
 
             const bills = await service.listBills(card.id, { from: '2026-11', to: '2027-01' });
 
             expect(bills).toEqual([
                 {
-                    month: '2026-11', startDate: '2026-09-25', closingDate: '2026-10-22', bestPurchaseDate: '2026-10-23',
+                    month: '2026-11', startDate: '2026-09-25', closingDate: '2026-10-25', bestPurchaseDate: '2026-10-26',
                     dueDate: '2026-11-03', source: 'bank', userBestPurchaseDate: null
                 },
                 {
-                    month: '2026-12', startDate: '2026-10-23', closingDate: '2026-11-26', bestPurchaseDate: '2026-11-27',
+                    month: '2026-12', startDate: '2026-10-26', closingDate: '2026-11-26', bestPurchaseDate: '2026-11-27',
                     dueDate: '2026-12-01', source: 'user', userBestPurchaseDate: '2026-11-27'
                 },
                 {

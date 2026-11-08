@@ -34,21 +34,27 @@ Sem os quatro, `POST /credit-cards/{id}/sync` responde `409 CARD_SYNC_NOT_CONFIG
 
 ## Ciclo da fatura (`credit-cards/service/billing-calendar.ts`)
 
-O fechamento **varia de mês a mês** (no C6, a fatura de novembro/2026 teve melhor dia 23/10 e a de
-dezembro, 25/11). Por isso cada fatura (`CardBill`) tem o seu melhor dia, que vale nesta ordem:
+O que decide a fatura é o **dia em que o banco lança a compra** (`billPostDate` da Pluggy), de 1 a 3 dias
+depois dela, e não o dia da compra: no C6, a compra de 24/09 lançada em 25/09 foi para a fatura seguinte à que
+"fecha 25/09". Com essa regra e o melhor dia 25, a fatura de novembro/2026 do C6 sincronizada bateu centavo a
+centavo com o CSV do banco (91 compras, R$ 5.587,01).
 
-1. **o fechamento informado pelo banco** (`bankClosingDate`, o último dia de compra): só existe depois que a
-   fatura fecha; vem de `GET /bills` da Pluggy a cada sincronização;
+O fechamento **varia de mês a mês** (no C6, entre os dias 21 e 26). Por isso cada fatura (`CardBill`) tem o seu
+melhor dia, que vale nesta ordem:
+
+1. **o fechamento informado pelo banco** (`bankClosingDate`): o primeiro dia de lançamento que já vai para a
+   fatura seguinte. Só existe depois que a fatura fecha (no C6, semanas depois); vem de `GET /bills` da Pluggy
+   a cada sincronização;
 2. **o ajuste do usuário** para aquela fatura (`PUT /credit-cards/{id}/bills/{month}`), copiado do app do banco;
 3. **o padrão do cartão**: o `bestPurchaseDay` no mês anterior ao vencimento (ou no próprio mês, quando
    vem antes do dia do vencimento).
 
 `GET /credit-cards/{id}/bills` mostra início, fechamento, melhor dia, vencimento e de onde veio cada um.
-As datas de compra são convertidas para o horário de Brasília (UTC−3): uma compra às 22h31 de 22/10 chega
-como `2026-10-23T01:31Z` e conta como 22/10.
+Sem `billPostDate`, vale o dia da transação no horário de Brasília (UTC−3): uma compra às 22h31 de 22/10
+chega como `2026-10-23T01:31Z` e conta como 22/10.
 
-O campo de "fatura prevista" da Pluggy não é usado: no C6 e no Neon ele traz o mês do lançamento, não o
-da fatura (só o Nubank acerta). O id da fatura (`billId`) só chega depois do vencimento.
+A "fatura prevista" da Pluggy (`billForecastDate`) só é usada no Nubank: no C6 e no Neon ela traz o mês do
+lançamento, não o da fatura. O id da fatura (`billId`) só chega depois do vencimento.
 
 ## Regras da sincronização (`card-sync.planner.ts`)
 
@@ -57,7 +63,8 @@ A sincronização é a fonte da verdade das faturas a partir de `syncFromMonth`:
 1. **Chave da compra** (`purchaseKey`): parcelada = `P|data da compra|total|DESCRIÇÃO`; à vista =
    `S|data|valor|DESCRIÇÃO`. Repetições idênticas recebem `#2`, `#3`...
 2. **Fatura de cada lançamento**: a correção do usuário (abaixo) vale sobre tudo; depois, a fatura informada
-   pelo banco (`billId`); senão, o calendário do cartão aplicado ao dia do lançamento.
+   pelo banco (`billId`); depois, a prevista pelo Nubank; senão, o calendário do cartão aplicado ao dia em que
+   o banco lançou a compra.
 3. **Parcelas que o banco não mandou** são lançadas a partir da última conhecida, uma por mês (o Neon só
    manda a 1ª parcela; o C6 manda cada uma quando é lançada; o Nubank manda todas, até as futuras).
    Duas parcelas da mesma compra nunca dividem a fatura.
@@ -78,7 +85,7 @@ sincronização sem novidades não muda nada (`unchanged`).
 | Banco | Descrição | Parcelas |
 | --- | --- | --- |
 | C6 | largura fixa `ESTABELECIMENTO(22) CIDADE(13) PAÍS(3)`: fica o estabelecimento, como no CSV | nos metadados; cada uma chega no mês em que é lançada |
-| Nubank | termina em `" 4/8"` nas parcelas: o sufixo sai | todas chegam, inclusive as futuras |
+| Nubank | termina em `" 4/8"` nas parcelas: o sufixo sai | todas chegam, inclusive as futuras; a fatura prevista pelo banco acerta |
 | Neon | largura fixa `ESTABELECIMENTO(25) CIDADE(13) PAÍS(2)` à vista; `" 1/5"` no fim das parceladas | só a 1ª chega |
 
 Ficam de fora pagamentos da fatura (`PAGAMENTO_FATURA`), estornos e créditos. Compra em outra moeda usa o

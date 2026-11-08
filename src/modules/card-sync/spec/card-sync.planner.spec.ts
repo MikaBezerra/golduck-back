@@ -21,6 +21,7 @@ const synced = (data: Partial<SyncedTransaction> & Pick<SyncedTransaction, 'desc
 
     return {
         externalId: `tx-${sequence}`,
+        bankBillMonth: null,
         purchaseDate: data.postedDate,
         amountCents: 1000n,
         installmentNumber: null,
@@ -112,6 +113,18 @@ describe('planCardSync', () => {
             });
 
             expect(result.creates.map(row => ym(row.month))).toEqual(['2027-01']);
+        });
+
+        it('Nubank: a fatura prevista pelo banco vale sobre o calendário; o billId vale sobre ela', () => {
+            const result = plan({
+                transactions: [
+                    synced({ description: 'Mercado', postedDate: day('2026-10-25'), bankBillMonth: month('2026-11') }),
+                    synced({ description: 'Farmacia', postedDate: day('2026-10-25'), bankBillMonth: month('2026-11'), billId: 'dez' })
+                ],
+                billMonthById: new Map([['dez', month('2026-12')]])
+            });
+
+            expect(result.creates.map(row => [row.originalDescription, ym(row.month)])).toEqual([['Mercado', '2026-11'], ['Farmacia', '2026-12']]);
         });
 
         it('a correção do usuário vale sobre tudo, inclusive renumerando as parcelas', () => {

@@ -10,16 +10,22 @@ import { PluggyTransaction } from '../pluggy/pluggy-client.js';
  *   como no CSV do banco. Cada parcela chega no mês em que é lançada.
  * - Neon: largura fixa "ESTABELECIMENTO (25) CIDADE (13) PAÍS (2)" nas compras à vista; nas parceladas, a
  *   descrição termina em " 1/5". Só a primeira parcela chega: as outras são lançadas pela sincronização.
- * - Nubank: a descrição termina em " 4/8" nas parcelas; chegam todas, inclusive as futuras.
+ * - Nubank: a descrição termina em " 4/8" nas parcelas; chegam todas, inclusive as futuras. A fatura
+ *   prevista pelo banco (billForecastDate) acerta, então é usada antes do calendário.
  *
  * Pagamentos da fatura e estornos ficam de fora (como no upload). Compras em outra moeda usam o valor
  * em reais. As datas são convertidas para o horário de Brasília.
+ *
+ * O que decide a fatura é o dia em que o banco LANÇA a compra (billPostDate), de 1 a 3 dias depois dela:
+ * no C6, a compra de 24/09 lançada em 25/09 foi para a fatura seguinte à que fechou em 25/09.
  */
 
 export type SyncedTransaction = {
     externalId: string;
-    /** Dia do lançamento: decide a fatura. */
+    /** Dia em que o banco lançou a compra (billPostDate; sem ele, o dia da transação): decide a fatura. */
     postedDate: Date;
+    /** Fatura prevista pelo banco, só no Nubank (o único em que ela acerta). */
+    bankBillMonth: Date | null;
     /** Dia da compra original (nas parcelas, a da primeira). */
     purchaseDate: Date;
     description: string;
@@ -45,6 +51,8 @@ const INSTALLMENT_SUFFIX = /\s+(\d{1,2})\/(\d{1,2})$/;
 const C6_FIXED_WIDTH = /^(.{22}) .{13} [A-Z]{3}$/;
 const NEON_FIXED_WIDTH = /^(.{25}).{13}[A-Z]{2}$/;
 const CARD_DIGITS = /^\d{4}$/;
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+const MONTH = /^\d{4}-\d{2}$/;
 
 export function normalizePluggyTransactions(bank: CardBank, transactions: PluggyTransaction[]): NormalizedTransactions {
     const normalized: SyncedTransaction[] = [];
@@ -60,13 +68,15 @@ export function normalizePluggyTransactions(bank: CardBank, transactions: Pluggy
 
         const metadata = transaction.creditCardMetadata ?? {};
         const installment = readInstallment(transaction);
-        const postedDate = brazilDay(new Date(transaction.date));
+        const transactionDay = brazilDay(new Date(transaction.date));
         const cardNumber = metadata.cardNumber ?? '';
+        const forecast = bank === CardBank.NUBANK ? metadata.billForecastDate ?? '' : '';
 
         normalized.push({
             externalId: transaction.id,
-            postedDate,
-            purchaseDate: installment && metadata.purchaseDate ? brazilDay(new Date(metadata.purchaseDate)) : postedDate,
+            postedDate: DAY.test(metadata.billPostDate ?? '') ? new Date(`${metadata.billPostDate as string}T00:00:00.000Z`) : transactionDay,
+            bankBillMonth: MONTH.test(forecast) ? new Date(`${forecast}-01T00:00:00.000Z`) : null,
+            purchaseDate: installment && metadata.purchaseDate ? brazilDay(new Date(metadata.purchaseDate)) : transactionDay,
             description: cleanDescription(bank, transaction.description),
             amountCents,
             installmentNumber: installment?.number ?? null,
