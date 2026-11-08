@@ -315,4 +315,43 @@ describe('SummaryService', () => {
             expect(summary.months.every(month => month.income === null && month.reserve === null)).toBe(true);
         });
     });
+
+    describe('findStatement', () => {
+        it('monta a tabela do mês pelo repositório: sem excluídas, com a quebra e a reserva acumulada até o mês', async () => {
+            const ana = repository.seedPerson({ name: 'Ana', email: 'ana@exemplo.com' });
+            const bruno = repository.seedPerson({ name: 'Bruno' });
+            const mercado = repository.seedCategory({ name: 'Mercado' });
+
+            repository.cards.set('nubank', 'Nubank');
+            repository.incomes.set('2026-11', 400_000n);
+            repository.reserves.set('2026-10', 30_000n);
+            repository.reserves.set('2026-11', 20_000n);
+            repository.reserves.set('2026-12', 99_900n);
+            repository.manualExpenses.push(
+                { id: 'aluguel', title: 'Aluguel', month: '2026-11', categoryId: mercado.id, personId: null, amountCents: 100_000n },
+                { month: '2026-10', categoryId: mercado.id, personId: null, amountCents: 77_700n }
+            );
+            repository.cardExpenses.push(
+                { id: 'curso', cardId: 'nubank', month: '2026-11', categoryId: mercado.id, personId: ana.id, amountCents: 10_000n },
+                { cardId: 'nubank', month: '2026-11', categoryId: mercado.id, personId: bruno.id, amountCents: 55_500n, excluded: true }
+            );
+            const load = jest.spyOn(repository, 'loadStatementSource');
+
+            const statement = await service.findStatement({ month: '2026-11' });
+
+            expect(load).toHaveBeenCalledWith(new Date('2026-11-01T00:00:00.000Z'));
+            expect(statement.month).toBe('2026-11');
+            expect(statement.columns.map(column => column.name)).toEqual(['Ana', 'Bruno']);
+            // (4000.00 − 1000.00) / 2 = 1500.00 antes da reserva; reserva de 200.00 = 100.00 para cada
+            expect(statement.breakdown).toEqual([
+                { personId: ana.id, name: 'Ana', beforeReserve: '1500.00', individual: '100.00', reserve: '100.00', net: '1300.00' },
+                { personId: bruno.id, name: 'Bruno', beforeReserve: '1500.00', individual: '0.00', reserve: '100.00', net: '1400.00' }
+            ]);
+            expect(statement.reserve).toEqual({ month: '200.00', accumulated: '500.00' });
+
+            const monthly = await service.findByMonth({ month: '2026-11' });
+
+            expect(monthly.netByPerson.map(item => item.net)).toEqual(statement.breakdown.map(item => item.net));
+        });
+    });
 });

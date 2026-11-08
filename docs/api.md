@@ -54,7 +54,7 @@ Login exigido em todas, salvo as marcadas como públicas. ADMIN acessa tudo.
 | `credit-cards` | `POST /credit-cards`, `GET /credit-cards`, `GET /credit-cards/{id}`, `PATCH /credit-cards/{id}` |
 | `card-imports` | `POST /card-imports` (upload), `POST /card-imports/preview`, `POST /card-imports/manual`, `GET /card-imports`, `GET/DELETE /card-imports/{id}` |
 | `card-expenses` | `GET /card-expenses?month&cardId[&includeExcluded]`, `GET /card-expenses/{id}`, `PATCH /card-expenses`, `DELETE /card-expenses`, `POST /card-expenses/restore` |
-| `summary` | `GET /summary?month`, `GET /summary/annual?year` |
+| `summary` | `GET /summary?month`, `GET /summary/annual?year`, `GET /summary/statement?month` (tabela por pessoa) |
 
 Os campos de cada rota estão no Swagger; as regras, em [regras-de-negocio.md](regras-de-negocio.md) e
 [importacao-de-faturas.md](importacao-de-faturas.md).

@@ -1,4 +1,5 @@
 import type { Category, Person } from '../../../generated/prisma/client.js';
+import type { StatementSource } from '../service/summary-statement.builder.js';
 import type { AmountGroup, MonthGroups } from '../service/summary.calculator.js';
 import { randomUUID } from 'node:crypto';
 
@@ -14,6 +15,12 @@ export type SummaryExpense = {
     amountCents: bigint;
     /** Só no cartão: despesa excluída da fatura (não entra no resumo). */
     excluded?: boolean;
+    /** Só na tabela do mês (statement); sem id, vira a posição na lista. */
+    id?: string;
+    /** Só fora do cartão, na tabela do mês. */
+    title?: string;
+    /** Só no cartão, na tabela do mês. */
+    cardId?: string;
 };
 
 /* eslint-disable @typescript-eslint/require-await -- imita a interface assíncrona do SummaryRepository */
@@ -29,6 +36,8 @@ export class InMemorySummaryRepository {
     public readonly cardExpenses: SummaryExpense[] = [];
     public readonly categories = new Map<string, Category>();
     public readonly people = new Map<string, Person>();
+    /** Cartões (id → nome), para a tabela do mês. */
+    public readonly cards = new Map<string, string>();
 
     public seedCategory(data: Partial<Category> & Pick<Category, 'name'>): Category {
         const now = new Date('2026-01-01T00:00:00.000Z');
@@ -75,6 +84,37 @@ export class InMemorySummaryRepository {
                 cardByPerson: groupBy(card, expense => expense.personId)
             };
         });
+    }
+
+    public async loadStatementSource(month: Date): Promise<StatementSource> {
+        const key = formatMonth(month);
+
+        return {
+            month,
+            incomeCents: this.incomes.get(key) ?? null,
+            reserveCents: this.reserves.get(key) ?? null,
+            reserveAccumulatedCents: [...this.reserves.entries()]
+                .filter(([reserveMonth]) => reserveMonth <= key)
+                .reduce((total, [, cents]) => total + cents, 0n),
+            people: [...this.people.values()].map(person => ({ id: person.id, name: person.name, active: person.active })),
+            manualExpenses: this.manualExpenses
+                .filter(expense => expense.month === key)
+                .map((expense, index) => ({
+                    id: expense.id ?? `manual-${index}`,
+                    title: expense.title ?? 'Despesa',
+                    amountCents: expense.amountCents,
+                    personId: expense.personId
+                })),
+            cardExpenses: this.cardExpenses
+                .filter(expense => expense.month === key && !expense.excluded)
+                .map((expense, index) => ({
+                    id: expense.id ?? `card-${index}`,
+                    cardId: expense.cardId ?? 'cartao',
+                    amountCents: expense.amountCents,
+                    personId: expense.personId
+                })),
+            cards: [...this.cards.entries()].map(([id, name]) => ({ id, name }))
+        };
     }
 
     public async findCategories(ids: string[]): Promise<Category[]> {

@@ -1,4 +1,5 @@
 import type { Category, Person } from '../../../generated/prisma/client.js';
+import type { StatementSource } from '../service/summary-statement.builder.js';
 import { Injectable } from '@nestjs/common';
 
 import { addMonths, formatMonth } from '../../common/date/month.js';
@@ -57,6 +58,43 @@ export class SummaryRepository {
         cardByPerson.forEach(row => bucket(row).cardByPerson.push(toGroup(row.personId, row)));
 
         return months.map(month => byMonth.get(month) as MonthGroups);
+    }
+
+    /**
+     * O que a tabela do mês precisa: entrada, reserva do mês e a soma das reservas até ele, todas as
+     * pessoas, as despesas do mês (do cartão, sem as excluídas) e os cartões dessas despesas.
+     */
+    public async loadStatementSource(month: Date): Promise<StatementSource> {
+        const range = { gte: month, lt: addMonths(month, 1) };
+        const [income, reserve, accumulated, people, manualExpenses, cardExpenses] = await Promise.all([
+            this.prisma.monthlyIncome.findUnique({ where: { month }, select: { amountCents: true } }),
+            this.prisma.monthlyReserve.findUnique({ where: { month }, select: { amountCents: true } }),
+            this.prisma.monthlyReserve.aggregate({ where: { month: { lt: addMonths(month, 1) } }, _sum: { amountCents: true } }),
+            this.prisma.person.findMany({ select: { id: true, name: true, active: true } }),
+            this.prisma.manualExpense.findMany({
+                where: { month: range },
+                select: { id: true, title: true, amountCents: true, personId: true }
+            }),
+            this.prisma.cardExpense.findMany({
+                where: { month: range, excludedAt: null },
+                select: { id: true, cardId: true, amountCents: true, personId: true }
+            })
+        ]);
+        const cardIds = [...new Set(cardExpenses.map(expense => expense.cardId))];
+        const cards = cardIds.length === 0
+            ? []
+            : await this.prisma.creditCard.findMany({ where: { id: { in: cardIds } }, select: { id: true, name: true } });
+
+        return {
+            month,
+            incomeCents: income?.amountCents ?? null,
+            reserveCents: reserve?.amountCents ?? null,
+            reserveAccumulatedCents: accumulated._sum.amountCents ?? 0n, // eslint-disable-line no-underscore-dangle
+            people,
+            manualExpenses,
+            cardExpenses,
+            cards
+        };
     }
 
     public async findCategories(ids: string[]): Promise<Category[]> {

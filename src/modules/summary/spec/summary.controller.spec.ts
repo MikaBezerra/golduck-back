@@ -1,4 +1,4 @@
-import type { AnnualSummaryResponse, SummaryResponse } from '../dto/summary.dto.js';
+import type { AnnualSummaryResponse, SummaryResponse, SummaryStatementResponse } from '../dto/summary.dto.js';
 
 import { Role } from '../../../generated/prisma/enums.js';
 import { dataOf, errorOf, HttpTestApp } from '../../../testing/http-test-app.js';
@@ -39,13 +39,14 @@ describe('rotas /summary', () => {
         await api.close();
     });
 
-    it('exige login nas duas rotas (401 AUTH_UNAUTHENTICATED)', async () => {
+    it('exige login nas rotas (401 AUTH_UNAUTHENTICATED)', async () => {
         await start();
 
         const monthly = await api.get('/summary', { auth: false, query: { month: '2026-11' } });
         const annual = await api.get('/summary/annual', { auth: false, query: { year: 2026 } });
+        const statement = await api.get('/summary/statement', { auth: false, query: { month: '2026-11' } });
 
-        for (const response of [monthly, annual]) {
+        for (const response of [monthly, annual, statement]) {
             expect(response.status).toBe(401);
             expect(errorOf(response).code).toBe('AUTH_UNAUTHENTICATED');
         }
@@ -86,6 +87,36 @@ describe('rotas /summary', () => {
             { field: 'month', code: 'string.pattern.base', message: 'O mês deve estar no formato AAAA-MM' }
         ]);
         expect(errorOf(extra).details).toEqual([{ field: 'personId', code: 'object.unknown', message: 'personId não é permitido' }]);
+    });
+
+    it('GET /summary/statement?month devolve a tabela do mês pronta, com a quebra e a reserva', async () => {
+        await start();
+
+        const response = await api.get('/summary/statement', { query: { month: '2026-11' } });
+        const statement = dataOf<SummaryStatementResponse>(response);
+
+        expect(response.status).toBe(200);
+        expect(statement).toMatchObject({
+            month: '2026-11',
+            columns: [{ name: 'Ana', initial: 'A', inactive: false }],
+            breakdown: [{ name: 'Ana', beforeReserve: '4990.00', individual: '123.45', reserve: '0.00', net: '4866.55' }],
+            reserve: { month: null, accumulated: '0.00' },
+            hasPeople: true,
+            incomeMissing: false
+        });
+        expect(statement.sections.map(section => section.id)).toEqual(['income', 'shared', 'individual', 'result']);
+    });
+
+    it('GET /summary/statement valida o mês como GET /summary (400)', async () => {
+        await start();
+
+        const missing = await api.get('/summary/statement');
+        const wrongFormat = await api.get('/summary/statement', { query: { month: '2026-1' } });
+
+        for (const response of [missing, wrongFormat]) {
+            expect(response.status).toBe(400);
+            expect(errorOf(response).code).toBe('VALIDATION_ERROR');
+        }
     });
 
     it('GET /summary/annual?year devolve o ano (número) com os 12 meses', async () => {

@@ -4,7 +4,13 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '../../../generated/prisma/client.js';
 import { Roles } from '../../auth/security/auth.decorators.js';
 import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-docs.js';
-import { AnnualSummaryQueryDto, AnnualSummaryResponse, SummaryQueryDto, SummaryResponse } from '../dto/summary.dto.js';
+import {
+    AnnualSummaryQueryDto,
+    AnnualSummaryResponse,
+    SummaryQueryDto,
+    SummaryResponse,
+    SummaryStatementResponse
+} from '../dto/summary.dto.js';
 import { AnnualSummaryQueryPipe, SummaryQueryPipe } from '../flow/summary.pipe.js';
 import { SummaryService } from '../service/summary.service.js';
 
@@ -30,6 +36,19 @@ export class SummaryController {
         @Query(SummaryQueryPipe) query: SummaryQueryDto
     ): Promise<SummaryResponse> {
         return this.summaryService.findByMonth(query);
+    }
+
+    @Get('statement')
+    @ApiOperation({
+        summary: 'Resumo do mês em tabela: uma coluna por pessoa, linhas prontas e a quebra do líquido de cada pessoa',
+        description: `${RULES} Em breakdown: beforeReserve − individual − reserve = net (a reserva entra uma vez só). `
+            + 'reserve.accumulated soma todas as reservas até o mês, inclusive.'
+    })
+    @ApiDataResponse(SummaryStatementResponse)
+    public async findStatement(
+        @Query(SummaryQueryPipe) query: SummaryQueryDto
+    ): Promise<SummaryStatementResponse> {
+        return this.summaryService.findStatement(query);
     }
 
     @Get('annual')

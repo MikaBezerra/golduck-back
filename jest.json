@@ -53,6 +53,10 @@
       "lines": 95,
       "branches": 85
     },
+    "./src/modules/summary/service/summary-statement.builder.ts": {
+      "lines": 95,
+      "branches": 85
+    },
     "./src/modules/card-imports/parsers/*-csv.parser.ts": {
       "lines": 80,
       "branches": 70

@@ -73,6 +73,33 @@ líquido da pessoa p   = (E − C − R) / k − Dₚ
   meses (para gráficos). O líquido anual de cada pessoa é a **soma dos líquidos mensais**, para o ano
   sempre bater com os meses, inclusive nos centavos distribuídos.
 
+### Tabela do mês (`/summary/statement?month=`)
+
+O mesmo resumo do mês em tabela, com uma coluna por pessoa e as linhas já prontas para desenhar
+(`summary/service/summary-statement.builder.ts`, função pura). O front não faz conta: só mostra.
+
+- Colunas: pessoas ativas em ordem alfabética e, depois, as inativas **só** se tiverem gasto individual
+  no mês (aparecem, mas não entram na divisão).
+- Seções: Entrada, Compartilhado (fixos, cartões e reserva), Individual e Resultado. Cada linha tem
+  `total`, um valor por coluna (`cells`) e detalhes (`children`: cada despesa, cada cartão).
+- A divisão do compartilhado é feita **uma vez só** (`E − C − R` dividido), como no `/summary`; depois as
+  linhas (fixos, cartões, reserva) são ajustadas centavo a centavo para somar exatamente a parte de cada um.
+- `breakdown`: o líquido de cada pessoa ativa em etapas, **sem descontar a reserva duas vezes**:
+
+```text
+beforeReserve = (E − C) / k              líquido antes da reserva e dos gastos individuais
+individual    = Dₚ                       gastos individuais da pessoa
+reserve       = parte da pessoa em R      (a linha "Reserva" da tabela)
+net           = beforeReserve − individual − reserve   (igual ao net do /summary)
+```
+
+  Exemplo: E = 10.000,00, C = 4.000,00, R = 1.000,00, duas pessoas e 800,00 de gastos individuais de uma
+  delas: `beforeReserve` 3.000,00, `individual` 800,00, `reserve` 500,00, `net` 1.700,00. A parte da
+  reserva é a diferença entre as duas divisões; por isso a conta sempre fecha no centavo.
+- `reserve.month`: quanto foi guardado no mês (todas as pessoas; `null` sem reserva).
+  `reserve.accumulated`: soma de **todas as reservas até o mês, inclusive** (um mês antigo mostra o
+  acumulado daquela época).
+
 ## Mudou uma regra?
 
 Atualize esta página no mesmo PR, com um exemplo numérico se for conta, e os testes da regra (de

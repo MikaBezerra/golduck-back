@@ -12,6 +12,10 @@ type GroupRow = {
     _count: { _all: number };
 };
 
+type AmountRow = { amountCents: bigint };
+type SumRow = { _sum: { amountCents: bigint | null } };
+type CardRow = { id: string; cardId: string; amountCents: bigint; personId: string | null };
+
 const NOVEMBER = new Date('2026-11-01T00:00:00.000Z');
 const DECEMBER = new Date('2026-12-01T00:00:00.000Z');
 const JANUARY = new Date('2027-01-01T00:00:00.000Z');
@@ -37,12 +41,26 @@ describe('SummaryRepository', () => {
     const groupRows = (rows: () => { byCategory: GroupRow[]; byPerson: GroupRow[] }) =>
         async (args: GroupByArgs): Promise<GroupRow[]> => Promise.resolve(args.by[1] === 'categoryId' ? rows().byCategory : rows().byPerson);
     const prisma = {
-        monthlyIncome: { findMany: jest.fn(async () => Promise.resolve(incomes)) },
-        monthlyReserve: { findMany: jest.fn(async () => Promise.resolve(reserves)) },
-        manualExpense: { groupBy: jest.fn(groupRows(() => manualRows)) },
-        cardExpense: { groupBy: jest.fn(groupRows(() => cardRows)) },
+        monthlyIncome: {
+            findMany: jest.fn(async () => Promise.resolve(incomes)),
+            findUnique: jest.fn(async (): Promise<AmountRow | null> => Promise.resolve(null))
+        },
+        monthlyReserve: {
+            findMany: jest.fn(async () => Promise.resolve(reserves)),
+            findUnique: jest.fn(async (): Promise<AmountRow | null> => Promise.resolve(null)),
+            aggregate: jest.fn(async (): Promise<SumRow> => Promise.resolve({ _sum: { amountCents: null } }))
+        },
+        manualExpense: {
+            groupBy: jest.fn(groupRows(() => manualRows)),
+            findMany: jest.fn(async (): Promise<unknown[]> => Promise.resolve([]))
+        },
+        cardExpense: {
+            groupBy: jest.fn(groupRows(() => cardRows)),
+            findMany: jest.fn(async (): Promise<CardRow[]> => Promise.resolve([]))
+        },
+        creditCard: { findMany: jest.fn(async () => Promise.resolve([{ id: 'nubank', name: 'Nubank' }])) },
         category: { findMany: jest.fn(async () => Promise.resolve([])) },
-        person: { findMany: jest.fn(async () => Promise.resolve([])) }
+        person: { findMany: jest.fn(async (): Promise<unknown[]> => Promise.resolve([])) }
     };
     const repository = new SummaryRepository(prisma as unknown as PrismaService);
 
@@ -153,6 +171,43 @@ describe('SummaryRepository', () => {
 
             expect(prisma.person.findMany).toHaveBeenNthCalledWith(1, { where: { OR: [{ id: { in: ['ana'] } }, { active: true }] } });
             expect(prisma.person.findMany).toHaveBeenNthCalledWith(2, { where: { OR: [{ id: { in: [] } }, { active: true }] } });
+        });
+    });
+
+    describe('loadStatementSource', () => {
+        it('lê o mês (cartão sem as excluídas), a reserva acumulada até ele e só os cartões das despesas', async () => {
+            const card = { id: 'c1', cardId: 'nubank', amountCents: 500n, personId: null };
+            prisma.monthlyIncome.findUnique.mockResolvedValueOnce({ amountCents: 100_000n });
+            prisma.monthlyReserve.findUnique.mockResolvedValueOnce({ amountCents: 5_000n });
+            prisma.monthlyReserve.aggregate.mockResolvedValueOnce({ _sum: { amountCents: 25_000n } });
+            prisma.person.findMany.mockResolvedValueOnce([{ id: 'ana', name: 'Ana', active: true }]);
+            prisma.cardExpense.findMany.mockResolvedValueOnce([card, { ...card, id: 'c2' }]);
+
+            const result = await repository.loadStatementSource(NOVEMBER);
+
+            expect(result).toEqual({
+                month: NOVEMBER,
+                incomeCents: 100_000n,
+                reserveCents: 5_000n,
+                reserveAccumulatedCents: 25_000n,
+                people: [{ id: 'ana', name: 'Ana', active: true }],
+                manualExpenses: [],
+                cardExpenses: [card, { ...card, id: 'c2' }],
+                cards: [{ id: 'nubank', name: 'Nubank' }]
+            });
+            expect(prisma.monthlyReserve.aggregate).toHaveBeenCalledWith({ where: { month: { lt: DECEMBER } }, _sum: { amountCents: true } });
+            expect(prisma.manualExpense.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { month: { gte: NOVEMBER, lt: DECEMBER } } }));
+            expect(prisma.cardExpense.findMany).toHaveBeenCalledWith(expect.objectContaining({
+                where: { month: { gte: NOVEMBER, lt: DECEMBER }, excludedAt: null }
+            }));
+            expect(prisma.creditCard.findMany).toHaveBeenCalledWith({ where: { id: { in: ['nubank'] } }, select: { id: true, name: true } });
+        });
+
+        it('mês vazio: entrada e reserva null, acumulado zero e sem consultar cartões', async () => {
+            const result = await repository.loadStatementSource(NOVEMBER);
+
+            expect(result).toMatchObject({ incomeCents: null, reserveCents: null, reserveAccumulatedCents: 0n, cards: [] });
+            expect(prisma.creditCard.findMany).not.toHaveBeenCalled();
         });
     });
 });

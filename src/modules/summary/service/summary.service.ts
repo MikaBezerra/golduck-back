@@ -8,9 +8,11 @@ import {
     AnnualSummaryResponse,
     SummaryQueryDto,
     SummaryResponse,
+    SummaryStatementResponse,
     SummaryTotalsDto
 } from '../dto/summary.dto.js';
 import { SummaryRepository } from '../repository/summary.repository.js';
+import { buildStatement } from './summary-statement.builder.js';
 import {
     combinePeriods,
     compareByAmountThenName,
@@ -70,6 +72,16 @@ export class SummaryService {
                 balance: formatAmountCents(month.balanceCents)
             }))
         };
+    }
+
+    /**
+     * Resumo do mês em tabela (uma coluna por pessoa), com a quebra do líquido de cada pessoa ativa e a
+     * reserva do mês e acumulada. As linhas vêm prontas: o front só desenha.
+     */
+    public async findStatement(query: SummaryQueryDto): Promise<SummaryStatementResponse> {
+        const source = await this.summaryRepository.loadStatementSource(parseMonth(query.month));
+
+        return buildStatement(source);
     }
 
     /** Nomes das categorias e pessoas que aparecem no período e as pessoas ativas. */
