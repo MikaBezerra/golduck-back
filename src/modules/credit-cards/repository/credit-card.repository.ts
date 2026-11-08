@@ -28,6 +28,19 @@ export type CreditCardSyncState = {
     syncConsentExpiresAt?: Date | null;
 };
 
+/** Pagamento de uma fatura (null nos dois desmarca). */
+export type CardBillPayment = {
+    paidAt: Date | null;
+    paidAmountCents: bigint | null;
+};
+
+/** Soma das compras (não excluídas) de uma fatura. */
+export type CardBillTotal = {
+    cardId: string;
+    month: Date;
+    totalCents: bigint;
+};
+
 @Injectable()
 export class CreditCardRepository {
     public constructor(private readonly prisma: PrismaService) { }
@@ -83,5 +96,29 @@ export class CreditCardRepository {
                 });
             }
         });
+    }
+
+    /** Marca ou desmarca a fatura como paga (a linha da fatura nasce aqui, se ainda não existir). */
+    public async savePayment(cardId: string, month: Date, payment: CardBillPayment): Promise<CardBill> {
+        return this.prisma.cardBill.upsert({
+            where: { cardId_month: { cardId, month } },
+            create: { cardId, month, ...payment },
+            update: payment
+        });
+    }
+
+    /** Total de cada fatura (cartão + mês) com as compras que não foram excluídas. */
+    public async sumBillTotals(filter: { cardId?: string; month?: Date }): Promise<CardBillTotal[]> {
+        const rows = await this.prisma.cardExpense.groupBy({
+            by: ['cardId', 'month'],
+            where: { excludedAt: null, cardId: filter.cardId, month: filter.month },
+            _sum: { amountCents: true }
+        });
+
+        return rows.map(row => ({
+            cardId: row.cardId,
+            month: row.month,
+            totalCents: row._sum.amountCents ?? 0n // eslint-disable-line no-underscore-dangle
+        }));
     }
 }

@@ -240,6 +240,25 @@ describe('rotas /credit-cards', () => {
                 field: 'bestPurchaseDate', code: 'any.required'
             });
         });
+
+        it('PUT e DELETE /:id/bills/:month/payment marcam e desmarcam a fatura como paga', async () => {
+            const card = repository.seed({ name: 'C6', bank: 'C6', dueDay: 1, bestPurchaseDay: 25 });
+            repository.billTotals.push({ cardId: card.id, month: new Date('2020-01-01T00:00:00.000Z'), totalCents: 5_000n });
+
+            const paid = await api.request('PUT', `/credit-cards/${card.id}/bills/2020-01/payment`);
+            const unpaid = await api.request('DELETE', `/credit-cards/${card.id}/bills/2020-01/payment`);
+            const open = await api.request('PUT', `/credit-cards/${card.id}/bills/2099-01/payment`);
+
+            expect(paid.status).toBe(200);
+            expect(dataOf(paid)).toMatchObject({ cardId: card.id, month: '2020-01', status: 'paid', total: '50.00', paidAmount: '50.00' });
+            expect(unpaid.status).toBe(200);
+            expect(dataOf(unpaid)).toMatchObject({ status: 'overdue', paidAt: null, paidAmount: null });
+            expect(open.status).toBe(409);
+            expect(errorOf(open).code).toBe('CREDIT_CARD_BILL_NOT_CLOSED');
+            expectInvalid(await api.request('PUT', `/credit-cards/${card.id}/bills/2020-13/payment`), { field: '$' });
+            expectInvalid(await api.request('DELETE', `/credit-cards/${UUID_V1}/bills/2020-01/payment`), { field: '$' });
+            expect((await api.request('PUT', `/credit-cards/${MISSING_ID}/bills/2020-01/payment`)).status).toBe(404);
+        });
     });
 
     it('todo erro traz o requestId, igual ao header x-request-id', async () => {

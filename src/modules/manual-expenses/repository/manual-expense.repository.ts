@@ -22,6 +22,7 @@ type ManualExpenseChanges = {
     categoryId?: string;
     split?: ExpenseSplit;
     personId?: string | null;
+    paidAt?: Date | null;
 };
 
 @Injectable()

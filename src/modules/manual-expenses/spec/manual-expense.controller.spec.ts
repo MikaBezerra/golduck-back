@@ -15,7 +15,7 @@ const MISSING_ID = '3f2a9c1e-8b7d-4c2a-9e1f-5a6b7c8d9e0f';
 const UUID_V1 = '3f2a9c1e-8b7d-1c2a-9e1f-5a6b7c8d9e0f';
 const OCTOBER = new Date('2026-10-01T00:00:00.000Z');
 
-type ExpenseBody = { id: string; month: string; title: string; amount: string; categoryId: string; split: string; personId: string | null };
+type ExpenseBody = { id: string; month: string; title: string; amount: string; categoryId: string; split: string; personId: string | null; paidAt: string | null };
 
 /** Campos apontados pela validação (details[].field). */
 const fieldsOf = (response: TestResponse): string[] =>
@@ -281,6 +281,17 @@ describe('rotas /manual-expenses', () => {
                 expect.objectContaining({ id: first.id, title: 'Fibra', amount: '120.50', categoryId: mercado.id, split: 'SHARED', personId: null }),
                 expect.objectContaining({ id: second.id, title: 'Fibra', amount: '120.50', categoryId: mercado.id, split: 'SHARED', personId: null })
             ]);
+        });
+
+        it('paid marca e desmarca como paga; precisa ser booleano', async () => {
+            const expense = repository.seed({ month: OCTOBER, title: 'Luz', categoryId: outros.id });
+
+            const paid = await api.patch('/manual-expenses', { ids: [expense.id], changes: { paid: true } });
+
+            expect(paid.status).toBe(200);
+            expect(dataOf<ExpenseBody[]>(paid)[0].paidAt).toEqual(expect.any(String));
+            expect(dataOf<ExpenseBody[]>(await api.patch('/manual-expenses', { ids: [expense.id], changes: { paid: false } }))[0].paidAt).toBeNull();
+            expectValidationError(await api.patch('/manual-expenses', { ids: [expense.id], changes: { paid: 'sim' } }), ['changes.paid']);
         });
 
         it('valida ids: obrigatórios, pelo menos um, UUID v4 e sem repetição', async () => {

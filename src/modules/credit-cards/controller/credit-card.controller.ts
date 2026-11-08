@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpStatus, Param, Patch, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpStatus, Param, Patch, Post, Put, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 
 import { Role } from '../../../generated/prisma/client.js';
@@ -7,6 +7,7 @@ import { ApiDataResponse, ApiErrorResponses } from '../../common/swagger/api-doc
 import {
     CreateCreditCardDto,
     CreditCardBillResponse,
+    CreditCardBillStatusResponse,
     CreditCardResponse,
     ListCreditCardBillsDto,
     UpdateCreditCardBillDto,
@@ -93,5 +94,33 @@ export class CreditCardController {
         @Body(UpdateCreditCardBillPipe) body: UpdateCreditCardBillDto
     ): Promise<CreditCardBillResponse> {
         return this.creditCardService.updateBill(id, month, body);
+    }
+
+    @Put(':id/bills/:month/payment')
+    @ApiOperation({
+        summary: 'Marca a fatura como paga',
+        description: 'Só depois do fechamento (409 CREDIT_CARD_BILL_NOT_CLOSED). Guarda o total do momento; '
+            + 'se a fatura mudar depois, changedAfterPayment avisa, e marcar de novo confirma o valor novo.'
+    })
+    @ApiParam({ name: 'id', format: 'uuid' })
+    @ApiParam({ name: 'month', example: '2026-11', description: 'Mês da fatura, AAAA-MM' })
+    @ApiDataResponse(CreditCardBillStatusResponse)
+    public async markBillPaid(
+        @Param('id', CreditCardIdPipe) id: string,
+        @Param('month', CreditCardBillMonthPipe) month: string
+    ): Promise<CreditCardBillStatusResponse> {
+        return this.creditCardService.markBillPaid(id, month);
+    }
+
+    @Delete(':id/bills/:month/payment')
+    @ApiOperation({ summary: 'Desmarca o pagamento da fatura' })
+    @ApiParam({ name: 'id', format: 'uuid' })
+    @ApiParam({ name: 'month', example: '2026-11', description: 'Mês da fatura, AAAA-MM' })
+    @ApiDataResponse(CreditCardBillStatusResponse)
+    public async unmarkBillPaid(
+        @Param('id', CreditCardIdPipe) id: string,
+        @Param('month', CreditCardBillMonthPipe) month: string
+    ): Promise<CreditCardBillStatusResponse> {
+        return this.creditCardService.unmarkBillPaid(id, month);
     }
 }

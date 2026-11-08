@@ -1,10 +1,12 @@
-import type { CreditCard } from '../../../generated/prisma/client.js';
+import type { CardBill, CreditCard } from '../../../generated/prisma/client.js';
 import { Injectable } from '@nestjs/common';
 
 import { addMonths, formatDate, formatMonth, parseMonth } from '../../common/date/month.js';
+import { formatAmountCents } from '../../common/money/money.js';
 import {
     CreateCreditCardDto,
     CreditCardBillResponse,
+    CreditCardBillStatusResponse,
     CreditCardResponse,
     CreditCardSyncResponse,
     ListCreditCardBillsDto,
@@ -13,7 +15,8 @@ import {
 } from '../dto/credit-card.dto.js';
 import { CREDIT_CARD_ERRORS } from '../errors/credit-card.errors.js';
 import { CreditCardRepository, CreditCardSyncState } from '../repository/credit-card.repository.js';
-import { addDays, BillingCalendar, BillSchedule } from './billing-calendar.js';
+import { BillTiming, isBillClosed, resolveBillStatus } from './bill-status.js';
+import { addDays, BillingCalendar, BillSchedule, dayInMonth } from './billing-calendar.js';
 import { todayInBrazil } from './brazil-time.js';
 
 const MAX_BILLS = 24;
@@ -172,6 +175,78 @@ export class CreditCardService {
         await this.creditCardRepository.saveBestPurchaseDate(card.id, billMonth, bestPurchaseDate);
 
         return this.toBillResponse(await this.getCalendar(card), billMonth);
+    }
+
+    /**
+     * Marca a fatura como paga, guardando o total do momento. Só fatura fechada; marcar de novo
+     * confirma o total atual (depois de uma compra que chegou atrasada).
+     */
+    public async markBillPaid(id: string, month: string): Promise<CreditCardBillStatusResponse> {
+        const card = await this.getById(id);
+        const billMonth = parseMonth(month);
+        const bills = await this.creditCardRepository.findBills(card.id);
+        const timing = this.billTiming(card, billMonth, bills);
+
+        if (!isBillClosed(timing, todayInBrazil())) {
+            throw CREDIT_CARD_ERRORS.billNotClosed(`bill_${month}_not_closed`);
+        }
+
+        const totalCents = await this.billTotal(card.id, billMonth);
+        const bill = await this.creditCardRepository.savePayment(card.id, billMonth, { paidAt: new Date(), paidAmountCents: totalCents });
+
+        return this.toBillStatusResponse(card.id, timing, bill, totalCents);
+    }
+
+    /** Desmarca o pagamento da fatura (volta a fechada, vencida ou aberta, conforme as datas). */
+    public async unmarkBillPaid(id: string, month: string): Promise<CreditCardBillStatusResponse> {
+        const card = await this.getById(id);
+        const billMonth = parseMonth(month);
+        const timing = this.billTiming(card, billMonth, await this.creditCardRepository.findBills(card.id));
+        const bill = await this.creditCardRepository.savePayment(card.id, billMonth, { paidAt: null, paidAmountCents: null });
+
+        return this.toBillStatusResponse(card.id, timing, bill, await this.billTotal(card.id, billMonth));
+    }
+
+    /** Fechamento e vencimento da fatura; sem o ciclo configurado, só o vencimento que der para saber. */
+    private billTiming(card: CreditCard, month: Date, bills: CardBill[]): BillTiming {
+        if (card.dueDay !== null && card.bestPurchaseDay !== null) {
+            const schedule = new BillingCalendar({ dueDay: card.dueDay, bestPurchaseDay: card.bestPurchaseDay }, bills).schedule(month);
+
+            return { month, closingDate: schedule.closingDate, dueDate: schedule.dueDate };
+        }
+
+        const stored = bills.find(bill => bill.month.getTime() === month.getTime());
+        const dueDate = stored?.bankDueDate ?? (card.dueDay === null ? null : dayInMonth(month, card.dueDay));
+
+        return { month, closingDate: null, dueDate };
+    }
+
+    private async billTotal(cardId: string, month: Date): Promise<bigint> {
+        const [total] = await this.creditCardRepository.sumBillTotals({ cardId, month });
+
+        return total?.totalCents ?? 0n;
+    }
+
+    private toBillStatusResponse(
+        cardId: string,
+        timing: BillTiming,
+        bill: Pick<CardBill, 'paidAt' | 'paidAmountCents'> | undefined,
+        totalCents: bigint
+    ): CreditCardBillStatusResponse {
+        const paidAt = bill?.paidAt ?? null;
+        const paidAmountCents = paidAt ? bill?.paidAmountCents ?? null : null;
+
+        return {
+            cardId,
+            month: formatMonth(timing.month),
+            status: resolveBillStatus({ ...timing, paidAt }, todayInBrazil()),
+            total: formatAmountCents(totalCents),
+            closingDate: timing.closingDate === null ? null : formatDate(timing.closingDate),
+            dueDate: timing.dueDate === null ? null : formatDate(timing.dueDate),
+            paidAt,
+            paidAmount: paidAmountCents === null ? null : formatAmountCents(paidAmountCents),
+            changedAfterPayment: paidAmountCents !== null && paidAmountCents !== totalCents
+        };
     }
 
     private toBillResponse(calendar: BillingCalendar, month: Date): CreditCardBillResponse {

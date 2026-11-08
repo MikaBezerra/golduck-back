@@ -303,4 +303,104 @@ describe('CreditCardService', () => {
             expect((await service.getCalendar(card)).schedule(NOVEMBER).source).toBe('bank');
         });
     });
+
+    describe('pagamento da fatura', () => {
+        const DECEMBER = day('2026-12-01');
+        const PAYMENT_TIME = new Date('2026-11-30T15:00:00.000Z');
+        const seedC6 = () => repository.seed({ name: 'C6', bank: 'C6', dueDay: 1, bestPurchaseDay: 25 });
+
+        beforeEach(() => {
+            // 30/11: a fatura de dezembro fechou em 24/11 e vence em 01/12; a de janeiro está aberta.
+            jest.useFakeTimers({ now: PAYMENT_TIME, doNotFake: ['nextTick', 'setImmediate'] });
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+
+        it('marca a fatura fechada como paga, guardando o total do momento', async () => {
+            const card = seedC6();
+            repository.billTotals.push({ cardId: card.id, month: DECEMBER, totalCents: 123_456n });
+
+            await expect(service.markBillPaid(card.id, '2026-12')).resolves.toEqual({
+                cardId: card.id,
+                month: '2026-12',
+                status: 'paid',
+                total: '1234.56',
+                closingDate: '2026-11-24',
+                dueDate: '2026-12-01',
+                paidAt: PAYMENT_TIME,
+                paidAmount: '1234.56',
+                changedAfterPayment: false
+            });
+            expect(repository.bill(card.id, DECEMBER)).toMatchObject({ paidAt: PAYMENT_TIME, paidAmountCents: 123_456n });
+        });
+
+        it('fatura sem compras também pode ser paga (total zero)', async () => {
+            const card = seedC6();
+
+            await expect(service.markBillPaid(card.id, '2026-12')).resolves.toMatchObject({ status: 'paid', total: '0.00', paidAmount: '0.00' });
+        });
+
+        it('marcar de novo confirma o total atual (compra que chegou depois do pagamento)', async () => {
+            const card = seedC6();
+            const total = { cardId: card.id, month: DECEMBER, totalCents: 10_000n };
+            repository.billTotals.push(total);
+            await service.markBillPaid(card.id, '2026-12');
+
+            total.totalCents = 15_000n;
+
+            await expect(service.markBillPaid(card.id, '2026-12')).resolves.toMatchObject({ paidAmount: '150.00', changedAfterPayment: false });
+            expect(repository.bill(card.id, DECEMBER)?.paidAmountCents).toBe(15_000n);
+        });
+
+        it('fatura ainda aberta: 409 CREDIT_CARD_BILL_NOT_CLOSED e nada gravado', async () => {
+            const card = seedC6();
+
+            await expectAppError(service.markBillPaid(card.id, '2027-01'), {
+                code: 'CREDIT_CARD_BILL_NOT_CLOSED', statusCode: 409, reason: 'bill_2027-01_not_closed'
+            });
+            expect(repository.bills.size).toBe(0);
+        });
+
+        it('desmarca: volta a fechada ou vencida, conforme o vencimento', async () => {
+            const card = seedC6();
+            await service.markBillPaid(card.id, '2026-12');
+            await service.markBillPaid(card.id, '2026-11');
+
+            await expect(service.unmarkBillPaid(card.id, '2026-12')).resolves.toMatchObject({
+                status: 'closed', paidAt: null, paidAmount: null, changedAfterPayment: false
+            });
+            await expect(service.unmarkBillPaid(card.id, '2026-11')).resolves.toMatchObject({ status: 'overdue', dueDate: '2026-11-01' });
+            expect(repository.bill(card.id, DECEMBER)).toMatchObject({ paidAt: null, paidAmountCents: null });
+        });
+
+        it('desmarcar uma fatura aberta só confirma que ela está aberta', async () => {
+            const card = seedC6();
+
+            await expect(service.unmarkBillPaid(card.id, '2027-01')).resolves.toMatchObject({ status: 'open', closingDate: '2026-12-24' });
+        });
+
+        it('sem o ciclo configurado: fechada a partir do mês do vencimento, com o vencimento que der para saber', async () => {
+            const uploadOnly = repository.seed({ name: 'Neon', bank: 'NEON' });
+            const withDueDay = repository.seed({ name: 'Nubank', dueDay: 10 });
+            await repository.saveBankDates(uploadOnly.id, [{ month: NOVEMBER, closingDate: day('2026-10-28'), dueDate: day('2026-11-05') }]);
+
+            await expect(service.markBillPaid(uploadOnly.id, '2026-11')).resolves.toMatchObject({
+                status: 'paid', closingDate: null, dueDate: '2026-11-05'
+            });
+            await expect(service.unmarkBillPaid(withDueDay.id, '2026-11')).resolves.toMatchObject({
+                status: 'overdue', closingDate: null, dueDate: '2026-11-10'
+            });
+            await expect(service.unmarkBillPaid(uploadOnly.id, '2026-10')).resolves.toMatchObject({ status: 'closed', dueDate: null });
+            await expectAppError(service.markBillPaid(uploadOnly.id, '2026-12'), {
+                code: 'CREDIT_CARD_BILL_NOT_CLOSED', statusCode: 409, reason: 'bill_2026-12_not_closed'
+            });
+        });
+
+        it('cartão inexistente: 404', async () => {
+            await expectAppError(service.markBillPaid(MISSING_ID, '2026-12'), NOT_FOUND);
+            await expectAppError(service.unmarkBillPaid(MISSING_ID, '2026-12'), NOT_FOUND);
+        });
+    });
 });

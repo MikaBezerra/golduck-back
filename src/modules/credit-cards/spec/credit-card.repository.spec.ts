@@ -19,6 +19,9 @@ describe('CreditCardRepository', () => {
             findMany: jest.fn(async () => Promise.resolve([])),
             upsert: jest.fn(async () => Promise.resolve({}))
         },
+        cardExpense: {
+            groupBy: jest.fn(async () => Promise.resolve([]))
+        },
         $transaction: jest.fn(async () => Promise.resolve())
     };
     const repository = new CreditCardRepository(prisma as unknown as PrismaService);
@@ -79,6 +82,37 @@ describe('CreditCardRepository', () => {
             where: { cardId_month: { cardId: 'id-1', month } },
             create: { cardId: 'id-1', month, bankClosingDate: closingDate, bankDueDate: dueDate },
             update: { bankClosingDate: closingDate, bankDueDate: dueDate }
+        });
+    });
+
+    it('savePayment grava o pagamento por upsert (cardId + mês)', async () => {
+        const month = new Date('2026-11-01T00:00:00.000Z');
+        const paidAt = new Date('2026-11-30T15:00:00.000Z');
+
+        await repository.savePayment('id-1', month, { paidAt, paidAmountCents: 100n });
+
+        expect(prisma.cardBill.upsert).toHaveBeenCalledWith({
+            where: { cardId_month: { cardId: 'id-1', month } },
+            create: { cardId: 'id-1', month, paidAt, paidAmountCents: 100n },
+            update: { paidAt, paidAmountCents: 100n }
+        });
+    });
+
+    it('sumBillTotals soma as compras não excluídas por cartão e mês (sem compras, zero)', async () => {
+        const month = new Date('2026-11-01T00:00:00.000Z');
+        prisma.cardExpense.groupBy.mockResolvedValueOnce([
+            { cardId: 'id-1', month, _sum: { amountCents: 1500n } },
+            { cardId: 'id-2', month, _sum: { amountCents: null } }
+        ] as never);
+
+        await expect(repository.sumBillTotals({ month })).resolves.toEqual([
+            { cardId: 'id-1', month, totalCents: 1500n },
+            { cardId: 'id-2', month, totalCents: 0n }
+        ]);
+        expect(prisma.cardExpense.groupBy).toHaveBeenCalledWith({
+            by: ['cardId', 'month'],
+            where: { excludedAt: null, cardId: undefined, month },
+            _sum: { amountCents: true }
         });
     });
 });

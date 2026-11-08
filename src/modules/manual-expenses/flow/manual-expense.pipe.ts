@@ -41,7 +41,8 @@ export class UpdateManualExpensesPipe extends JoiValidationPipePtbr {
                 title: titleSchema.optional(),
                 amount: amountSchema.optional(),
                 categoryId: idSchema.optional(),
-                ...splitSchemas(idSchema, { required: false })
+                ...splitSchemas(idSchema, { required: false }),
+                paid: Joi.boolean().optional()
             }).min(1).unknown(false).required()
         }).unknown(false);
     }

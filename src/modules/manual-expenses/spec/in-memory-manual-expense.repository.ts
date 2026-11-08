@@ -5,7 +5,7 @@ import { Prisma } from '../../../generated/prisma/client.js';
 import { assertSplitCheck, splitFor } from '../../../testing/expense-split-check.js';
 
 type NewManualExpense = Pick<ManualExpense, 'month' | 'title' | 'amountCents' | 'categoryId' | 'split' | 'personId'>;
-type ManualExpenseChanges = Partial<Pick<ManualExpense, 'title' | 'amountCents' | 'categoryId' | 'split' | 'personId'>>;
+type ManualExpenseChanges = Partial<Pick<ManualExpense, 'title' | 'amountCents' | 'categoryId' | 'split' | 'personId' | 'paidAt'>>;
 
 /* eslint-disable @typescript-eslint/require-await -- imita a interface assíncrona do ManualExpenseRepository */
 /**
@@ -23,6 +23,7 @@ export class InMemoryManualExpenseRepository {
             amountCents: 1000n,
             personId: null,
             split: splitFor(data.personId),
+            paidAt: null,
             createdAt: now,
             updatedAt: now,
             ...data

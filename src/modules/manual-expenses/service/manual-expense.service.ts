@@ -80,7 +80,10 @@ export class ManualExpenseService {
                 : await this.resolveCategoryId(data.changes.categoryId),
             ...(data.changes.split === undefined
                 ? {}
-                : await this.resolveSplit(data.changes.split, data.changes.personId))
+                : await this.resolveSplit(data.changes.split, data.changes.personId)),
+            paidAt: data.changes.paid === undefined
+                ? undefined
+                : data.changes.paid ? new Date() : null
         };
 
         try {
@@ -157,6 +160,7 @@ export class ManualExpenseService {
             categoryId: expense.categoryId,
             split: expense.split,
             personId: expense.personId,
+            paidAt: expense.paidAt,
             createdAt: expense.createdAt,
             updatedAt: expense.updatedAt
         };

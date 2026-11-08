@@ -85,17 +85,19 @@ model MonthlyReserve {
 }
 
 model ManualExpense {
-  id          String   @id @default(uuid()) @db.Uuid
-  month       DateTime @db.Date
-  title       String   @db.VarChar(160)
-  amountCents BigInt   @db.BigInt
-  categoryId  String   @db.Uuid
+  id          String       @id @default(uuid()) @db.Uuid
+  month       DateTime     @db.Date
+  title       String       @db.VarChar(160)
+  amountCents BigInt       @db.BigInt
+  categoryId  String       @db.Uuid
   /// Nunca PENDING: quem lança a despesa à mão escolhe na hora.
   split       ExpenseSplit
   /// Preenchido só quando split = PERSONAL (CHECK no banco).
-  personId    String?  @db.Uuid
-  createdAt   DateTime @default(now()) @db.Timestamptz(3)
-  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+  personId    String?      @db.Uuid
+  /// Quando o usuário marcou a despesa como paga; null = não paga.
+  paidAt      DateTime?    @db.Timestamptz(3)
+  createdAt   DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @db.Timestamptz(3)
 
   category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   person   Person?  @relation(fields: [personId], references: [id], onDelete: Restrict)
@@ -150,6 +152,10 @@ model CardBill {
   /// Fechamento informado pelo banco depois que a fatura fecha (vale sobre tudo).
   bankClosingDate  DateTime? @db.Date
   bankDueDate      DateTime? @db.Date
+  /// Quando o usuário marcou a fatura (fechada) como paga; null = não paga.
+  paidAt           DateTime? @db.Timestamptz(3)
+  /// Total da fatura no momento do pagamento: se a fatura mudar depois, o app avisa.
+  paidAmountCents  BigInt?   @db.BigInt
   createdAt        DateTime  @default(now()) @db.Timestamptz(3)
   updatedAt        DateTime  @updatedAt @db.Timestamptz(3)
 

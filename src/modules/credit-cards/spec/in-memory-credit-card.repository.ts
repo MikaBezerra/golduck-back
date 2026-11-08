@@ -1,5 +1,11 @@
 import type { CardBank, CardBill, CreditCard } from '../../../generated/prisma/client.js';
-import type { CreditCardChanges, CreditCardSettings, CreditCardSyncState } from '../repository/credit-card.repository.js';
+import type {
+    CardBillPayment,
+    CardBillTotal,
+    CreditCardChanges,
+    CreditCardSettings,
+    CreditCardSyncState
+} from '../repository/credit-card.repository.js';
 import { randomUUID } from 'node:crypto';
 
 import { Prisma } from '../../../generated/prisma/client.js';
@@ -13,6 +19,8 @@ export class InMemoryCreditCardRepository {
     public readonly cards = new Map<string, CreditCard>();
     /** Faturas gravadas, por "cardId|mês". */
     public readonly bills = new Map<string, CardBill>();
+    /** Compras não excluídas de cada fatura (o que o banco somaria em CardExpense). */
+    public readonly billTotals: CardBillTotal[] = [];
 
     /** Cadastra direto, sem passar pelo serviço (monta o cenário do teste). */
     public seed(data: Partial<CreditCard> & Pick<CreditCard, 'name'>): CreditCard {
@@ -97,6 +105,21 @@ export class InMemoryCreditCardRepository {
         }
     }
 
+    public async savePayment(cardId: string, month: Date, payment: CardBillPayment): Promise<CardBill> {
+        return this.upsertBill(cardId, month, payment);
+    }
+
+    public async sumBillTotals(filter: { cardId?: string; month?: Date }): Promise<CardBillTotal[]> {
+        return this.billTotals.filter(total =>
+            (filter.cardId === undefined || total.cardId === filter.cardId)
+            && (filter.month === undefined || total.month.getTime() === filter.month.getTime()));
+    }
+
+    /** O CardBill gravado (ou undefined). */
+    public bill(cardId: string, month: Date): CardBill | undefined {
+        return this.bills.get(`${cardId}|${month.toISOString()}`);
+    }
+
     private upsertBill(cardId: string, month: Date, data: Partial<CardBill>): CardBill {
         const key = `${cardId}|${month.toISOString()}`;
         const now = new Date();
@@ -107,6 +130,8 @@ export class InMemoryCreditCardRepository {
             bestPurchaseDate: null,
             bankClosingDate: null,
             bankDueDate: null,
+            paidAt: null,
+            paidAmountCents: null,
             createdAt: now,
             ...this.bills.get(key),
             ...data,

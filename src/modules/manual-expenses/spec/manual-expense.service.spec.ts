@@ -69,6 +69,7 @@ describe('ManualExpenseService', () => {
                 categoryId: outros.id,
                 split: 'SHARED',
                 personId: null,
+                paidAt: null,
                 createdAt: row.createdAt,
                 updatedAt: row.updatedAt
             });
@@ -233,6 +234,7 @@ describe('ManualExpenseService', () => {
                 categoryId: mercado.id,
                 split: 'PERSONAL',
                 personId: ana.id,
+                paidAt: null,
                 createdAt: expense.createdAt,
                 updatedAt: expense.updatedAt
             });
@@ -260,6 +262,27 @@ describe('ManualExpenseService', () => {
             expect(findCategory).not.toHaveBeenCalled();
             expect(findDefault).not.toHaveBeenCalled();
             expect(findPerson).not.toHaveBeenCalled();
+        });
+
+        it('paid true marca como paga agora; paid false desmarca; sem paid, fica como estava', async () => {
+            const now = new Date('2026-11-30T15:00:00.000Z');
+            const first = repository.seed({ month: OCTOBER, title: 'Luz', categoryId: mercado.id });
+            const second = repository.seed({ month: OCTOBER, title: 'Água', categoryId: mercado.id });
+            jest.useFakeTimers({ now, doNotFake: ['nextTick', 'setImmediate'] });
+
+            try {
+                const paid = await service.updateMany({ ids: [first.id, second.id], changes: { paid: true } });
+
+                expect(paid.map(expense => expense.paidAt)).toEqual([now, now]);
+                await service.updateMany({ ids: [first.id], changes: { title: 'Conta de luz' } });
+                expect(repository.get(first.id).paidAt).toEqual(now);
+                await expect(service.updateMany({ ids: [first.id], changes: { paid: false } })).resolves.toEqual([
+                    expect.objectContaining({ title: 'Conta de luz', paidAt: null })
+                ]);
+                expect(repository.get(second.id).paidAt).toEqual(now);
+            } finally {
+                jest.useRealTimers();
+            }
         });
 
         it('converte o novo valor para centavos', async () => {

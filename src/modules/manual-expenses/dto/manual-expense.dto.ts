@@ -46,6 +46,9 @@ export class ManualExpenseChangesDto {
 
     @ApiPropertyOptional({ ...UUID_PROPERTY, nullable: true, description: 'Obrigatório com split PERSONAL; nos outros casos, omitido ou null' })
     public personId?: string | null;
+
+    @ApiPropertyOptional({ type: Boolean, description: 'true marca como paga (agora); false desmarca' })
+    public paid?: boolean;
 }
 
 export class UpdateManualExpensesDto {
@@ -87,6 +90,9 @@ export class ManualExpenseResponse {
 
     @ApiProperty({ ...UUID_PROPERTY, nullable: true, description: 'Só na despesa individual (PERSONAL)' })
     public personId!: string | null;
+
+    @ApiProperty({ ...DATE_TIME_PROPERTY, nullable: true, description: 'Quando foi marcada como paga; null = não paga' })
+    public paidAt!: Date | null;
 
     @ApiProperty(DATE_TIME_PROPERTY)
     public createdAt!: Date;

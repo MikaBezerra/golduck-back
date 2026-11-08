@@ -1,8 +1,10 @@
+import type { BillStatus } from '../service/bill-status.js';
 import type { BillBoundarySource } from '../service/billing-calendar.js';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 import { CardBank } from '../../../generated/prisma/client.js';
-import { DATE_PATTERN, DATE_TIME_PROPERTY, MONTH_PROPERTY, UUID_PROPERTY } from '../../common/swagger/api-docs.js';
+import { DATE_PATTERN, DATE_TIME_PROPERTY, MONEY_PROPERTY, MONTH_PROPERTY, UUID_PROPERTY } from '../../common/swagger/api-docs.js';
+import { BILL_STATUSES } from '../service/bill-status.js';
 
 const BANK_PROPERTY = {
     enum: CardBank,
@@ -165,4 +167,42 @@ export class CreditCardBillResponse {
 
     @ApiProperty({ ...DAY_DATE_PROPERTY, nullable: true, description: 'Ajuste do usuário, mesmo quando o fechamento do banco prevalece' })
     public userBestPurchaseDate!: string | null;
+}
+
+/** Quanto é a fatura e se já foi paga. */
+export class CreditCardBillStatusResponse {
+    @ApiProperty(UUID_PROPERTY)
+    public cardId!: string;
+
+    @ApiProperty({ ...MONTH_PROPERTY, description: 'Mês da fatura (o do vencimento)' })
+    public month!: string;
+
+    @ApiProperty({
+        type: String,
+        enum: BILL_STATUSES,
+        enumName: 'BillStatus',
+        description: 'open (antes do fechamento), closed (fechada, a pagar), overdue (fechada, vencida e não paga) ou paid (marcada como paga)'
+    })
+    public status!: BillStatus;
+
+    @ApiProperty({ ...MONEY_PROPERTY, description: 'Soma das compras da fatura (sem as excluídas)' })
+    public total!: string;
+
+    @ApiProperty({ ...DAY_DATE_PROPERTY, nullable: true, description: 'Último dia de compra; null sem o ciclo da fatura configurado no cartão' })
+    public closingDate!: string | null;
+
+    @ApiProperty({ ...DAY_DATE_PROPERTY, nullable: true, description: 'Vencimento; null sem o ciclo da fatura configurado no cartão' })
+    public dueDate!: string | null;
+
+    @ApiProperty({ ...DATE_TIME_PROPERTY, nullable: true, description: 'Quando foi marcada como paga' })
+    public paidAt!: Date | null;
+
+    @ApiProperty({ ...MONEY_PROPERTY, nullable: true, description: 'Total da fatura no momento em que foi marcada como paga' })
+    public paidAmount!: string | null;
+
+    @ApiProperty({
+        type: Boolean,
+        description: 'Paga, mas o total mudou depois (compra que chegou atrasada): marque como paga de novo para confirmar o valor novo'
+    })
+    public changedAfterPayment!: boolean;
 }

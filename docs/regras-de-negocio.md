@@ -57,6 +57,8 @@ Toda despesa diz de quem é no campo `split` (`common/expense-split/expense-spli
 - Sem categoria, vai para "Outros". Categoria ou pessoa inativa: `409 MANUAL_EXPENSE_INACTIVE_*`.
 - `replicateUntilYearEnd`: cria uma cópia por mês, do mês informado até dezembro.
 - Alteração e exclusão são em lote (lista de IDs) e numa transação: ou todas, ou nenhuma.
+- **Paga**: `changes.paid: true` marca as despesas como pagas (`paidAt` = agora) e `false` desmarca.
+  Qualquer mês pode ser marcado; não muda nenhuma conta do resumo.
 
 ## Despesas do cartão (`card-expenses`)
 
@@ -77,6 +79,29 @@ O usuário pode:
 - **excluir** (exclusão suave: a linha sai das listas e dos totais) e **restaurar**, com escopo:
   `month` (só o mês), `forward` (o mês e os seguintes), `backward` (o mês e os anteriores) ou `all`
   (todas as parcelas da compra) — `card-expense-scope.ts`.
+
+## Fatura paga (`credit-cards`)
+
+`PUT /credit-cards/{id}/bills/{month}/payment` marca a fatura como paga; `DELETE` na mesma rota desmarca.
+A situação de cada fatura (`status`, `credit-cards/service/bill-status.ts`, função pura):
+
+| `status` | Quando |
+| --- | --- |
+| `open` | antes do fechamento (ainda recebe compras) |
+| `closed` | fechou e falta pagar |
+| `overdue` | fechou, passou do vencimento e não foi marcada como paga |
+| `paid` | marcada como paga (vale sobre as outras) |
+
+- Só dá para marcar **depois do fechamento** (`409 CREDIT_CARD_BILL_NOT_CLOSED`). Desmarcar não tem restrição.
+- Cartão **sem o ciclo configurado** (só upload): o fechamento é desconhecido, então a fatura conta como
+  fechada a partir do **mês do vencimento** e nunca aparece como vencida (o vencimento, quando se sabe,
+  vem do banco ou do dia do vencimento do cartão).
+- Ao marcar, o app guarda o **total do momento** (`paidAmount`, sem as compras excluídas). Se o total
+  mudar depois (compra que chega atrasada na sincronização, exclusão), a fatura **continua paga** e
+  `changedAfterPayment: true` avisa; marcar como paga de novo confirma o valor novo.
+- Exemplo: fatura de dezembro do C6 (melhor dia 25, vence dia 1) fecha em 24/11. Em 20/11 é `open` (e
+  não pode ser paga); em 30/11, `closed`; em 02/12 sem pagamento, `overdue`. Paga em 30/11 com 1.234,56;
+  uma compra de 50,00 chega em 01/12: `paid`, `paidAmount` 1234.56, `total` 1284.56, `changedAfterPayment` true.
 
 ## Resumo (`summary`)
 
